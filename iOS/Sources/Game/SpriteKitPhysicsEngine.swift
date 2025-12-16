@@ -7,7 +7,7 @@
 
 import SpriteKit
 
-final class SpriteKitPhysicsEngine {
+final class SpriteKitPhysicsEngine: PhysicsEngine {
     private unowned let scene: SKScene
     private var nodes: [UUID: SKSpriteNode] = [:]
     
@@ -18,8 +18,8 @@ final class SpriteKitPhysicsEngine {
     }
     
     private func configureWorld() {
-        // 초당 1200의 가속도가 붙음, 중력 가속도 9.8를 적용하면 너무 미미하기에 화면 비율상 적절한 값을 넣음
-        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -1200)
+        // 중력 가속도 9.8를 적용
+        scene.physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
     }
     
     private func setupGround() {
@@ -58,5 +58,41 @@ final class SpriteKitPhysicsEngine {
 
         nodes[id] = node
         scene.addChild(node)
+    }
+    
+    func apply(_ command: CharacterCommand, to id: UUID) {
+        guard let body = nodes[id]?.physicsBody else { return }
+
+        switch command {
+        case .moveLeft(let strength):
+            body.velocity.dx = -strength * 250
+
+        case .moveRight(let strength):
+            body.velocity.dx = strength * 250
+
+        case .jump(let strength):
+            body.velocity.dy = strength * 550
+        }
+    }
+    
+    func characterState(id: UUID) -> CharacterState {
+        guard
+            let node = nodes[id],
+            let body = node.physicsBody
+        else {
+            return CharacterState(
+                position: .zero,
+                velocity: .zero,
+                isGrounded: false
+            )
+        }
+
+        let isGrounded = abs(body.velocity.dy) < 1.0 // 속력이 1미만일 때 바닥으로 생각
+
+        return CharacterState(
+            position: node.position,
+            velocity: body.velocity,
+            isGrounded: isGrounded
+        )
     }
 }

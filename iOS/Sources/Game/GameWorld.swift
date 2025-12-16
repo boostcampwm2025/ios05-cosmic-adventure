@@ -9,11 +9,11 @@ import Foundation
 
 final class GameWorld {
 
-    private let engine: SpriteKitPhysicsEngine // TODO: 추상화
+    private let engine: PhysicsEngine
     private let characterID: UUID
 
     init(
-        engine: SpriteKitPhysicsEngine,
+        engine: PhysicsEngine,
         mapSize: CGSize,
         characterSize: CGSize = CGSize(width: 50, height: 50)
     ) {
@@ -28,6 +28,14 @@ final class GameWorld {
                 y: mapSize.height / 2
             )
         )
+    }
+    
+    func handle(_ command: CharacterCommand) {
+        engine.apply(command, to: characterID)
+    }
+
+    var characterState: CharacterState {
+        engine.characterState(id: characterID)
     }
 }
 
