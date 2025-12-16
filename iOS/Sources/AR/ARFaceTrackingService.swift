@@ -6,12 +6,18 @@
 //
 
 import ARKit
+import Combine
 
-final class ARFaceTrackingService: NSObject {
+final class ARFaceTrackingService: NSObject, FaceTrackingService {
     
     private let session: ARSession
     private let strategy: FaceInputStrategy
-
+    private let subject = PassthroughSubject<GameEvent, Never>()
+    
+    var events: AnyPublisher<GameEvent, Never> {
+        subject.eraseToAnyPublisher()
+    }
+    
     init(strategy: FaceInputStrategy) {
         self.session = ARSession()
         self.strategy = strategy
@@ -40,7 +46,7 @@ extension ARFaceTrackingService: ARSessionDelegate {
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         for anchor in anchors.compactMap({ $0 as? ARFaceAnchor }) {
             let events = strategy.interpret(anchor: anchor)
-            print(events)
+            events.forEach { subject.send($0) }
         }
     }
 }
