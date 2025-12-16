@@ -45,6 +45,9 @@ struct ContentView: View {
         .onChange(of: faceManager.mouthPuckerValue) { _ in
             updateGameInput()
         }
+        .onChange(of: faceManager.headRoll) { _ in
+            updateGameInput()
+        }
     }
 
     // 입력을 게임 씬으로 전달하는 헬퍼 함수
@@ -52,7 +55,8 @@ struct ContentView: View {
         gameScene.updateInput(
             pucker: faceManager.mouthPuckerValue,
             puff: faceManager.cheekPuffValue,
-            jawOpen: faceManager.jawOpenValue
+            jawOpen: faceManager.jawOpenValue,
+            roll: faceManager.headRoll
         )
     }
 }

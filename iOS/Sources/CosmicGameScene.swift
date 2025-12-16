@@ -29,7 +29,9 @@ class CosmicGameScene: SKScene {
     }
 
     // ContentView에서 매 프레임 호출하는 입력 관리 함수
-    func updateInput(pucker: Float, puff: Float, jawOpen: Float) {
+    func updateInput(pucker: Float, puff: Float, jawOpen: Float, roll: Float) {
+        // [좌우 이동 로직] (갸웃갸웃)
+        updateMovement(roll: roll)
 
         // 1. [우선순위 1위] 차징 시작 & 진행 (볼 빵빵 0.4 이상) -> '우'를 있는 힘껏 해보니 0.4보다 살짝 떨어지는 정도
         if puff > 0.4 {
@@ -50,6 +52,31 @@ class CosmicGameScene: SKScene {
             // "우~"는 0.4 이상, "아~"는 아니어야 함 (정확도 향상)
             if pucker > 0.4 && jawOpen < 0.2 {
                 jump()
+            }
+        }
+    }
+
+    // 좌우 이동 처리 함수
+    private func updateMovement(roll: Float) {
+        // roll 값은 보통 -0.5 ~ 0.5 (라디안) 사이로 들어옵니다.
+        // 중앙(0.0)에 있을 때 미세한 떨림을 막기 위해 데드존(Deadzone)을 둡니다.
+
+        let deadZone: Float = 0.05 // 갸웃 각도가 이보다 작으면 움직이지 않음
+        let moveSpeed: CGFloat = 500.0 // 이동 속도 (조절 가능)
+
+        if abs(roll) > deadZone {
+            // 각도에 비례해서 속도를 줍니다 (많이 기울이면 빨리 감)
+            let velocityX = CGFloat(roll) * moveSpeed
+
+            // 기존의 점프 속도(dy)는 유지하고, 좌우 속도(dx)만 바꿉니다.
+            if let currentDy = player.physicsBody?.velocity.dy {
+                player.physicsBody?.velocity = CGVector(dx: velocityX, dy: currentDy)
+            }
+        } else {
+            // 머리를 똑바로 하면 좌우 멈춤 (마찰력 느낌)
+            if let currentDy = player.physicsBody?.velocity.dy {
+                // 서서히 멈추게 하려면 dx에 0.9 등을 곱해주면 됨. 지금은 즉시 정지.
+                player.physicsBody?.velocity = CGVector(dx: 0, dy: currentDy)
             }
         }
     }
