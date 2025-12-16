@@ -15,6 +15,7 @@ let project = Project(
                         "UIColorName": "",
                         "UIImageName": "",
                     ],
+                    "NSCameraUsageDescription": "얼굴 인식 기능을 사용하여 게임을 플레이하기 위해 카메라 권한이 필요합니다.",
                 ]
             ),
             buildableFolders: [
