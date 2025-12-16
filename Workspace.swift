@@ -6,6 +6,7 @@ let workspace = Workspace(
         "iOS",
     ],
     additionalFiles: [
+        .folderReference(path: "backend"),
         "README.md",
     ]
 )
