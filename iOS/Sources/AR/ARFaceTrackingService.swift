@@ -10,9 +10,11 @@ import ARKit
 final class ARFaceTrackingService: NSObject {
     
     private let session: ARSession
-    
-    override init() {
+    private let strategy: FaceInputStrategy
+
+    init(strategy: FaceInputStrategy) {
         self.session = ARSession()
+        self.strategy = strategy
         super.init()
         session.delegate = self
     }
@@ -28,12 +30,17 @@ final class ARFaceTrackingService: NSObject {
     func stop() {
         session.pause()
     }
+    
+    func previewSession() -> ARSession {
+        session
+    }
 }
 
 extension ARFaceTrackingService: ARSessionDelegate {
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         for anchor in anchors.compactMap({ $0 as? ARFaceAnchor }) {
-            let browRaise = anchor.blendShapes[.mouthPucker]?.floatValue ?? 0 > 0.5
+            let events = strategy.interpret(anchor: anchor)
+            print(events)
         }
     }
 }
