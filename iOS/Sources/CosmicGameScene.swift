@@ -72,6 +72,15 @@ class CosmicGameScene: SKScene {
             if let currentDy = player.physicsBody?.velocity.dy {
                 player.physicsBody?.velocity = CGVector(dx: velocityX, dy: currentDy)
             }
+            let currentScale = abs(player.xScale)
+
+            if velocityX > 0 {
+                // 오른쪽: 양수(+) 비율 적용
+                player.xScale = currentScale
+            } else {
+                // 왼쪽: 음수(-) 비율 적용 -> 뒤집힘!
+                player.xScale = -currentScale
+            }
         } else {
             // 머리를 똑바로 하면 좌우 멈춤 (마찰력 느낌)
             if let currentDy = player.physicsBody?.velocity.dy {
@@ -156,11 +165,26 @@ class CosmicGameScene: SKScene {
     }
 
     private func setupPlayer() {
-        player = SKSpriteNode(color: .systemGreen, size: CGSize(width: 60, height: 60))
+        let texture = SKTexture(imageNamed: "Alien")
+        player = SKSpriteNode(texture: texture)
+
+        // 2. 크기 조절 (이미지가 너무 클 수 있으니 적당히 줄이기)
+        // 원본 비율을 유지하면서 높이를 80으로 맞춤 (조절해보세요!)
+        let ratio = texture.size().width / texture.size().height
+        let height: CGFloat = 80
+        player.size = CGSize(width: height * ratio, height: height)
+
+        // 3. 위치 설정
         player.position = CGPoint(x: self.size.width / 2, y: 100)
-        player.physicsBody = SKPhysicsBody(rectangleOf: player.size)
-        player.physicsBody?.allowsRotation = false
-        player.physicsBody?.restitution = 0.0
+
+        // 4. 물리 충돌 설정
+        // 네모난 박스 대신, 원형(Circle)으로 감싸면 더 자연스럽게 구릅니다.
+        // 캐릭터 모양에 더 딱 맞게 하려면: SKPhysicsBody(texture: texture, size: player.size)
+        player.physicsBody = SKPhysicsBody(circleOfRadius: player.size.height / 2.5)
+
+        player.physicsBody?.allowsRotation = false // 캐릭터가 데굴데굴 구르지 않게 고정
+        player.physicsBody?.restitution = 0.0      // 통통 튀기기 방지
+
         addChild(player)
     }
 

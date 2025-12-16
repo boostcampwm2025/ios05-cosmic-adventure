@@ -15,11 +15,9 @@ struct ARViewContainer: UIViewRepresentable {
         let arView = ARSCNView()
 
         arView.session = session
-        arView.isHidden = false // 카메라는 보여야 하니까 false
-
+        arView.isHidden = false
         return arView
     }
 
     func updateUIView(_ uiView: ARSCNView, context: Context) {}
 }
-
