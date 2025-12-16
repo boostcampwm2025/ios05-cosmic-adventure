@@ -16,6 +16,18 @@ final class ARFaceTrackingService: NSObject {
         super.init()
         session.delegate = self
     }
+    
+    func start() {
+        let configuration = ARFaceTrackingConfiguration()
+        configuration.isLightEstimationEnabled = true
+        
+        // 기존 세션에 남아 있던 트래킹 상태/ anchor 초기화
+        session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
+    }
+    
+    func stop() {
+        session.pause()
+    }
 }
 
 extension ARFaceTrackingService: ARSessionDelegate {
