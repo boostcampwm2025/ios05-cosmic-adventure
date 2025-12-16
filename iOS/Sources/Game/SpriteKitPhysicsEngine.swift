@@ -36,4 +36,27 @@ final class SpriteKitPhysicsEngine {
 
         scene.addChild(ground)
     }
+    
+    func addCharacter(
+        id: UUID,
+        size: CGSize,
+        position: CGPoint
+    ) {
+        let node = SKSpriteNode(
+            color: .systemBlue,
+            size: size
+        )
+        node.position = position
+
+        let body = SKPhysicsBody(rectangleOf: size)
+        body.allowsRotation = false // 회전
+        body.restitution = 0 // 탄성
+        body.friction = 0.8 // 마찰력, 클수록 안미끄러짐
+        body.linearDamping = 0.4 // 저항력, 미끄러질때 필요함
+
+        node.physicsBody = body
+
+        nodes[id] = node
+        scene.addChild(node)
+    }
 }
