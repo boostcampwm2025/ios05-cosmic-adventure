@@ -81,6 +81,8 @@ class CosmicGameScene: SKScene {
                 // 왼쪽: 음수(-) 비율 적용 -> 뒤집힘!
                 player.xScale = -currentScale
             }
+            let rotationDamping: CGFloat = 0.5 // 너무 홱 돌지 않게 조절 (0.0 ~ 1.0)
+            player.zRotation = -CGFloat(roll) * rotationDamping
         } else {
             // 머리를 똑바로 하면 좌우 멈춤 (마찰력 느낌)
             if let currentDy = player.physicsBody?.velocity.dy {
