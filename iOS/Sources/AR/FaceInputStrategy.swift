@@ -8,5 +8,5 @@
 import ARKit
 
 protocol FaceInputStrategy {
-    func interpret(anchor: ARFaceAnchor) -> [GameEvent]
+    func interpret(anchor: ARFaceAnchor) -> [CharacterCommand]
 }

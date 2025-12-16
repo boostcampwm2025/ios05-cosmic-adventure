@@ -12,9 +12,9 @@ final class ARFaceTrackingService: NSObject, FaceTrackingService {
     
     private let session: ARSession
     private let strategy: FaceInputStrategy
-    private let subject = PassthroughSubject<GameEvent, Never>()
+    private let subject = PassthroughSubject<CharacterCommand, Never>()
     
-    var events: AnyPublisher<GameEvent, Never> {
+    var events: AnyPublisher<CharacterCommand, Never> {
         subject.eraseToAnyPublisher()
     }
     

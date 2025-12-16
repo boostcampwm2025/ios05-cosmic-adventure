@@ -8,7 +8,7 @@
 import Combine
 
 protocol FaceTrackingService {
-    var events: AnyPublisher<GameEvent, Never> { get }
+    var events: AnyPublisher<CharacterCommand, Never> { get }
     
     func start()
     func stop()

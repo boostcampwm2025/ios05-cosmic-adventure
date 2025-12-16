@@ -12,8 +12,8 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
     private let rollThreshold: Float = 0.3
     private let puckerThreshold: Double = 0.3
 
-    func interpret(anchor: ARFaceAnchor) -> [GameEvent] {
-        var events: [GameEvent] = []
+    func interpret(anchor: ARFaceAnchor) -> [CharacterCommand] {
+        var events: [CharacterCommand] = []
 
         if let horizontalEvent = horizontalMovementEvent(from: anchor) {
             events.append(horizontalEvent)
@@ -26,7 +26,7 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
         return events
     }
     
-    private func horizontalMovementEvent(from anchor: ARFaceAnchor) -> GameEvent? {
+    private func horizontalMovementEvent(from anchor: ARFaceAnchor) -> CharacterCommand? {
         let roll = atan2(
             anchor.transform.columns.1.x,
             anchor.transform.columns.0.x
@@ -43,7 +43,7 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
         return nil
     }
     
-    private func jumpEvent(from anchor: ARFaceAnchor) -> GameEvent? {
+    private func jumpEvent(from anchor: ARFaceAnchor) -> CharacterCommand? {
         guard let pucker = anchor.blendShapes[.mouthPucker]?.doubleValue,
               pucker > puckerThreshold else {
             return nil
