@@ -3,7 +3,7 @@ import SpriteKit
 
 struct ContentView: View {
     // 1. AR 데이터 매니저
-    @StateObject var faceManager = FaceTrackingManager()
+    @State var faceManager = FaceTrackingManager()
 
     // 2. 게임 씬 생성
     @State var gameScene: CosmicGameScene = {
@@ -39,13 +39,13 @@ struct ContentView: View {
             .padding(.top, 50)
         }
         // 데이터가 변할 때마다 게임 씬에 알려줌
-        .onChange(of: faceManager.cheekPuffValue) { _ in
+        .onChange(of: faceManager.cheekPuffValue) {
             updateGameInput()
         }
-        .onChange(of: faceManager.mouthPuckerValue) { _ in
+        .onChange(of: faceManager.mouthPuckerValue) {
             updateGameInput()
         }
-        .onChange(of: faceManager.headRoll) { _ in
+        .onChange(of: faceManager.headRoll) {
             updateGameInput()
         }
     }

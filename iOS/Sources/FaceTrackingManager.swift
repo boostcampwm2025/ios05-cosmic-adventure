@@ -6,23 +6,23 @@
 //
 
 import ARKit
-import Combine
 
+@Observable
 class FaceTrackingManager: NSObject, ObservableObject, ARSessionDelegate {
-    @Published var jawOpenValue: Float = 0.0
-    @Published var mouthFunnelValue: Float = 0.0
-    @Published var mouthPuckerValue: Float = 0.0
-    @Published var mouthCloseValue: Float = 0.0
-    @Published var cheekPuffValue: Float = 0.0
-    @Published var headRoll: Float = 0.0
-
+    var jawOpenValue: Float = 0.0
+    var mouthFunnelValue: Float = 0.0
+    var mouthPuckerValue: Float = 0.0
+    var mouthCloseValue: Float = 0.0
+    var cheekPuffValue: Float = 0.0
+    var headRoll: Float = 0.0
+    
     var session = ARSession()
-
+    
     override init() {
         super.init()
         setupSession()
     }
-
+    
     func setupSession() {
         guard ARFaceTrackingConfiguration.isSupported else { return }
         let configuration = ARFaceTrackingConfiguration()
@@ -30,10 +30,10 @@ class FaceTrackingManager: NSObject, ObservableObject, ARSessionDelegate {
         session.delegate = self
         session.run(configuration, options: [.resetTracking, .removeExistingAnchors])
     }
-
+    
     func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         guard let faceAnchor = anchors.first as? ARFaceAnchor else { return }
-
+        
         // 값 추출
         let jawOpen = faceAnchor.blendShapes[.jawOpen]?.floatValue ?? 0.0
         let funnel = faceAnchor.blendShapes[.mouthFunnel]?.floatValue ?? 0.0
@@ -41,8 +41,8 @@ class FaceTrackingManager: NSObject, ObservableObject, ARSessionDelegate {
         let close = faceAnchor.blendShapes[.mouthClose]?.floatValue ?? 0.0
         let puff = faceAnchor.blendShapes[.cheekPuff]?.floatValue ?? 0.0
         let roll = faceAnchor.transform.eulerAngles.z
-
-        DispatchQueue.main.async {
+        
+        Task { @MainActor in
             self.jawOpenValue = jawOpen
             self.mouthFunnelValue = funnel
             self.mouthPuckerValue = pucker
