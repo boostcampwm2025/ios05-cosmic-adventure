@@ -8,192 +8,291 @@
 import SwiftUI
 import SpriteKit
 
-class CosmicGameScene: SKScene {
+// 발판 클래스
+class PlatformNode: SKSpriteNode {
+    init(position: CGPoint) {
+        // 발판 크기: 너비 100, 높이 20
+        let size = CGSize(width: 100, height: 20)
+        // 텍스처가 있다면 texture: SKTexture(imageNamed: "Platform") 등으로 변경 가능
+        super.init(texture: nil, color: .brown, size: size)
+
+        self.position = position
+        self.name = "platform"
+
+        // 물리 설정: 고정된 물체
+        self.physicsBody = SKPhysicsBody(rectangleOf: size)
+        self.physicsBody?.isDynamic = false
+        self.physicsBody?.categoryBitMask = 2       // 카테고리 2: 발판
+        self.physicsBody?.friction = 1.0            // 미끄러짐 방지
+        self.physicsBody?.restitution = 0.0         // 통통 튀김 방지
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+}
+
+class CosmicGameScene: SKScene, SKPhysicsContactDelegate {
     private var player: SKSpriteNode!
     private var statusLabel: SKLabelNode!
 
+    // 카메라
+    private var cameraNode: SKCameraNode!
+
+    // 계단(발판) 관리 변수
+    private var platforms: [PlatformNode] = []
+    private var lastPlatformPos: CGPoint = CGPoint(x: 0, y: -100) // 시작 위치
+    private var isNextRight: Bool = true // 다음 발판이 오른쪽인지 여부 (지그재그용)
+
     // [공기팡] 차징 관련 변수
-    private var currentCharge: Double = 0.0      // 현재 모인 힘 (0.0 ~ 1.0)
-    private var isCharging: Bool = false         // 지금 기를 모으는 중인가?
-    private let chargeSpeed: Double = 0.02       // 기가 모이는 속도
+    private var currentCharge: Double = 0.0
+    private var isCharging: Bool = false
+    private let chargeSpeed: Double = 0.02
 
     override func didMove(to view: SKView) {
         self.backgroundColor = .clear
         view.allowsTransparency = true
         view.backgroundColor = .clear
 
-        setupPhysics()
+        // 1. 물리 세계 설정
+        self.physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
+        self.physicsWorld.contactDelegate = self
+
+        // 2. 카메라 설정
+        cameraNode = SKCameraNode()
+        self.camera = cameraNode
+        addChild(cameraNode)
+
+        // 3. 요소 배치
         setupBackground()
         setupPlayer()
         setupUI()
+
+        // 4. 초기 계단 생성 (지그재그)
+        spawnInitialStairs()
     }
 
-    // ContentView에서 매 프레임 호출하는 입력 관리 함수
+    // 초기 계단 배치
+    func spawnInitialStairs() {
+        // 시작점 초기화
+        lastPlatformPos = CGPoint(x: 0, y: -100)
+        isNextRight = true // 처음엔 오른쪽으로 시작
+
+        for _ in 0..<10 {
+            spawnNextStep()
+        }
+    }
+
+    // 다음 계단 생성 (지그재그 패턴)
+    func spawnNextStep() {
+        // 1. Y축: 위로 120만큼 이동
+        let nextY = lastPlatformPos.y + 120
+
+        // 2. X축: 지그재그 로직 (오른쪽 -> 왼쪽 -> 오른쪽 ...)
+        // 중앙(0)을 기준으로 오른쪽(+80)과 왼쪽(-80)을 왔다갔다 함
+        let nextX: CGFloat = isNextRight ? 80 : -80
+
+        let nextPos = CGPoint(x: nextX, y: nextY)
+
+        // 3. 발판 생성
+        let newPlatform = PlatformNode(position: nextPos)
+        addChild(newPlatform)
+        platforms.append(newPlatform)
+
+        // 4. 상태 업데이트
+        lastPlatformPos = nextPos
+        isNextRight.toggle() // 방향 반전 (True -> False -> True)
+
+        // 5. 청소
+        cleanUpOldPlatforms()
+    }
+
+    // 지나간 발판 삭제
+    func cleanUpOldPlatforms() {
+        let lowerBound = cameraNode.position.y - 800
+        platforms.removeAll { platform in
+            if platform.position.y < lowerBound {
+                platform.removeFromParent()
+                return true
+            }
+            return false
+        }
+    }
+
+    // 매 프레임 실행
+    override func update(_ currentTime: TimeInterval) {
+        // 1. 카메라 추적 (부드럽게 따라가기)
+        // 플레이어보다 카메라가 낮으면 따라 올라감
+        if player.position.y > cameraNode.position.y {
+            let lerpY = cameraNode.position.y + (player.position.y - cameraNode.position.y) * 0.1
+            cameraNode.position.y = lerpY
+
+            // UI도 같이 이동
+            statusLabel.position.y = cameraNode.position.y + 300
+        }
+
+        // 2. 무한 생성: 맨 위 발판이 보일 때쯤 새거 추가
+        if lastPlatformPos.y < cameraNode.position.y + 500 {
+            spawnNextStep()
+        }
+
+        // 3. 게임 오버 체크 (떨어짐)
+        if player.position.y < cameraNode.position.y - 600 {
+            print("💀 떨어짐!")
+            resetGame()
+        }
+    }
+
+    func resetGame() {
+        player.position = CGPoint(x: 0, y: 0)
+        player.physicsBody?.velocity = .zero
+        cameraNode.position = .zero
+
+        platforms.forEach { $0.removeFromParent() }
+        platforms.removeAll()
+
+        spawnInitialStairs()
+        statusLabel.position = CGPoint(x: 0, y: 300)
+        statusLabel.text = "다시 시작!"
+    }
+
+    // 입력 처리
     func updateInput(pucker: Float, puff: Float, jawOpen: Float, roll: Float) {
-        // [좌우 이동 로직] (갸웃갸웃)
+        // [수정] 갸웃거림(Roll)은 이제 미세 조정용으로만 씁니다. (자동 점프가 되므로)
         updateMovement(roll: roll)
 
-        // 1. [우선순위 1위] 차징 시작 & 진행 (볼 빵빵 0.4 이상) -> '우'를 있는 힘껏 해보니 0.4보다 살짝 떨어지는 정도
         if puff > 0.4 {
             startCharging()
             statusLabel.text = "기 모으는 중... 😡"
-            return // 차징 중에는 아래 '우~' 로직 실행 금지
+            return
         }
 
-        // 2. [우선순위 2위] 공기팡 발사! (차징 중이었다가 볼 바람이 빠짐)
         if isCharging && puff < 0.15 {
             fireAirPang()
             return
         }
 
-        // 3. [우선순위 3위] 기본 점프 (우~)
-        // 차징 중이 아닐 때만 작동
         if !isCharging {
-            // "우~"는 0.4 이상, "아~"는 아니어야 함 (정확도 향상)
             if pucker > 0.4 && jawOpen < 0.2 {
-                jump()
+                jumpToNextPlatform() // ✨ 포물선 점프 함수 호출
             }
         }
     }
 
-    // 좌우 이동 처리 함수
+    // 미세 이동 (선택 사항)
     private func updateMovement(roll: Float) {
-        // roll 값은 보통 -0.5 ~ 0.5 (라디안) 사이로 들어옵니다.
-        // 중앙(0.0)에 있을 때 미세한 떨림을 막기 위해 데드존(Deadzone)을 둡니다.
-
-        let deadZone: Float = 0.05 // 갸웃 각도가 이보다 작으면 움직이지 않음
-        let moveSpeed: CGFloat = 500.0 // 이동 속도 (조절 가능)
+        let deadZone: Float = 0.05
+        let moveSpeed: CGFloat = 300.0 // 속도를 좀 줄임 (점프가 메인이라)
 
         if abs(roll) > deadZone {
-            // 각도에 비례해서 속도를 줍니다 (많이 기울이면 빨리 감)
             let velocityX = CGFloat(roll) * moveSpeed
-
-            // 기존의 점프 속도(dy)는 유지하고, 좌우 속도(dx)만 바꿉니다.
             if let currentDy = player.physicsBody?.velocity.dy {
                 player.physicsBody?.velocity = CGVector(dx: velocityX, dy: currentDy)
             }
-            let currentScale = abs(player.xScale)
-
-            if velocityX > 0 {
-                // 오른쪽: 양수(+) 비율 적용
-                player.xScale = currentScale
-            } else {
-                // 왼쪽: 음수(-) 비율 적용 -> 뒤집힘!
-                player.xScale = -currentScale
-            }
-            let rotationDamping: CGFloat = 0.5 // 너무 홱 돌지 않게 조절 (0.0 ~ 1.0)
-            player.zRotation = -CGFloat(roll) * rotationDamping
-        } else {
-            // 머리를 똑바로 하면 좌우 멈춤 (마찰력 느낌)
-            if let currentDy = player.physicsBody?.velocity.dy {
-                // 서서히 멈추게 하려면 dx에 0.9 등을 곱해주면 됨. 지금은 즉시 정지.
-                player.physicsBody?.velocity = CGVector(dx: 0, dy: currentDy)
-            }
         }
     }
 
-    // 기 모으기
     private func startCharging() {
         isCharging = true
-
-        // 힘을 최대 1.0까지만 모음
-        if currentCharge < 1.0 {
-            currentCharge += chargeSpeed
-        }
-
-        // 시각 효과: 힘을 모을수록 캐릭터가 빨개짐
+        if currentCharge < 1.0 { currentCharge += chargeSpeed }
         player.color = .red
         player.colorBlendFactor = CGFloat(currentCharge)
     }
 
-    // 공기팡 발사 (강력한 점프)
     private func fireAirPang() {
-        // 최소 힘(300) + 모은 힘(최대 700) = 최대 1000
-        let minForce: Double = 300.0
-        let maxBonusForce: Double = 700.0
+        // 공기팡은 수직으로 강력하게!
+        let minForce: Double = 100.0
+        let maxBonusForce: Double = 300.0
         let totalForce = minForce + (maxBonusForce * currentCharge)
 
-        // 기존 속도 제거 후 발사 (더 팍! 튀어오르는 느낌)
         player.physicsBody?.velocity = CGVector(dx: 0, dy: 0)
         player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: totalForce))
 
         statusLabel.text = "공기팡 발사!! 💨"
-
-        // 상태 초기화
         resetCharge()
     }
 
-    // 기본 점프 (우~)
-    private func jump() {
-        // 땅에 있을 때만 점프 (연타 방지)
-        guard let dy = player.physicsBody?.velocity.dy, abs(dy) < 1.0 else {
-            return
+    // 지그재그 포물선 점프
+    private func jumpToNextPlatform() {
+        guard let dy = player.physicsBody?.velocity.dy, abs(dy) < 1.0 else { return }
+
+        // 1. 현재 내 위치 파악
+        let currentX = player.position.x
+
+        // 2. 점프 방향 결정 (포물선 만들기)
+        // 내가 왼쪽에 있으면(-80 근처) -> 오른쪽으로 점프해야 함 (+힘)
+        // 내가 오른쪽에 있으면(+80 근처) -> 왼쪽으로 점프해야 함 (-힘)
+        // 중앙이면(0) -> 지그재그 순서에 맞게 감
+
+        var jumpDx: CGFloat = 0
+
+        if currentX < -20 { // 왼쪽에 있음
+            jumpDx = 180 // 오른쪽으로 뛴다
+            player.xScale = 1 // 오른쪽 보기 (Alien 원본 방향)
+        } else if currentX > 20 { // 오른쪽에 있음
+            jumpDx = -180 // 왼쪽으로 뛴다
+            player.xScale = -1 // 왼쪽 보기 (이미지 반전)
+        } else {
+            // 중앙에 있으면 랜덤 혹은 오른쪽
+             jumpDx = 180
+             player.xScale = 1
         }
 
-        player.physicsBody?.applyImpulse(CGVector(dx: 0, dy: 350)) // 가볍게 350
-        statusLabel.text = "폴짝! (기본 점프)"
+        // 3. 포물선 힘 적용 (대각선 점프)
+        // dx: 가로 이동 힘, dy: 높이 점프 힘
+        player.physicsBody?.applyImpulse(CGVector(dx: jumpDx, dy: 550))
 
-        // 텍스트 복귀
+        statusLabel.text = "폴짝!"
+
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.statusLabel.text = "준비 완료"
+            self.statusLabel.text = ""
         }
     }
 
-    // 상태 초기화
     private func resetCharge() {
         isCharging = false
         currentCharge = 0.0
-
-        // 색깔 원래대로 복구 애니메이션
         let colorAction = SKAction.colorize(withColorBlendFactor: 0.0, duration: 0.2)
         player.run(colorAction)
-
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
-            self.statusLabel.text = "준비 완료"
-        }
-    }
-
-    private func setupPhysics() {
-        self.physicsWorld.gravity = CGVector(dx: 0, dy: -9.8)
-        self.physicsBody = SKPhysicsBody(edgeLoopFrom: self.frame)
     }
 
     private func setupBackground() {
-        let ground = SKSpriteNode(color: .black, size: CGSize(width: self.size.width, height: 50))
-        ground.position = CGPoint(x: self.size.width / 2, y: 25)
+        let ground = SKSpriteNode(color: .darkGray, size: CGSize(width: 200, height: 20))
+        ground.position = CGPoint(x: 0, y: -150)
         ground.physicsBody = SKPhysicsBody(rectangleOf: ground.size)
         ground.physicsBody?.isDynamic = false
+        ground.physicsBody?.categoryBitMask = 2
         addChild(ground)
     }
 
     private func setupPlayer() {
+        // 캐릭터 이미지 사용
         let texture = SKTexture(imageNamed: "Alien")
         player = SKSpriteNode(texture: texture)
 
-        // 2. 크기 조절 (이미지가 너무 클 수 있으니 적당히 줄이기)
-        // 원본 비율을 유지하면서 높이를 80으로 맞춤 (조절해보세요!)
+        // 비율 유지하며 크기 조절
         let ratio = texture.size().width / texture.size().height
-        let height: CGFloat = 80
+        let height: CGFloat = 70 // 크기 살짝 줄임 (발판에 맞게)
         player.size = CGSize(width: height * ratio, height: height)
 
-        // 3. 위치 설정
-        player.position = CGPoint(x: self.size.width / 2, y: 100)
+        player.position = CGPoint(x: 0, y: 0)
 
-        // 4. 물리 충돌 설정
-        // 네모난 박스 대신, 원형(Circle)으로 감싸면 더 자연스럽게 구릅니다.
-        // 캐릭터 모양에 더 딱 맞게 하려면: SKPhysicsBody(texture: texture, size: player.size)
+        // 물리 설정
         player.physicsBody = SKPhysicsBody(circleOfRadius: player.size.height / 2.5)
+        player.physicsBody?.allowsRotation = false // 회전 금지 (서있는 상태 유지)
+        player.physicsBody?.restitution = 0.0
 
-        player.physicsBody?.allowsRotation = false // 캐릭터가 데굴데굴 구르지 않게 고정
-        player.physicsBody?.restitution = 0.0      // 통통 튀기기 방지
+        player.physicsBody?.categoryBitMask = 1
+        player.physicsBody?.collisionBitMask = 2
+        player.physicsBody?.contactTestBitMask = 2
 
         addChild(player)
     }
 
     private func setupUI() {
-        statusLabel = SKLabelNode(text: "우~(점프) 또는 볼빵빵(차징)")
+        statusLabel = SKLabelNode(text: "준비 완료")
         statusLabel.fontSize = 24
-        statusLabel.position = CGPoint(x: self.size.width / 2, y: self.size.height - 100)
+        statusLabel.position = CGPoint(x: 0, y: 300)
         addChild(statusLabel)
     }
 }

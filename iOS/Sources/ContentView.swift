@@ -10,6 +10,9 @@ struct ContentView: View {
         let scene = CosmicGameScene(size: UIScreen.main.bounds.size)
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear
+        // 앵커 포인트를 중앙으로 설정
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+
         return scene
     }()
 
