@@ -2,11 +2,17 @@ import ARKit
 import Combine
 
 /// InputSystem의 진입점. `InputSourceProtocol` + `InputMapperProtocol`을 조합해 `InputSnapshot`을 제공합니다.
-final class InputManager<Source: InputSourceProtocol, Mapper: InputMapperProtocol>: ObservableObject where Source.Raw == Mapper.Raw {
+final class InputManager<Source: InputSourceProtocol, Mapper: InputMapperProtocol>: ObservableObject, InputProvidingProtocol where Source.Raw == Mapper.Raw {
 
     // MARK: - Output
 
     @Published private(set) var currentSnapshot: InputSnapshot = .idle
+
+    // MARK: - InputProvidingProtocol
+
+    var snapshotPublisher: AnyPublisher<InputSnapshot, Never> {
+        $currentSnapshot.eraseToAnyPublisher()
+    }
 
     // MARK: - Dependencies
 
