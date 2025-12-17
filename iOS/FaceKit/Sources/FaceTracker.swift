@@ -9,7 +9,7 @@ import ARKit
 import Combine
 import OSLog
 
-final class FaceTracker: NSObject {
+final public class FaceTracker: NSObject, ObservableObject {
     
     private let arSession = ARSession()
     private let configuration = ARFaceTrackingConfiguration()
@@ -23,14 +23,19 @@ final class FaceTracker: NSObject {
     private let superJumpThreshold: Float = 0.6
     private let tiltThreshold: Float = 0.15
     
-    override init() {
+    public override init() {
         super.init()
         arSession.delegate = self
         configuration.isLightEstimationEnabled = false
     }
     
+    deinit {
+        arSession.pause()
+        logger.debug("FaceTracker deinit")
+    }
+    
     /// 얼굴 추적 시작
-    func startTracking() {
+    public func startTracking() {
         guard ARFaceTrackingConfiguration.isSupported else {
             logger.error("🚨 해당 기기에서는 얼굴 추적 기능이 지원되지 않습니다.")
             return
@@ -43,7 +48,7 @@ final class FaceTracker: NSObject {
     
     
     /// 얼굴 추적 종료
-    func stopTracking() {
+    public func stopTracking() {
         arSession.pause()
         isTracking = false
         currentGesture = .none
@@ -54,12 +59,17 @@ final class FaceTracker: NSObject {
 extension FaceTracker: ARSessionDelegate {
     
     /// faceAnchor를 사용해서 어떤 동작인지 판단 후 결과값을 전달
-    func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
+    public func session(_ session: ARSession, didUpdate anchors: [ARAnchor]) {
         guard let faceAnchor = anchors.first as? ARFaceAnchor else { return }
         
         let gesture = detectGesture(from: faceAnchor)
         
         // 얼굴 이미지 전달
+        if gesture.type != currentGesture {
+            DispatchQueue.main.async {
+                self.currentGesture = gesture.type
+            }
+        }
     }
     
     private func detectGesture(from faceAnchor: ARFaceAnchor)
@@ -79,7 +89,7 @@ extension FaceTracker: ARSessionDelegate {
         let gesture = calculateGesture(
             mouthPucker: mouthPucker,
             cheekPuff: cheekPuff,
-            roll: roll
+            roll: rollDegree
         )
         
         return gesture
