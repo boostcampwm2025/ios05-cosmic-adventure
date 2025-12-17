@@ -189,6 +189,18 @@ class CosmicGameScene: SKScene, SKPhysicsContactDelegate {
             if let currentDy = player.physicsBody?.velocity.dy {
                 player.physicsBody?.velocity = CGVector(dx: velocityX, dy: currentDy)
             }
+
+            let currentScale = abs(player.xScale)
+
+            if velocityX > 0 {
+                // 오른쪽: 양수(+) 비율 적용
+                player.xScale = currentScale
+            } else {
+                // 왼쪽: 음수(-) 비율 적용 -> 뒤집힘!
+                player.xScale = -currentScale
+            }
+            let rotationDamping: CGFloat = 0.5 // 너무 홱 돌지 않게 조절 (0.0 ~ 1.0)
+            player.zRotation = -CGFloat(roll) * rotationDamping
         }
     }
 
