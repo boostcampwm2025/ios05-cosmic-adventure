@@ -1,5 +1,5 @@
 //
-//  GameEngine.swift
+//  GameScene.swift
 //  Engine
 //
 //  Created by 강윤서 on 12/17/25.
@@ -8,7 +8,7 @@
 import SpriteKit
 import OSLog
 
-public class GameEngine: SKScene {
+public class GameScene: SKScene {
     
     private var player: SKSpriteNode!
     private var moveDirection: CGFloat = 0  /// -1(왼쪽), 0(정지), 1(오른쪽)
@@ -85,7 +85,7 @@ public class GameEngine: SKScene {
     }
 }
 
-extension GameEngine: SKPhysicsContactDelegate {
+extension GameScene: SKPhysicsContactDelegate {
     /// 충돌 처리
     public func didBegin(_ contact: SKPhysicsContact) {
         print("💥 Collision detected")
