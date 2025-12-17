@@ -5,18 +5,29 @@
 //  Created by sungkug_apple_developer_ac on 12/17/25.
 //
 
+import Combine
 import Foundation
 import Network
 
 final class NetworkFrameworkGameNetworking {
+    let serviceType: String
     private(set) var state: NetworkingState = .idle
-    private let serviceType = "cosmic-adventure"
     private var peers: [Peer] = []
     
     // MARK: - Components
     private var listener: NWListener?
     private var browser: NWBrowser?
     private var connection: NWConnection?
+    
+    private let peersSubject = CurrentValueSubject<[Peer], Never>([])
+
+    var availablePeers: AnyPublisher<[Peer], Never> {
+        peersSubject.eraseToAnyPublisher()
+    }
+    
+    init(serviceType: String) {
+        self.serviceType = serviceType
+    }
     
     // MARK: - Public API
     func start() {
@@ -47,7 +58,7 @@ private extension NetworkFrameworkGameNetworking {
             startConnection(to: peer)
 
         case .connected:
-            
+            break
         }
     }
     
@@ -159,7 +170,7 @@ private extension NetworkFrameworkGameNetworking {
             }
         }
 
-        // TODO: 탐색한 Peer 처리
+        peersSubject.send(newPeers)
     }
 }
 
