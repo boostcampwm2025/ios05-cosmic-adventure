@@ -9,6 +9,8 @@ import ARKit
 import Combine
 import OSLog
 
+import Core
+
 final public class FaceTracker: NSObject, ObservableObject {
     
     private let arSession = ARSession()
@@ -17,11 +19,6 @@ final public class FaceTracker: NSObject, ObservableObject {
     
     @Published public private(set) var currentGesture: FaceGestureType = .none          /// 인식된 제스처
     @Published public private(set) var isTracking: Bool = false                          /// 추적 상태
-    
-    /// Threshold 값들
-    private let jumpThreshold: Float = 0.5
-    private let superJumpThreshold: Float = 0.6
-    private let tiltThreshold: Float = 0.15
     
     public override init() {
         super.init()
@@ -104,19 +101,19 @@ extension FaceTracker: ARSessionDelegate {
     private func calculateGesture(mouthPucker: Float,
                                   cheekPuff: Float,
                                   roll: Float) -> (type: FaceGestureType, intensity: Float) {
-        if cheekPuff > superJumpThreshold {
+        if cheekPuff > GameConstant.superJumpThreshold {
             return (.superJump, cheekPuff)
         }
         
-        if mouthPucker > jumpThreshold {
+        if mouthPucker > GameConstant.jumpThreshold {
             return (.jump, mouthPucker)
         }
         
-        if roll < -tiltThreshold {
+        if roll < -GameConstant.tiltThreshold {
             return (.move(.left), roll)
         }
         
-        if roll > tiltThreshold {
+        if roll > GameConstant.tiltThreshold {
             return (.move(.right), roll)
         }
         
