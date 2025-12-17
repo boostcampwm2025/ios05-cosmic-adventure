@@ -96,10 +96,4 @@ final class FaceInputMapper: InputMapperProtocol {
         
         return false
     }
-    
-    // MARK: - Helpers
-    
-    private func lerp(_ a: Double, _ b: Double, _ t: Double) -> Double {
-        a + (b - a) * t
-    }
 }
