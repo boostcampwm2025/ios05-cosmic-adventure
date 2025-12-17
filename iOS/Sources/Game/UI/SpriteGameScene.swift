@@ -10,11 +10,6 @@ import SpriteKit
 final class SpriteGameScene: SKScene {
     
     private var world: GameWorld!
-
-    private let characterNode = SKSpriteNode(
-        color: .systemBlue,
-        size: CGSize(width: 50, height: 50)
-    )
     
     override func didMove(to view: SKView) {
         backgroundColor = .white

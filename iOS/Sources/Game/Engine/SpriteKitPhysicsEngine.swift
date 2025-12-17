@@ -65,16 +65,17 @@ final class SpriteKitPhysicsEngine: PhysicsEngine {
 
         switch command {
         case .moveLeft(let strength):
-            body.velocity.dx = -strength * 250
+            body.velocity.dx = -strength * 400
 
         case .moveRight(let strength):
-            body.velocity.dx = strength * 250
+            body.velocity.dx = strength * 400
 
         case .jump(let strength):
-            body.velocity.dy = strength * 550
+            body.velocity.dy = strength * 600
         }
     }
     
+    // 찾고자하는 노드 상태값 가져오기
     func characterState(id: UUID) -> CharacterState {
         guard
             let node = nodes[id],

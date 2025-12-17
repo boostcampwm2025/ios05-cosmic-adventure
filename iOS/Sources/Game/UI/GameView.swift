@@ -34,7 +34,6 @@ struct GameView: View {
         .onDisappear {
             coordinator.stop()
         }
-   
     }
 }
 
