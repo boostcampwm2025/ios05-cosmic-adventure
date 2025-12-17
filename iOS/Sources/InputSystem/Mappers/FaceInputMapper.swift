@@ -9,11 +9,13 @@ final class FaceInputMapper: InputMapperProtocol {
     
     struct Config {
         // 좌우 이동 (roll 기반)
-        var deadZone: Double = 0.08          // ~5도, 작은 흔들림 무시
-        var maxTilt: Double = 0.35           // ~20도, 최대 입력
-        var minInput: Double = 0.25          // 최소 입력 보정 (답답함 방지)
-        var smoothingAlpha: Double = 0.2     // lerp 계수 (낮을수록 부드러움)
-        
+        var deadZone: Double = 0.08 // ~5도, 작은 흔들림 무시
+        var maxTilt: Double = 0.35 // ~20도, 최대 입력
+        var minInput: Double = 0.25 // 최소 입력 보정 (답답함 방지)
+        var smoothingAlpha: Double = 0.2 // lerp 계수 (낮을수록 부드러움)
+        var neutralReturnAlpha: Double = 0.35 // deadZone 안에서 0으로 빨리 복귀
+        var neutralSnapEpsilon: Double = 0.02 // 이 아래면 0으로 스냅
+
         // mouthPucker 기반 점프 트리거
         var puckerThresholdOn: Double = 0.55
         var puckerThresholdOff: Double = 0.45
@@ -54,7 +56,10 @@ final class FaceInputMapper: InputMapperProtocol {
         
         // Deadzone 내면 0
         guard absRoll > config.deadZone else {
-            smoothedMoveX = lerp(smoothedMoveX, 0, config.smoothingAlpha)
+            smoothedMoveX = lerp(smoothedMoveX, 0, config.neutralReturnAlpha)
+            if abs(smoothedMoveX) < config.neutralSnapEpsilon {
+                smoothedMoveX = 0
+            }
             return smoothedMoveX
         }
         
