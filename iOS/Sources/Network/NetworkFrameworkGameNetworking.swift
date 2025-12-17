@@ -5,11 +5,13 @@
 //  Created by sungkug_apple_developer_ac on 12/17/25.
 //
 
+import Foundation
 import Network
 
 final class NetworkFrameworkGameNetworking {
     private(set) var state: NetworkingState = .idle
     private let serviceType = "cosmic-adventure"
+    private var peers: [Peer] = []
     
     // MARK: - Components
     private var listener: NWListener?
@@ -39,6 +41,7 @@ private extension NetworkFrameworkGameNetworking {
         switch newState {
         case .idle:
             startListener()
+            startBrowser()
         case .connecting(let peer):
             
         case .connected:
@@ -54,7 +57,10 @@ private extension NetworkFrameworkGameNetworking {
         browser = nil
         connection = nil
     }
-    
+}
+
+// MARK: Listener
+private extension NetworkFrameworkGameNetworking {
     private func startListener() {
         let params = NWParameters.tcp
         params.includePeerToPeer = true
@@ -114,5 +120,43 @@ private extension NetworkFrameworkGameNetworking {
             }
             self?.startReceiveLoop()
         }
+    }
+}
+
+// MARK: Browser
+private extension NetworkFrameworkGameNetworking {
+    private func startBrowser() {
+        let params = NWParameters.tcp
+        params.includePeerToPeer = true
+        
+        let browser = NWBrowser(
+            for: .bonjour(type: serviceType, domain: nil),
+            using: params
+        )
+        
+        browser.browseResultsChangedHandler = { [weak self] results, _ in
+            self?.handleBrowseResults(results)
+        }
+        
+        browser.start(queue: .main)
+        self.browser = browser
+    }
+    
+    private func handleBrowseResults(
+        _ results: Set<NWBrowser.Result>
+    ) {
+        let newPeers: [Peer] = results.compactMap { result in
+            if case let .service(name, _, _, _) = result.endpoint {
+                return Peer(
+                    id: UUID(),
+                    name: name,
+                    endpoint: result.endpoint
+                )
+            } else {
+                return nil
+            }
+        }
+
+        // TODO: 탐색한 Peer 처리
     }
 }
