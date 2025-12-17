@@ -45,5 +45,18 @@ struct NetworkingTestView: View {
             }
         }
         .padding()
+        .alert(
+            "게임요청",
+            isPresented: $viewModel.isIncomingRequestAlertPresented
+        ) {
+            Button("거절", role: .cancel) {
+                viewModel.rejectIncomingRequest()
+            }
+            Button("수락") {
+                viewModel.approveIncomingRequest()
+            }
+        } message: {
+            Text("\(viewModel.incomingRequest?.name ?? "Unknown")이 게임을 요청했습니다.")
+        }
     }
 }

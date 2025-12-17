@@ -18,11 +18,17 @@ final class NetworkFrameworkGameNetworking {
     private var listener: NWListener?
     private var browser: NWBrowser?
     private var connection: NWConnection?
+    private var pendingConnections: [UUID: NWConnection] = [:]
     
     private let peersSubject = CurrentValueSubject<[Peer], Never>([])
-
+    private let incomingRequestSubject = PassthroughSubject<IncomingConnectionRequest, Never>()
+    
     var availablePeers: AnyPublisher<[Peer], Never> {
         peersSubject.eraseToAnyPublisher()
+    }
+    
+    var incomingRequests: AnyPublisher<IncomingConnectionRequest, Never> {
+        incomingRequestSubject.eraseToAnyPublisher()
     }
     
     init(serviceType: String) {
@@ -40,6 +46,24 @@ final class NetworkFrameworkGameNetworking {
     
     func disconnect() {
         transition(to: .idle)
+    }
+    
+    func approveIncomingRequest(id: UUID) {
+        guard let connection = pendingConnections.removeValue(forKey: id) else { return }
+
+        // 1:1 연결을 가정하므로 기존 활성 연결이 있다면 정리
+        self.connection?.cancel()
+        self.connection = connection
+
+        connection.stateUpdateHandler = { [weak self] state in
+            self?.handleConnectionState(state)
+        }
+        connection.start(queue: .main)
+    }
+
+    func rejectIncomingRequest(id: UUID) {
+        guard let connection = pendingConnections.removeValue(forKey: id) else { return }
+        connection.cancel()
     }
 }
 
@@ -69,6 +93,8 @@ private extension NetworkFrameworkGameNetworking {
         listener = nil
         browser = nil
         connection = nil
+        pendingConnections.values.forEach { $0.cancel() }
+        pendingConnections.removeAll()
     }
     
     private func handleConnectionState(_ state: NWConnection.State) {
@@ -113,7 +139,7 @@ private extension NetworkFrameworkGameNetworking {
             )
             
             listener.newConnectionHandler = { [weak self] connection in
-                self?.accept(connection)
+                self?.handleIncomingConnection(connection)
             }
             
             listener.start(queue: .main)
@@ -124,15 +150,24 @@ private extension NetworkFrameworkGameNetworking {
         }
     }
     
-    private func accept(_ connection: NWConnection) {
-        self.connection?.cancel()
-        self.connection = connection
+    private func handleIncomingConnection(_ connection: NWConnection) {
+        let requestID = UUID()
+        pendingConnections[requestID] = connection
         
-        connection.stateUpdateHandler = { [weak self] state in
-            self?.handleConnectionState(state)
+        let displayName: String
+        switch connection.endpoint {
+        case let .service(name, _, _, _):
+            displayName = name
+        default:
+            displayName = String(describing: connection.endpoint)
         }
         
-        connection.start(queue: .main)
+        incomingRequestSubject.send(
+            IncomingConnectionRequest(
+                id: requestID,
+                name: displayName
+            )
+        )
     }
 }
 
