@@ -7,7 +7,7 @@ let project = Project(
             name: "iOS",
             destinations: .iOS,
             product: .app,
-            bundleId: "dev.tuist.iOS",
+            bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(
                 with: [
@@ -27,7 +27,7 @@ let project = Project(
             name: "iOSTests",
             destinations: .iOS,
             product: .unitTests,
-            bundleId: "dev.tuist.iOSTests",
+            bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure-tests",
             infoPlist: .default,
             buildableFolders: [
                 "Tests",
