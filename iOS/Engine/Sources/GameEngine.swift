@@ -64,6 +64,14 @@ public class GameScene: SKScene {
         if moveDirection != 0 {
             let moveSpeed: CGFloat = 300  // 초당 300포인트
             player.physicsBody?.velocity.dx = moveDirection * moveSpeed
+        // 화면 경계 벗어나지 않도록 제한
+        let halfWidth = player.size.width / 2
+        if player.position.x < halfWidth {
+            player.position.x = halfWidth
+            player.physicsBody?.velocity.dx = 0  // 벽에 닿으면 정지
+        } else if player.position.x > size.width - halfWidth {
+            player.position.x = size.width - halfWidth
+            player.physicsBody?.velocity.dx = 0
         }
     }
     
