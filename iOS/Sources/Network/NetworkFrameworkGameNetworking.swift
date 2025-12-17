@@ -42,8 +42,10 @@ private extension NetworkFrameworkGameNetworking {
         case .idle:
             startListener()
             startBrowser()
-        case .connecting(let peer):
             
+        case .connecting(let peer):
+            startConnection(to: peer)
+
         case .connected:
             
         }
@@ -56,6 +58,33 @@ private extension NetworkFrameworkGameNetworking {
         listener = nil
         browser = nil
         connection = nil
+    }
+    
+    private func handleConnectionState(_ state: NWConnection.State) {
+        switch state {
+        case .ready:
+            startReceiveLoop()
+            
+        case .failed, .cancelled:
+            transition(to: .idle)
+            
+        default:
+            break
+        }
+    }
+    
+    private func startReceiveLoop() {
+        guard let connection else { return }
+        
+        connection.receive(
+            minimumIncompleteLength: 1,
+            maximumLength: 64_000
+        ) { [weak self] data, _, _, _ in
+            if let data {
+                // TODO: 데이터 처리 로직 구현
+            }
+            self?.startReceiveLoop()
+        }
     }
 }
 
@@ -94,33 +123,6 @@ private extension NetworkFrameworkGameNetworking {
         
         connection.start(queue: .main)
     }
-    
-    private func handleConnectionState(_ state: NWConnection.State) {
-        switch state {
-        case .ready:
-            startReceiveLoop()
-            
-        case .failed, .cancelled:
-            transition(to: .idle)
-            
-        default:
-            break
-        }
-    }
-    
-    private func startReceiveLoop() {
-        guard let connection else { return }
-        
-        connection.receive(
-            minimumIncompleteLength: 1,
-            maximumLength: 64_000
-        ) { [weak self] data, _, _, _ in
-            if let data {
-                // TODO: 데이터 처리 로직 구현
-            }
-            self?.startReceiveLoop()
-        }
-    }
 }
 
 // MARK: Browser
@@ -158,5 +160,25 @@ private extension NetworkFrameworkGameNetworking {
         }
 
         // TODO: 탐색한 Peer 처리
+    }
+}
+
+// MARK: Connection
+private extension NetworkFrameworkGameNetworking {
+    private func startConnection(to peer: Peer) {
+        let params = NWParameters.tcp
+        params.includePeerToPeer = true
+        
+        let connection = NWConnection(
+            to: peer.endpoint,
+            using: params
+        )
+        
+        connection.stateUpdateHandler = { [weak self] state in
+            self?.handleConnectionState(state)
+        }
+        
+        connection.start(queue: .main)
+        self.connection = connection
     }
 }
