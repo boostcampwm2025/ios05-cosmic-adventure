@@ -35,6 +35,15 @@ struct ContentView: View {
                 // 여기에 상대방 캐릭터 점프 로직 추가 가능
             }
         }
+        // 앱 켜지자마자 "이미지 생기면 바로 전송해!"라고 연결
+        .onAppear {
+            faceManager.onImageCaptured = { imageData in
+                // 연결된 상태면 이미지 전송
+                if p2pManager.isConnected {
+                    p2pManager.sendImage(data: imageData)
+                }
+            }
+        }
     }
 
     // 대기 화면 (Lobby)
@@ -74,24 +83,54 @@ struct ContentView: View {
     // 게임 화면
     var gameView: some View {
         ZStack {
+            // 1. 내 배경 (AR 카메라)
             ARViewContainer(session: faceManager.session)
                 .ignoresSafeArea()
 
+            // 2. 게임 씬
             SpriteView(scene: gameScene, options: [.allowsTransparency])
                 .ignoresSafeArea()
                 .background(Color.clear)
 
+            // 3. UI 오버레이
             VStack {
+                // 상단 영역
                 HStack {
+                    // 왼쪽: 내 수치
                     Text("우~: \(String(format: "%.2f", faceManager.mouthPuckerValue))")
+                        .foregroundColor(.white)
+                        .padding()
+                        .background(Color.black.opacity(0.5))
+                        .cornerRadius(10)
+
+                    Spacer()
+
+                    // 오른쪽: 상대방 얼굴 화면 (Pip 모드)
+                    if let receivedData = p2pManager.receivedImageData,
+                       let opponentImage = UIImage(data: receivedData) {
+                        Image(uiImage: opponentImage)
+                            .resizable()
+                            .scaledToFill()
+                            .frame(width: 100, height: 150) // 작은 화면 크기
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(Color.white, lineWidth: 2)
+                            )
+                            .shadow(radius: 5)
+                    } else {
+                        // 영상 수신 전이면 대기 문구
+                        Rectangle()
+                            .fill(Color.gray.opacity(0.5))
+                            .frame(width: 100, height: 150)
+                            .cornerRadius(12)
+                            .overlay(Text("상대방\n대기중").font(.caption).foregroundColor(.white))
+                    }
                 }
-                .foregroundColor(.white)
                 .padding()
-                .background(Color.black.opacity(0.5))
-                .cornerRadius(10)
+
                 Spacer()
             }
-            .padding(.top, 50)
         }
         // 내 행동 -> 네트워크 전송
         .onChange(of: faceManager.mouthPuckerValue) {
