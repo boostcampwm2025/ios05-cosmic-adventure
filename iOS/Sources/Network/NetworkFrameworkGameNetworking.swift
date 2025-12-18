@@ -20,8 +20,13 @@ final class NetworkFrameworkGameNetworking {
     private var connection: NWConnection?
     private var pendingConnections: [UUID: NWConnection] = [:]
     
+    private let stateSubject = CurrentValueSubject<NetworkingState, Never>(.idle)
     private let peersSubject = CurrentValueSubject<[Peer], Never>([])
     private let incomingRequestSubject = PassthroughSubject<IncomingConnectionRequest, Never>()
+    
+    var statePublisher: AnyPublisher<NetworkingState, Never> {
+        stateSubject.eraseToAnyPublisher()
+    }
     
     var availablePeers: AnyPublisher<[Peer], Never> {
         peersSubject.eraseToAnyPublisher()
@@ -54,9 +59,15 @@ final class NetworkFrameworkGameNetworking {
         // 1:1 연결을 가정하므로 기존 활성 연결이 있다면 정리
         self.connection?.cancel()
         self.connection = connection
+        let peer = Peer(
+            id: UUID(),
+            name: String(describing: connection.endpoint),
+            endpoint: connection.endpoint
+        )
+        let isAuthority = true
 
         connection.stateUpdateHandler = { [weak self] state in
-            self?.handleConnectionState(state)
+            self?.handleConnectionState(state, peer, isAuthority)
         }
         connection.start(queue: .main)
     }
@@ -72,6 +83,7 @@ private extension NetworkFrameworkGameNetworking {
     func transition(to newState: NetworkingState) {
         cleanup()
         state = newState
+        stateSubject.send(newState)
         
         switch newState {
         case .idle:
@@ -97,9 +109,21 @@ private extension NetworkFrameworkGameNetworking {
         pendingConnections.removeAll()
     }
     
-    private func handleConnectionState(_ state: NWConnection.State) {
+    private func enterConnectedState(_ peer: Peer, _ isAuthority: Bool) {
+        // 연결이 성립되면 더 이상 광고/탐색을 하지 않도록 중지
+        listener?.cancel()
+        browser?.cancel()
+        listener = nil
+        browser = nil
+
+        state = .connected(peer: peer, isAuthority: isAuthority)
+        stateSubject.send(.connected(peer: peer, isAuthority: isAuthority))
+    }
+    
+    private func handleConnectionState(_ state: NWConnection.State, _ peer: Peer, _ isAuthority: Bool) {
         switch state {
         case .ready:
+            enterConnectedState(peer, isAuthority)
             startReceiveLoop()
             
         case .failed, .cancelled:
@@ -221,7 +245,7 @@ private extension NetworkFrameworkGameNetworking {
         )
         
         connection.stateUpdateHandler = { [weak self] state in
-            self?.handleConnectionState(state)
+            self?.handleConnectionState(state, peer, false)
         }
         
         connection.start(queue: .main)

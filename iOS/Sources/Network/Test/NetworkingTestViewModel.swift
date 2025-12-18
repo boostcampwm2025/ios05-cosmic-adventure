@@ -14,6 +14,7 @@ final class NetworkingTestViewModel: ObservableObject {
     @Published var stateText: String = "Idle"
     @Published var incomingRequest: IncomingConnectionRequest?
     @Published var isIncomingRequestAlertPresented: Bool = false
+    @Published var isConnected: Bool = false
     
     private let networking: NetworkFrameworkGameNetworking
     private var cancellables = Set<AnyCancellable>()
@@ -35,6 +36,26 @@ final class NetworkingTestViewModel: ObservableObject {
 
                 self.incomingRequest = request
                 self.isIncomingRequestAlertPresented = true
+            }
+            .store(in: &cancellables)
+        
+        networking.statePublisher
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                guard let self else { return }
+
+                switch state {
+                case .idle:
+                    self.stateText = "Idle"
+                    self.isConnected = false
+
+                case .connecting:
+                    break
+
+                case .connected:
+                    self.stateText = "Connected"
+                    self.isConnected = true
+                }
             }
             .store(in: &cancellables)
     }

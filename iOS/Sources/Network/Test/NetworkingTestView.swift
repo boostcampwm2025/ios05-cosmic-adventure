@@ -23,40 +23,44 @@ struct NetworkingTestView: View {
     }
 
     var body: some View {
-        VStack(spacing: 16) {
-
-            Text("Network Test")
-                .font(.headline)
-
-            Button("Start / Search") {
-                viewModel.start()
-            }
-
-            Text(viewModel.stateText)
-                .font(.subheadline)
-                .foregroundColor(.gray)
-
-            List(viewModel.peers) { peer in
-                Button {
-                    viewModel.connect(to: peer)
-                } label: {
-                    Text(peer.name)
+        NavigationStack {
+            VStack(spacing: 16) {
+                Text("Network Test")
+                    .font(.headline)
+                
+                Button("Start / Search") {
+                    viewModel.start()
+                }
+                
+                Text(viewModel.stateText)
+                    .font(.subheadline)
+                    .foregroundColor(.gray)
+                
+                List(viewModel.peers) { peer in
+                    Button {
+                        viewModel.connect(to: peer)
+                    } label: {
+                        Text(peer.name)
+                    }
                 }
             }
-        }
-        .padding()
-        .alert(
-            "게임요청",
-            isPresented: $viewModel.isIncomingRequestAlertPresented
-        ) {
-            Button("거절", role: .cancel) {
-                viewModel.rejectIncomingRequest()
+            .padding()
+            .navigationDestination(isPresented: $viewModel.isConnected) {
+                TestGameView()
             }
-            Button("수락") {
-                viewModel.approveIncomingRequest()
+            .alert(
+                "게임요청",
+                isPresented: $viewModel.isIncomingRequestAlertPresented
+            ) {
+                Button("거절", role: .cancel) {
+                    viewModel.rejectIncomingRequest()
+                }
+                Button("수락") {
+                    viewModel.approveIncomingRequest()
+                }
+            } message: {
+                Text("\(viewModel.incomingRequest?.name ?? "Unknown")이 게임을 요청했습니다.")
             }
-        } message: {
-            Text("\(viewModel.incomingRequest?.name ?? "Unknown")이 게임을 요청했습니다.")
         }
     }
 }
