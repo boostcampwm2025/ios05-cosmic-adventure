@@ -1,12 +1,13 @@
 import SpriteKit
 
-// - NOTE: CharacterState는 Gameplay 모듈에 있으므로, GameEngineKit이 Gameplay를 알아야 쓸 수 있음.
-// 하지만 GameEngineKit은 '엔진'이라 'Gameplay(비즈니스 룰)'를 모르는 게 의존성 방향상 깔끔함.
-// -> 그래서 PhysicsController는 CharacterState(구조체) 대신, 필요한 값(moveX)만 인자로 받는 게 더 범용적임.
-
 /// SpriteKit 물리 바디를 제어하는 컨트롤러
+/// - 지상/공중 이동 분리
+/// - Apex(점프 정점) 체공 처리
 public final class PhysicsController {
     private weak var body: SKPhysicsBody?
+    
+    /// 착지 상태 (외부에서 설정)
+    public var isGrounded: Bool = false
 
     public init(body: SKPhysicsBody) {
         self.body = body
@@ -20,22 +21,30 @@ public final class PhysicsController {
         body.linearDamping = PhysicsConstants.linearDamping
         body.friction = PhysicsConstants.friction
         body.restitution = PhysicsConstants.restitution
-
-        // 카테고리 설정 (기본값: 플레이어)
-        // 실제로는 외부에서 노드 생성 시 설정하거나, 여기서 init 인자로 받을 수도 있음.
-        // 일단 기본 물리 속성만 설정.
     }
 
     /// 이동 의도 적용 (moveX: -1.0 ~ 1.0)
+    /// 지상에서는 민첩하게, 공중에서는 관성 있게
     public func applyMovement(moveX: Double) {
         guard let body = body else { return }
 
         let targetVelocityX = CGFloat(moveX) * PhysicsConstants.moveSpeed
-
-        // 부드러운 가속
         let currentDx = body.velocity.dx
-        let newDx = lerp(currentDx, targetVelocityX, PhysicsConstants.movementSmoothing)
-
+        let hasInput = abs(moveX) > 0.01
+        
+        // 지상 vs 공중 가속/감속 분리
+        let acceleration: CGFloat
+        if isGrounded {
+            acceleration = hasInput
+                ? PhysicsConstants.groundAcceleration
+                : PhysicsConstants.groundDeceleration
+        } else {
+            acceleration = hasInput
+                ? PhysicsConstants.airAcceleration
+                : PhysicsConstants.airDeceleration
+        }
+        
+        let newDx = lerp(currentDx, targetVelocityX, acceleration)
         body.velocity = CGVector(dx: newDx, dy: body.velocity.dy)
     }
 
@@ -46,5 +55,38 @@ public final class PhysicsController {
         // 기존 Y 속도 초기화 후 점프 (반응성 향상)
         body.velocity = CGVector(dx: body.velocity.dx, dy: 0)
         body.applyImpulse(CGVector(dx: 0, dy: PhysicsConstants.jumpImpulse))
+    }
+    
+    /// 매 프레임 호출: Apex 체공 + 하강 가속 처리
+    public func updateGravity() {
+        guard let body = body else { return }
+        
+        let velocityY = body.velocity.dy
+        let baseGravity = PhysicsConstants.gravityDY
+        
+        // Apex 판정: 속도가 작을 때 (점프 정점 부근)
+        let isAtApex = abs(velocityY) < PhysicsConstants.apexThreshold && !isGrounded
+        // 하강 중
+        let isFalling = velocityY < 0
+        
+        let gravityMultiplier: CGFloat
+        if isAtApex {
+            // 정점에서 체공감
+            gravityMultiplier = PhysicsConstants.apexGravityMultiplier
+        } else if isFalling {
+            // 하강 시 빠르게
+            gravityMultiplier = PhysicsConstants.fallGravityMultiplier
+        } else {
+            // 상승 중
+            gravityMultiplier = 1.0
+        }
+        
+        // 추가 중력 적용 (기본 중력 * (배율 - 1))
+        // 기본 중력은 physicsWorld에서 적용되므로, 차이만큼만 추가
+        let additionalGravity = baseGravity * (gravityMultiplier - 1.0)
+        body.velocity = CGVector(
+            dx: body.velocity.dx,
+            dy: body.velocity.dy + additionalGravity
+        )
     }
 }

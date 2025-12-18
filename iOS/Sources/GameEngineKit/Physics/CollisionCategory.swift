@@ -10,4 +10,6 @@ public enum CollisionCategory {
     public static let ground: UInt32 = 1 << 1
     public static let wall: UInt32 = 1 << 2
     public static let hazard: UInt32 = 1 << 3
+    /// One-way platform (아래에서 위로 통과 가능)
+    public static let platform: UInt32 = 1 << 4
 }
