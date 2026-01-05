@@ -3,12 +3,12 @@ import ProjectDescription
 let project = Project(
     name: "Games",
     targets: [
-        .init(
+        Target.target(
             name: "Games",
-            platform: .iOS,
+            destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.iOS.Games",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: [
                 "Sources/**"
