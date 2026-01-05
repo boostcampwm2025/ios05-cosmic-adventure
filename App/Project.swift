@@ -3,12 +3,11 @@ import ProjectDescription
 let project = Project(
     name: "App",
     targets: [
-        .init(
+        .target(
             name: "App",
-            platform: .iOS,
+            destinations: .iOS,
             product: .app,
             bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
             infoPlist: .extendingDefault(
                 with: [
                     "UILaunchScreen": [
@@ -29,12 +28,11 @@ let project = Project(
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
             ]
         ),
-        .init(
+        .target(
             name: "AppTests",
-            platform: .iOS,
+            destinations: .iOS,
             product: .unitTests,
             bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure-tests",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
             infoPlist: .default,
             sources: [
                 "Tests/**"
