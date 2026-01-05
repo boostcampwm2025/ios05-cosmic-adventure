@@ -3,10 +3,10 @@ import ProjectDescription
 let workspace = Workspace(
     name: "cosmic-adventure",
     projects: [
-        "App",
-        "Modules/InputSystem",
-        "Modules/Games",
-        "Modules/GameEngineCore",
+        "iOS/App",
+        "iOS/Modules/InputSystem",
+        "iOS/Modules/Games",
+        "iOS/Modules/GameEngineCore",
     ],
     additionalFiles: [
         .folderReference(path: "backend"),
