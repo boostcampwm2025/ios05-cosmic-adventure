@@ -3,20 +3,19 @@ import ProjectDescription
 let project = Project(
     name: "App",
     targets: [
-        .init(
+        Target.target(
             name: "App",
-            platform: .iOS,
+            destinations: .iOS,
             product: .app,
             bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
-            infoPlist: .extendingDefault(
-                with: [
-                    "UILaunchScreen": [
-                        "UIColorName": "",
-                        "UIImageName": "",
-                    ],
-                ]
-            ),
+            infoPlist: .extendingDefault(with: [
+                "UILaunchScreen": .array([
+                    .dictionary([
+                        "UIColorName": .string(""),
+                        "UIImageName": .string(""),
+                    ],)
+                ])
+            ]),
             sources: [
                 "Sources/**"
             ],
@@ -29,12 +28,12 @@ let project = Project(
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
             ]
         ),
-        .init(
+        Target.target(
             name: "AppTests",
-            platform: .iOS,
+            destinations: .iOS,
             product: .unitTests,
             bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure-tests",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: [
                 "Tests/**"
@@ -42,6 +41,6 @@ let project = Project(
             dependencies: [
                 .target(name: "App")
             ]
-        ),
+        )
     ]
 )

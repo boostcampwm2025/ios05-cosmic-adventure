@@ -3,12 +3,12 @@ import ProjectDescription
 let project = Project(
     name: "GameEngineCore",
     targets: [
-        .init(
+        Target.target(
             name: "GameEngineCore",
-            platform: .iOS,
+            destinations: .iOS,
             product: .framework,
             bundleId: "dev.tuist.iOS.GameEngineCore",
-            deploymentTarget: .iOS(targetVersion: "18.0", devices: .iphone),
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: [
                 "Sources/**"
@@ -17,5 +17,3 @@ let project = Project(
         )
     ]
 )
-
-
