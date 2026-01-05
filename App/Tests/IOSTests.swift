@@ -1,5 +1,5 @@
 import Testing
-@testable import IOS
+@testable import App
 
 struct IOSTests {
 
