@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct PermissionSetupView: View {
+    @StateObject private var permissionManager = PermissionManager()
     
     var body: some View {
         ZStack {
@@ -24,11 +25,13 @@ struct PermissionSetupView: View {
                 Spacer()
                 
                 privacyNoticeText
-                
+
                 PrimaryGradientButton(
-                    title: "다음"
+                    title: "권한 요청하기"
                 ) {
-                    // TODO: 다음 버튼 눌렀을 때 동작
+                    Task {
+                        await permissionManager.requestPermissionsOnNextTapped()
+                    }
                 }
                 .padding(.top, 24)
                 .padding(.bottom, 70)
@@ -41,6 +44,15 @@ struct PermissionSetupView: View {
                 .scaledToFill()
         }
         .ignoresSafeArea()
+        .alert("권한이 필요해요", isPresented: $permissionManager.showSettingsAlert) {
+            Button("설정으로 이동") { permissionManager.openAppSettings() }
+            Button("취소", role: .cancel) {}
+        } message: {
+            Text(permissionManager.settingsAlertMessage)
+        }
+        .onAppear {
+            permissionManager.refreshCameraState()
+        }
     }
     
     private var backgoundImage: some View {
@@ -92,7 +104,7 @@ struct PermissionSetupView: View {
     }
     
     private var privacyNoticeText: some View {
-        Text("저희는 개인 정보를 수집하지 않습니다..")
+        Text("저희는 개인 정보를 수집하지 않습니다.")
             .font(.system(size: 13, weight: .regular))
             .foregroundStyle(Color("blackLabel").opacity(0.5))
     }
