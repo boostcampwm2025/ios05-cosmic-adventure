@@ -36,4 +36,10 @@ enum Constants {
         static let characterLabel: LocalizedStringKey = "Character"
         static let startButtonTitle: LocalizedStringKey = "시작할 준비가 되었나요?"
     }
+    
+    enum Lobby {
+        static let greetingSuffix: LocalizedStringKey = " 님 함께"
+        static let greetingMessage: LocalizedStringKey = "모험을 떠날 탐험가를 골라주세요"
+        static let startButtonTitle: LocalizedStringKey = "혼자 모험 떠나기"
+    }
 }
