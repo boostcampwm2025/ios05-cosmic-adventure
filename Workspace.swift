@@ -7,6 +7,7 @@ let workspace = Workspace(
         "iOS/Modules/InputSystem",
         "iOS/Modules/Games",
         "iOS/Modules/GameEngineCore",
+        "iOS/Modules/NetworkKit",
     ],
     additionalFiles: [
         .folderReference(path: "backend"),
