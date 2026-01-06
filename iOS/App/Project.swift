@@ -44,6 +44,7 @@ let project = Project(
                 .project(target: "Games", path: "../Modules/Games"),
                 .project(target: "InputSystem", path: "../Modules/InputSystem"),
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
+                .project(target: "NetworkKit", path: "../Modules/NetworkKit"),
             ]
         ),
         Target.target(
