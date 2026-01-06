@@ -8,7 +8,7 @@
 import ARKit
 import Foundation
 
-public final class ARFaceTrackingInputSource: NSObject, InputSource {
+public final class ARFaceTrackingInputSource: NSObject, InputSource, ARSessionPreviewProviding {
     private let session: ARSession
     private let strategy: FaceInputStrategy
     private let hub: InputEventHub
