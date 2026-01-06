@@ -12,7 +12,7 @@ struct PermissionSetupView: View {
     
     var body: some View {
         @Bindable var permissionManager = permissionManager
-
+        
         ZStack {
             VStack(spacing: 0) {
                 backgoundImage
@@ -39,7 +39,7 @@ struct PermissionSetupView: View {
             .padding(.horizontal, 20)
         }
         .background {
-            Image("background")
+            AppAsset.Image.background.swiftUIImage
                 .resizable()
                 .scaledToFill()
         }
@@ -60,7 +60,7 @@ struct PermissionSetupView: View {
         ZStack {
             Circle()
                 .fill(
-                    Color("profileBackground")
+                    AppAsset.Color.profileBackground.swiftUIColor
                         .opacity(0.5)
                 )
                 .overlay(
@@ -69,7 +69,7 @@ struct PermissionSetupView: View {
                 )
                 .frame(width: 120, height: 120)
             
-            Image("Character1")
+            AppAsset.Image.character1.swiftUIImage
                 .resizable()
                 .scaledToFit()
                 .frame(width: 70)
@@ -79,25 +79,26 @@ struct PermissionSetupView: View {
     private var profileSection: some View {
         Group {
             Text(Constants.PermissionSetup.title)
-                .font(.system(size: 25, weight: .bold))
-                .foregroundStyle(Color("mainLabel"))
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 25))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             
             Text(Constants.PermissionSetup.subtitle)
-                .font(.system(size: 15, weight: .regular))
-                .foregroundStyle(Color("mainLabel"))
+                .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 15))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+                .padding(.top, 5)
         }
     }
     
     private var permissionCardsSection: some View {
         VStack(spacing: 20) {
             PermissionCard(
-                iconName: "permissionCameraIcon",
+                iconImage: AppAsset.Image.permissionCameraIcon.swiftUIImage,
                 title: Constants.PermissionSetup.Card.cameraTitle,
                 subtitle: Constants.PermissionSetup.Card.cameraSubtitle
             )
             
             PermissionCard(
-                iconName: "permissionNetworkIcon",
+                iconImage: AppAsset.Image.permissionNetworkIcon.swiftUIImage,
                 title: Constants.PermissionSetup.Card.networkTitle,
                 subtitle: Constants.PermissionSetup.Card.networkSubtitle
             )
@@ -106,8 +107,11 @@ struct PermissionSetupView: View {
     
     private var privacyNoticeText: some View {
         Text(Constants.PermissionSetup.privacyNotice)
-            .font(.system(size: 13, weight: .regular))
-            .foregroundStyle(Color("blackLabel").opacity(0.5))
+            .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 13))
+            .foregroundStyle(
+                AppAsset.Color.blackLabel.swiftUIColor
+                    .opacity(0.5)
+            )
     }
 }
 

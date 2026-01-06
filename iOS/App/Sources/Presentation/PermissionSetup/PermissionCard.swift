@@ -8,23 +8,23 @@
 import SwiftUI
 
 struct PermissionCard: View {
-    let iconName: String
+    let iconImage: Image
     let title: LocalizedStringKey
     let subtitle: LocalizedStringKey
     
     var body: some View {
         HStack(spacing: 14) {
-            Image(iconName)
+            iconImage
                 .frame(width: 50, height: 50)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(Color("blackLabel"))
-                
+                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 16))
+                    .foregroundStyle(AppAsset.Color.blackLabel.swiftUIColor)
+
                 Text(subtitle)
-                    .font(.system(size: 13, weight: .regular))
-                    .foregroundStyle(Color("subBlackLabel"))
+                    .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 13))
+                    .foregroundStyle(AppAsset.Color.subBlackLabel.swiftUIColor)
             }
             
             Spacer()
@@ -32,7 +32,8 @@ struct PermissionCard: View {
         .padding(.vertical, 18)
         .padding(.horizontal, 20)
         .background(
-            Color("permissionCardBackground").opacity(0.4)
+            AppAsset.Color.permissionCardBackground.swiftUIColor
+                .opacity(0.4)
         )
         .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         .overlay(
