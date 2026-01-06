@@ -9,8 +9,8 @@ import SwiftUI
 
 struct PrimaryGradientButton: View {
     let title: LocalizedStringKey
-    let startColor: Color = Color("buttonGradientStart")
-    let endColor: Color = Color("buttonGradientEnd")
+    let startColor: Color = AppAsset.Color.buttonGradientStart.swiftUIColor
+    let endColor: Color = AppAsset.Color.buttonGradientEnd.swiftUIColor
     var cornerRadius: CGFloat = 18
     var verticalPadding: CGFloat = 20
     let action: () -> Void
@@ -18,7 +18,7 @@ struct PrimaryGradientButton: View {
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(.system(size: 20, weight: .bold))
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, verticalPadding)
                 .background(

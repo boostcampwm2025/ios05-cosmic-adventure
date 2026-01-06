@@ -22,6 +22,17 @@ let project = Project(
                 "NSBonjourServices": .array([
                     .string("_cosmicadventure._tcp"),
                 ]),
+                "UIAppFonts": [
+                  "Fonts/Pretendard-Thin.otf",
+                  "Fonts/Pretendard-ExtraLight.otf",
+                  "Fonts/Pretendard-Light.otf",
+                  "Fonts/Pretendard-Regular.otf",
+                  "Fonts/Pretendard-Medium.otf",
+                  "Fonts/Pretendard-SemiBold.otf",
+                  "Fonts/Pretendard-Bold.otf",
+                  "Fonts/Pretendard-ExtraBold.otf",
+                  "Fonts/Pretendard-Black.otf",
+                ]
             ]),
             sources: [
                 "Sources/**"
@@ -49,5 +60,6 @@ let project = Project(
                 .target(name: "App")
             ]
         )
-    ]
+    ],
+    resourceSynthesizers: [.assets(), .fonts()]
 )
