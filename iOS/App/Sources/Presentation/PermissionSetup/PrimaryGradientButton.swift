@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct PrimaryGradientButton: View {
-    let title: String
+    let title: LocalizedStringKey
     let startColor: Color = Color("buttonGradientStart")
     let endColor: Color = Color("buttonGradientEnd")
     var cornerRadius: CGFloat = 18

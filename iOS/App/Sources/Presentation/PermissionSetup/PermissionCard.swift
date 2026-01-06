@@ -9,8 +9,8 @@ import SwiftUI
 
 struct PermissionCard: View {
     let iconName: String
-    let title: String
-    let subtitle: String
+    let title: LocalizedStringKey
+    let subtitle: LocalizedStringKey
     
     var body: some View {
         HStack(spacing: 14) {

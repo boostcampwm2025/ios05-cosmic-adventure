@@ -25,10 +25,8 @@ struct PermissionSetupView: View {
                 Spacer()
                 
                 privacyNoticeText
-
-                PrimaryGradientButton(
-                    title: "권한 요청하기"
-                ) {
+                
+                PrimaryGradientButton(title: Constants.PermissionSetup.requestButtonTitle) {
                     Task {
                         await permissionManager.requestPermissionsOnNextTapped()
                     }
@@ -44,9 +42,12 @@ struct PermissionSetupView: View {
                 .scaledToFill()
         }
         .ignoresSafeArea()
-        .alert("권한이 필요해요", isPresented: $permissionManager.showSettingsAlert) {
-            Button("설정으로 이동") { permissionManager.openAppSettings() }
-            Button("취소", role: .cancel) {}
+        .alert(Constants.Common.permissionAlertTitle, isPresented: $permissionManager.showSettingsAlert) {
+            Button(Constants.Common.goToSettings) { permissionManager.openAppSettings()
+            }
+            Button(Constants.Common.cancel, role: .cancel) {
+                
+            }
         } message: {
             Text(permissionManager.settingsAlertMessage)
         }
@@ -77,11 +78,11 @@ struct PermissionSetupView: View {
     
     private var profileSection: some View {
         Group {
-            Text("우주 수호자 설정")
+            Text(Constants.PermissionSetup.title)
                 .font(.system(size: 25, weight: .bold))
                 .foregroundStyle(Color("mainLabel"))
-
-            Text("게임을 시작하기 위해 몇 가지 권한이 필요해요.")
+            
+            Text(Constants.PermissionSetup.subtitle)
                 .font(.system(size: 15, weight: .regular))
                 .foregroundStyle(Color("mainLabel"))
         }
@@ -91,20 +92,20 @@ struct PermissionSetupView: View {
         VStack(spacing: 20) {
             PermissionCard(
                 iconName: "permissionCameraIcon",
-                title: "카메라 권한",
-                subtitle: "AR 게임 플레이를 위해 필요해요.",
+                title: Constants.PermissionSetup.Card.cameraTitle,
+                subtitle: Constants.PermissionSetup.Card.cameraSubtitle
             )
-
+            
             PermissionCard(
                 iconName: "permissionNetworkIcon",
-                title: "근거리 통신 권한",
-                subtitle: "다른 플레이어와 연결하기 위해 필요해요.",
+                title: Constants.PermissionSetup.Card.networkTitle,
+                subtitle: Constants.PermissionSetup.Card.networkSubtitle
             )
         }
     }
     
     private var privacyNoticeText: some View {
-        Text("저희는 개인 정보를 수집하지 않습니다.")
+        Text(Constants.PermissionSetup.privacyNotice)
             .font(.system(size: 13, weight: .regular))
             .foregroundStyle(Color("blackLabel").opacity(0.5))
     }
