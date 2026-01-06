@@ -13,7 +13,7 @@ struct PermissionSetupView: View {
     var body: some View {
         @Bindable var permissionManager = permissionManager
         
-        ZStack {
+        BackgroundContainerView {
             VStack(spacing: 0) {
                 backgoundImage
                     .padding(.top, 100)
@@ -38,12 +38,6 @@ struct PermissionSetupView: View {
             }
             .padding(.horizontal, 20)
         }
-        .background {
-            AppAsset.Image.background.swiftUIImage
-                .resizable()
-                .scaledToFill()
-        }
-        .ignoresSafeArea()
         .alert(Constants.Common.permissionAlertTitle, isPresented: $permissionManager.showSettingsAlert) {
             Button(Constants.Common.goToSettings) { permissionManager.openAppSettings()
             }

@@ -28,4 +28,12 @@ enum Constants {
             static let networkSubtitle: LocalizedStringKey = "다른 플레이어와 연결하기 위해 필요해요."
         }
     }
+    
+    enum ProfileSetup {
+        static let title: LocalizedStringKey = "프로필 설정"
+        static let nicknameLabel: LocalizedStringKey = "Nickname"
+        static let nicknamePlaceholder: LocalizedStringKey = "건방진 탐험가 123"
+        static let characterLabel: LocalizedStringKey = "Character"
+        static let startButtonTitle: LocalizedStringKey = "시작할 준비가 되었나요?"
+    }
 }
