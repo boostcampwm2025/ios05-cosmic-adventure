@@ -15,7 +15,6 @@ let project = Project(
                         "UIImageName": .string(""),
                     ])
                 ]),
-
                 "NSCameraUsageDescription": .string("AR 게임 플레이를 위해 카메라 접근이 필요해요."),
 
                 "NSLocalNetworkUsageDescription": .string("근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요."),

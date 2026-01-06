@@ -6,7 +6,7 @@
 //
 
 import AVFoundation
-import Foundation
+import Observation
 import UIKit
 
 // TODO: 네트워크 권한은 "확인/요청" API가 없어서 실제 구현은 나중에 붙이기.
@@ -21,7 +21,8 @@ final class StubLocalNetworkPermissionRequester: LocalNetworkPermissionRequestin
 }
 
 @MainActor
-final class PermissionManager: ObservableObject {
+@Observable
+final class PermissionManager {
 
     enum PermissionState {
         case unknown
@@ -29,15 +30,16 @@ final class PermissionManager: ObservableObject {
         case denied
     }
 
-    @Published private(set) var cameraState: PermissionState = .unknown
-    @Published private(set) var localNetworkState: PermissionState = .unknown
+    private(set) var cameraState: PermissionState = .unknown
+    private(set) var localNetworkState: PermissionState = .unknown
 
-    @Published var showSettingsAlert: Bool = false
-    @Published var settingsAlertMessage: String = ""
+    var showSettingsAlert: Bool = false
+    var settingsAlertMessage: String = ""
 
     // TODO: 이걸로 navigaion 연결하기
-    @Published var shouldNavigateNext: Bool = false
+    var shouldNavigateNext: Bool = false
 
+    @ObservationIgnored
     private let localNetworkRequester: LocalNetworkPermissionRequesting
 
     // 나중에 Bonjour browse/advertise로 팝업 트리거
@@ -99,9 +101,9 @@ final class PermissionManager: ObservableObject {
     }
 
     private func requestLocalNetworkPermissionIfNeeded() async -> Bool {
-        let ok = await localNetworkRequester.requestPermission()
-        localNetworkState = ok ? .allowed : .denied
-        return ok
+        let isGranted = await localNetworkRequester.requestPermission()
+        localNetworkState = isGranted ? .allowed : .denied
+        return isGranted
     }
 
     func openAppSettings() {

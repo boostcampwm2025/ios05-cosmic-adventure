@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct PermissionSetupView: View {
-    @StateObject private var permissionManager = PermissionManager()
+    @State private var permissionManager = PermissionManager()
     
     var body: some View {
+        @Bindable var permissionManager = permissionManager
+
         ZStack {
             VStack(spacing: 0) {
                 backgoundImage
@@ -45,9 +47,7 @@ struct PermissionSetupView: View {
         .alert(Constants.Common.permissionAlertTitle, isPresented: $permissionManager.showSettingsAlert) {
             Button(Constants.Common.goToSettings) { permissionManager.openAppSettings()
             }
-            Button(Constants.Common.cancel, role: .cancel) {
-                
-            }
+            Button(Constants.Common.cancel, role: .cancel) { }
         } message: {
             Text(permissionManager.settingsAlertMessage)
         }
