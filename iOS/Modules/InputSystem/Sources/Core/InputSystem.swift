@@ -18,6 +18,10 @@ public final class InputSystem {
     public func events() async -> AsyncStream<InputEvent> {
         await hub.makeStream()
     }
+    
+    public func previewSession() -> ARSession? {
+        (source as? ARSessionPreviewProviding)?.previewSession()
+    }
 }
 
 public extension InputSystem {
