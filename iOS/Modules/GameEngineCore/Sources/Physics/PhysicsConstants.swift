@@ -25,7 +25,7 @@ public enum PhysicsConstants {
     public static let fallGravityMultiplier: CGFloat = 1.3
 
     // 환경
-    public static let gravityDY: CGFloat = -8.5
+    public static let gravityDY: CGFloat = -9.8
     public static let linearDamping: CGFloat = 2.0
     public static let friction: CGFloat = 1.0
     public static let restitution: CGFloat = 0.0
