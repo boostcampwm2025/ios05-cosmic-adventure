@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct PermissionSetupView: View {
+    @EnvironmentObject private var router: AppRouter
     @State private var permissionManager = PermissionManager()
     
     var body: some View {
@@ -53,6 +54,11 @@ struct PermissionSetupView: View {
         }
         .onAppear {
             permissionManager.refreshCameraState()
+        }
+        .onChange(of: permissionManager.shouldNavigateNext) {
+            guard permissionManager.shouldNavigateNext else { return }
+            router.push(.profileSetup)
+            permissionManager.shouldNavigateNext = false
         }
     }
     
