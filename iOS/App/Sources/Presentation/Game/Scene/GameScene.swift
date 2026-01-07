@@ -39,7 +39,7 @@ final class GameScene: SKScene {
     override func didMove(to view: SKView) {
         // 기본 설정
         self.anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        self.backgroundColor = .white
+        self.backgroundColor = .clear
 
         // 카메라 설정
         cameraSystem = CameraSystem(scene: self)
