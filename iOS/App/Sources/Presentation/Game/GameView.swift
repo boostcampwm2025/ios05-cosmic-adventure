@@ -6,14 +6,12 @@
 //
 
 import Games
-import InputSystem
 import SpriteKit
 import SwiftUI
 
 public struct GameView: View {
     @State private var gameplayManager = GameplayManager()
     @State private var gameScene: GameScene?
-    private let inputSystem = InputSystem(source: .faceTracking())
 
     public init() {}
 
@@ -25,27 +23,12 @@ public struct GameView: View {
                     .edgesIgnoringSafeArea(.all)
             }
         }
-        .task { // InputSystem -> GameplayManager 연결
-            inputSystem.start()
-
-            // AsyncStream 구독
-            for await event in await inputSystem.events() {
-                switch event {
-                case .horizontal(let x):
-                    gameplayManager.updateInput(moveX: x)
-
-                case .action(let action, let value):
-                    if action == .primary && value > 0.5 {
-                        gameplayManager.tryJump()
-                    }
-                }
-            }
-        }
-        .onDisappear {
-            inputSystem.stop()
-        }
         .onAppear {
             setupGame()
+            gameplayManager.bind(input: FaceTrackingGameInputProvider())
+        }
+        .onDisappear {
+            gameplayManager.unbind()
         }
     }
 

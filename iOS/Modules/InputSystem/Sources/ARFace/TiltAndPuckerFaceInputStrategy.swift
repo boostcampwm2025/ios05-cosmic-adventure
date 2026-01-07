@@ -10,9 +10,11 @@ import ARKit
 public final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
     private let rollThreshold: Double = 0.3
     private let maxRoll: Double = 0.9          // 이 값에서 강도 1.0(각도 51.6도일 때 최대)
-    private let puckerThreshold: Double = 0.3
+    private let puckerThreshold: Double
 
-    public init() {}
+    public init(puckerThreshold: Double = 0.5) {
+        self.puckerThreshold = puckerThreshold
+    }
 
     public func interpret(anchor: ARFaceAnchor) -> [InputEvent] {
         var out: [InputEvent] = []

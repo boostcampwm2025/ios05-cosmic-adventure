@@ -26,13 +26,13 @@ public final class InputSystem {
 
 public extension InputSystem {
     enum FaceTrackingStrategyOption {
-        case tiltAndPucker
+        case tiltAndPucker(puckerThreshold: Double = 0.5)
         case custom(FaceInputStrategy)
 
         var strategy: FaceInputStrategy {
             switch self {
-            case .tiltAndPucker:
-                return TiltAndPuckerFaceInputStrategy()
+            case .tiltAndPucker(let threshold):
+                return TiltAndPuckerFaceInputStrategy(puckerThreshold: threshold)
             case .custom(let s):
                 return s
             }
@@ -40,7 +40,7 @@ public extension InputSystem {
     }
 
     enum Source {
-        case faceTracking(strategy: FaceTrackingStrategyOption = .tiltAndPucker)
+        case faceTracking(strategy: FaceTrackingStrategyOption = .tiltAndPucker())
     }
 
     convenience init(source: Source) {
