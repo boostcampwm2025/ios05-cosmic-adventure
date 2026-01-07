@@ -9,7 +9,7 @@ import SwiftUI
 
 struct PermissionSetupView: View {
     @EnvironmentObject private var router: AppRouter
-    @State private var permissionManager = PermissionManager()
+    @State private var permissionManager = PermissionManager(localNetworkRequester: LocalNetworkPermissionRequester())
     
     var body: some View {
         @Bindable var permissionManager = permissionManager

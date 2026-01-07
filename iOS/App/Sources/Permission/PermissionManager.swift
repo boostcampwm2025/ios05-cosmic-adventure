@@ -6,10 +6,10 @@
 //
 
 import AVFoundation
+import NetworkKit
 import Observation
 import UIKit
 
-// TODO: 네트워크 권한은 "확인/요청" API가 없어서 실제 구현은 나중에 붙이기.
 protocol LocalNetworkPermissionRequesting {
     func requestPermission() async -> Bool
 }
@@ -17,6 +17,31 @@ protocol LocalNetworkPermissionRequesting {
 final class StubLocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
     func requestPermission() async -> Bool {
         true
+    }
+}
+
+final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
+    private let sessionProvider = NetworkSessionManager()
+
+    func requestPermission() async -> Bool {
+        await withCheckedContinuation { continuation in
+            var hasResumed = false
+
+            sessionProvider.onLocalNetworkPermissionGranted = {
+                guard !hasResumed else { return }
+                hasResumed = true
+                continuation.resume(returning: true)
+            }
+
+            sessionProvider.onLocalNetworkPermissionDenied = { _ in
+                guard !hasResumed else { return }
+                hasResumed = true
+                continuation.resume(returning: false)
+            }
+
+            // TODO: - 실제 사용자 닉네임으로 수정
+            sessionProvider.activate(nickname: "permission-check")
+        }
     }
 }
 
@@ -42,8 +67,7 @@ final class PermissionManager {
     @ObservationIgnored
     private let localNetworkRequester: LocalNetworkPermissionRequesting
 
-    // 나중에 Bonjour browse/advertise로 팝업 트리거
-    init(localNetworkRequester: LocalNetworkPermissionRequesting = StubLocalNetworkPermissionRequester()) {
+    init(localNetworkRequester: LocalNetworkPermissionRequesting) {
         self.localNetworkRequester = localNetworkRequester
         refreshCameraState()
     }
