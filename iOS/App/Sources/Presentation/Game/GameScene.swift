@@ -270,10 +270,10 @@ final class GameScene: SKScene {
         // 좌우 반전
         if moveX < -0.01 {
             // 왼쪽 이동
-            player.xScale = -abs(player.xScale)
+            player.xScale = abs(player.xScale)
         } else if moveX > 0.01 {
             // 오른쪽 이동
-            player.xScale = abs(player.xScale)
+            player.xScale = -abs(player.xScale)
         }
 
         // 기울기
