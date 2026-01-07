@@ -7,23 +7,16 @@
 
 import Games
 import GameEngineCore
-import InputSystem
 import SpriteKit
 
 final class GameScene: SKScene {
     private var gameplayManager: GameplayManager?
     private var physicsCore: PhysicsCore?
     private var cameraSystem: CameraSystem?
+    private var platformController: PlatformController?
     private var playerNode: SKSpriteNode?
 
-    // 무한 맵 생성
-    private var lastPlatformY: CGFloat = -100
-    private var isNextRight: Bool = true
-    private let xOffset: CGFloat = 70
-    private let yGap: CGFloat = 130
-
     private let deadZoneThreshold: CGFloat = 100
-    private var lastSafePosition: CGPoint = CGPoint(x: 0, y: -150) // 리스폰 위치 저장
     private var isRespawning: Bool = false
 
     private var lastUpdateTime: TimeInterval = 0
@@ -50,11 +43,12 @@ final class GameScene: SKScene {
 
         // 카메라 설정
         cameraSystem = CameraSystem(scene: self)
+        platformController = PlatformController(scene: self)
 
         // 요소 배치
         setupWalls()
         setupPlayer()
-        setupInitialPlatforms()
+        platformController?.setupInitialPlatforms()
 
         if let player = playerNode, let playerBody = player.physicsBody {
             // 카메라가 플레이어를 따라가도록 설정
@@ -98,11 +92,10 @@ final class GameScene: SKScene {
         cameraSystem.update()
 
         updateWalls()
-        updateInfiniteMap()
+        platformController?.update(cameraY: cameraSystem.cameraNode.position.y, sceneHeight: size.height)
 
         // 리스폰 체크
         if let player = playerNode {
-            // 이제 cameraNode에 접근하려면 cameraSystem.cameraNode로 접근
             let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
             if player.position.y < cameraBottom - deadZoneThreshold {
                 respawnPlayer()
@@ -160,70 +153,6 @@ final class GameScene: SKScene {
         playerNode = player
     }
 
-    // 무한 맵 생성
-    private func setupInitialPlatforms() {
-        let startY: CGFloat = -200
-        let startGround = createPlatform(
-            position: CGPoint(x: 0, y: startY),
-            size: CGSize(width: 200, height: 35)
-        )
-
-        addChild(startGround)
-
-        lastSafePosition = startGround.position
-        lastPlatformY = startY
-
-        for _ in 0..<10 {
-            spawnNextPlatform()
-        }
-    }
-
-    private func updateInfiniteMap() {
-        guard let cameraSystem = cameraSystem else { return }
-
-        //  발판 생성
-        let cameraTop = cameraSystem.cameraNode.position.y + size.height / 2
-        if lastPlatformY < cameraTop + 100 {
-            spawnNextPlatform()
-        }
-
-        // 발판 삭제
-        let cameraBottom = cameraSystem.cameraNode.position.y - (size.height * 2)
-        enumerateChildNodes(withName: Constants.Game.NodeName.platform) { node, _ in
-            if node.position.y < cameraBottom {
-                if node.position.y < self.lastSafePosition.y {
-                    node.removeFromParent()
-                }
-            }
-        }
-    }
-
-    private func spawnNextPlatform() {
-        let nextY = lastPlatformY + yGap
-        let nextX: CGFloat = isNextRight ? xOffset : -xOffset
-
-        let platform = createPlatform(position: CGPoint(x: nextX, y: nextY))
-
-        addChild(platform)
-        lastPlatformY = nextY
-        isNextRight.toggle()
-    }
-
-    private func createPlatform(position: CGPoint, size: CGSize = CGSize(width: 110, height: 35)) -> SKSpriteNode {
-        let platform = SKSpriteNode(imageNamed: AppAsset.Image.platform.name)
-
-        platform.name = Constants.Game.NodeName.platform
-        platform.size = size
-        platform.position = position
-
-        platform.physicsBody = SKPhysicsBody(rectangleOf: size)
-        platform.physicsBody?.isDynamic = false
-        platform.physicsBody?.categoryBitMask = PhysicsCategory.ground.rawValue
-        platform.physicsBody?.restitution = 0.0
-
-        return platform
-    }
-
     private func updateWalls() {
         guard let cameraSystem = cameraSystem else { return }
         let currentCameraY = cameraSystem.cameraNode.position.y
@@ -241,7 +170,8 @@ final class GameScene: SKScene {
         isRespawning = true
 
         guard let player = playerNode,
-              let cameraSystem = cameraSystem else {
+              let cameraSystem = cameraSystem,
+              let platformController = platformController else {
             return
         }
 
@@ -250,6 +180,7 @@ final class GameScene: SKScene {
         player.physicsBody?.isDynamic = false // 잠깐 멈춤
 
         // 위치 이동 (마지막 안전 발판 + 조금 위)
+        let lastSafePosition = platformController.lastSafePosition
         let targetPosition = (lastSafePosition == .zero) ? CGPoint(x: 0, y: -100) : lastSafePosition
         player.position = CGPoint(x: targetPosition.x, y: targetPosition.y + 100)
 
@@ -322,7 +253,7 @@ extension GameScene: SKPhysicsContactDelegate {
                 let dy = player.physicsBody?.velocity.dy ?? 0
                 if dy <= 5.0 && player.position.y > platformNode.position.y {
                     gameplayManager?.handleContact(.ground)
-                    lastSafePosition = platformNode.position
+                    platformController?.updateLastSafePosition(platformNode.position)
                 }
             }
 
