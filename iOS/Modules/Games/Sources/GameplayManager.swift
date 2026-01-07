@@ -8,47 +8,72 @@
 import Foundation
 
 @Observable
+@MainActor
 public final class GameplayManager {
     public var state = CharacterState()
 
     public var isJumpRequested: Bool = false
     private let maxJumpCount = 2
 
-    // 0.4초 동안은 연속 점프 금지 (얼굴 인식 속도가 너무 빨라서 필요)
     private let jumpCooldown: TimeInterval = 0.4
     private var lastJumpTime: TimeInterval = 0
 
-    // InputSystem DeadZone 이벤트 처리
     private var timeSinceLastInput: TimeInterval = 0
     private let inputTimeout: TimeInterval = 0.2
 
+    private var inputProvider: (any GameInputProviding)?
+    private var inputTask: Task<Void, Never>?
+
     public init() {}
 
-    // InputSystem event 연결
-    public func updateInput(moveX: Double) {
+    public func bind(input: any GameInputProviding) {
+        unbind()
+        inputProvider = input
+        input.start()
+
+        inputTask = Task { [weak self] in
+            guard let self else { return }
+            let stream = await input.events()
+            for await event in stream {
+                guard !Task.isCancelled else { break }
+                self.handleInput(event)
+            }
+        }
+    }
+
+    public func unbind() {
+        inputTask?.cancel()
+        inputTask = nil
+        inputProvider?.stop()
+        inputProvider = nil
+    }
+
+    private func handleInput(_ event: GameInputEvent) {
+        switch event {
+        case .horizontal(let x):
+            updateMoveX(x)
+        case .jump:
+            tryJump()
+        }
+    }
+
+    private func updateMoveX(_ moveX: Double) {
         state.moveX = moveX
         timeSinceLastInput = 0
     }
 
-    public func tryJump() {
-        // 현재 시간
+    private func tryJump() {
         let currentTime = Date().timeIntervalSince1970
 
-        // 쿨타임 체크 - 마지막 점프하고 0.4초 지났는지 체크
-        if currentTime - lastJumpTime > jumpCooldown {
+        guard currentTime - lastJumpTime > jumpCooldown else { return }
+        guard state.jumpCount < maxJumpCount else { return }
 
-            // 점프 횟수 체크
-            if state.jumpCount < maxJumpCount {
-                state.jumpCount += 1
-                state.isGrounded = false
+        state.jumpCount += 1
+        state.isGrounded = false
+        isJumpRequested = true
 
-                isJumpRequested = true
-
-                // 마지막 점프 시간 갱신 (쿨타임 시작)
-                lastJumpTime = currentTime
-                timeSinceLastInput = 0
-            }
-        }
+        lastJumpTime = currentTime
+        timeSinceLastInput = 0
     }
 
     // Game Loop Update
@@ -67,7 +92,6 @@ public final class GameplayManager {
     public func handleContact(_ type: GameContactType) {
         switch type {
         case .ground:
-            // 땅에 닿으면 점프 횟수 초기화
             if !state.isGrounded {
                 state.isGrounded = true
                 state.jumpCount = 0
