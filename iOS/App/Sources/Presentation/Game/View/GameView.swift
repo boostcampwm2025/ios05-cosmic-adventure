@@ -17,11 +17,25 @@ public struct GameView: View {
 
     public var body: some View {
         ZStack {
+            AppAsset.Image.background.swiftUIImage
+                .resizable()
+                .scaledToFill()
+                .edgesIgnoringSafeArea(.all)
+            
             if let scene = gameScene {
                 SpriteView(scene: scene, options: [.allowsTransparency])
-                    .background(Color.clear)
                     .edgesIgnoringSafeArea(.all)
             }
+            
+            VStack {
+                Spacer()
+                AppAsset.Image.monsterOverlay.swiftUIImage
+                    .resizable()
+                    .scaledToFit()
+                    .offset(y: 50)
+            }
+            .edgesIgnoringSafeArea(.all)
+            .allowsHitTesting(false)
         }
         .onAppear {
             setupGame()
