@@ -20,7 +20,12 @@ final class LobbyViewModel {
     private(set) var peers: [LobbyExplorer]
     var selectedPeerID: UUID?
     var userName: String
-    var showPermissionAlert: Bool = false
+    
+    var activeAlert: LobbyAlert = .none
+    var showPermissionAlert: Bool {
+        get { activeAlert != .none }
+        set { if !newValue { activeAlert = .none } }
+    }
 
     @ObservationIgnored
     private let sessionManager = NetworkSessionManager()
@@ -59,21 +64,19 @@ final class LobbyViewModel {
         ]
         
         self.selectedPeerID = nil
-        setupSessionManager()
     }
     
     // MARK: - Actions
 
     private func setupSessionManager() {
-        sessionManager.onLocalNetworkPermissionDenied = { [weak self] in
+        sessionManager.onPermissionResult = { [weak self] result in
+            guard case .failure(let error) = result else { return }
+            
             Task { @MainActor in
-                self?.showPermissionAlert = true
-                self?.sessionManager.deactive()
+                guard self?.activeAlert == LobbyAlert.none else { return }
+                self?.activeAlert = (error == .denied) ? .permissionDenied : .unknownNetworkError
             }
         }
-        
-        // 탐색된 피어 업데이트 로직 (필요 시 추가)
-        // sessionManager.onPeersUpdated = { ... }
     }
     
     // MARK: - Proximity Update (TODO)
@@ -102,6 +105,7 @@ final class LobbyViewModel {
     }
 
     func startNetworkExploration() {
+        setupSessionManager()
         sessionManager.activate(nickname: userName)
     }
     

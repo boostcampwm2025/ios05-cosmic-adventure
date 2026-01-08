@@ -73,3 +73,40 @@ enum OrbitSlot: CaseIterable {
         [.orbit1Top, .orbit2LeftTop, .orbit2RightTop, .orbit3LeftBottom, .orbit3RightBottom]
     }
 }
+
+enum LobbyAlert {
+    case none
+    case permissionDenied
+    case unknownNetworkError
+
+    var title: LocalizedStringKey {
+        switch self {
+        case .permissionDenied: return Constants.Common.permissionAlertTitle
+        case .unknownNetworkError: return Constants.Alert.defaultTitle
+        case .none: return ""
+        }
+    }
+
+    var message: LocalizedStringKey {
+        switch self {
+        case .permissionDenied:
+            return Constants.Alert.localNetworkSubTitle
+        case .unknownNetworkError:
+            return Constants.Alert.unknownSubTitle
+        case .none:
+            return ""
+        }
+    }
+
+    var primaryButtonTitle: LocalizedStringKey {
+        switch self {
+        case .permissionDenied: return Constants.Common.goToSettings
+        case .unknownNetworkError: return Constants.Common.confirm
+        case .none: return ""
+        }
+    }
+    
+    var hasCancelButton: Bool {
+        return self == .permissionDenied
+    }
+}

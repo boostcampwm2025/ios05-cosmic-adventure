@@ -97,11 +97,11 @@ final class HostManager: HostManaging {
             logger.info("리스너 준비 완료(권한 확인)")
             onPermissionGranted?()
         case .waiting(let error):
+            print(error.debugDescription)
             onPermissionDeniedOrFailed?(error)
         case .failed(let error):
             logger.error("리스너 준비 실패: \(error.localizedDescription)")
             onPermissionDeniedOrFailed?(error)
-
         case .cancelled:
             logger.info("리스너 취소")
 

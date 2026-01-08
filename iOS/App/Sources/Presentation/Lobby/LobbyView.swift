@@ -40,11 +40,18 @@ struct LobbyView: View {
         .onDisappear {
             viewModel.stopNetworkExploration()
         }
-        .alert(Constants.Common.permissionAlertTitle,
-               isPresented: $viewModel.showPermissionAlert) {
-            Button(Constants.Common.goToSettings) { viewModel.openAppSettings() }
+        .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
+            Button(viewModel.activeAlert.primaryButtonTitle) {
+                if viewModel.activeAlert == .permissionDenied {
+                    viewModel.openAppSettings()
+                }
+            }
+            
+            if viewModel.activeAlert.hasCancelButton {
+                Button(Constants.Common.cancel, role: .cancel) { }
+            }
         } message: {
-            Text("근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요.")
+            Text(viewModel.activeAlert.message)
         }
     }
 }
