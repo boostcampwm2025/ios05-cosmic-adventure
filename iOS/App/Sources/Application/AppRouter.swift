@@ -5,12 +5,13 @@
 //  Created by sungkug_apple_developer_ac on 1/7/26.
 //
 
-import SwiftUI
+import Observation
 
 @MainActor
-final class AppRouter: ObservableObject {
-    @Published var root: AppRoute
-    @Published var path: [AppRoute]
+@Observable
+final class AppRouter {
+    var root: AppRoute
+    var path: [AppRoute]
 
     init(initial: AppRoute = .permissionSetup) {
         self.root = initial

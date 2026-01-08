@@ -9,7 +9,7 @@ import SwiftUI
 import NetworkKit
 
 struct PermissionSetupView: View {
-    @EnvironmentObject private var router: AppRouter
+    @Environment(AppRouter.self) private var router: AppRouter
     @State private var permissionManager = PermissionViewModel(localNetworkRequester: LocalNetworkPermissionRequester(sessionProvider: NetworkSessionManager()))
     
     var body: some View {
