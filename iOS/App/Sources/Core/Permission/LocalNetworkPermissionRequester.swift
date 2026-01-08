@@ -2,21 +2,16 @@
 //  LocalNetworkPermissionRequester.swift
 //  App
 //
-//  Created by 강윤서 on 1/8/26.
+//  Created by sungkug_apple_developer_ac on 1/8/26.
 //
 
-import Foundation
 import NetworkKit
-
-protocol LocalNetworkPermissionRequesting {
-    func requestPermission(hostName: String) async -> Bool
-}
 
 final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
     
     private var sessionProvider: ConnectionSessionProvider
     
-    init(sessionProvider: ConnectionSessionProvider = NetworkSessionManager()) {
+    init(sessionProvider: ConnectionSessionProvider) {
         self.sessionProvider = sessionProvider
     }
     
