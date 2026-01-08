@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct RootView: View {
-    @StateObject var router = AppRouter()
+    @State var router = AppRouter()
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -17,7 +17,7 @@ struct RootView: View {
                     screen(route)
                 }
         }
-        .environmentObject(router)
+        .environment(router)
     }
 
     @ViewBuilder
