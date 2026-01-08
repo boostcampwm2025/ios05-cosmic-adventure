@@ -10,9 +10,11 @@ import NetworkKit
 
 struct PermissionSetupView: View {
     @Environment(AppRouter.self) private var router: AppRouter
-    @State private var viewModel = PermissionSetupViewModel(
-        service: DefaultPermissionService(localNetworkRequester: LocalNetworkPermissionRequester(sessionProvider: NetworkSessionManager()))
-    )
+    @State private var viewModel: PermissionSetupViewModel
+
+    init(viewModel: PermissionSetupViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
     
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -119,6 +121,6 @@ struct PermissionSetupView: View {
 
 struct PermissionSetupView_Previews: PreviewProvider {
     static var previews: some View {
-        PermissionSetupView()
+        PermissionSetupView(viewModel: AppContainer().makePermissionSetupViewModel())
     }
 }

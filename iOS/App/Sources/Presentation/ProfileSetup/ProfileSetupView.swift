@@ -8,8 +8,12 @@
 import SwiftUI
 
 struct ProfileSetupView: View {
-    @EnvironmentObject private var router: AppRouter
-    @State private var viewModel = ProfileSetupViewModel()
+    @Environment(AppRouter.self) private var router: AppRouter
+    @State private var viewModel: ProfileSetupViewModel
+
+    init(viewModel: ProfileSetupViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
     
     private let columns = [
         GridItem(.flexible()),
@@ -39,7 +43,7 @@ struct ProfileSetupView: View {
                 
                 PrimaryGradientButton(title: Constants.ProfileSetup.startButtonTitle) {
                     viewModel.proceedToLobby()
-                    router.setRoot(.home)
+                    router.setRoot(.lobby)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 70)
@@ -155,6 +159,6 @@ private extension ProfileSetupView {
 
 struct ProfileSetupView_Previews: PreviewProvider {
     static var previews: some View {
-        ProfileSetupView()
+        ProfileSetupView(viewModel: AppContainer().makeProfileSetupViewModel())
     }
 }

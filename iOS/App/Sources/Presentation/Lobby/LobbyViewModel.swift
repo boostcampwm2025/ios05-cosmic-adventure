@@ -28,7 +28,7 @@ final class LobbyViewModel {
     }
 
     @ObservationIgnored
-    private let sessionManager = NetworkSessionManager()
+    private let sessionManager: NetworkSessionManager
 
     // MARK: - Computed Properties
 
@@ -46,7 +46,9 @@ final class LobbyViewModel {
     
     //MARK: - Initialization
 
-    init() {
+    init(sessionManager: NetworkSessionManager) {
+        self.sessionManager = sessionManager
+        
         self.userName = "건방진 탐험가 123"
         
         self.myExplorer = LobbyExplorer(

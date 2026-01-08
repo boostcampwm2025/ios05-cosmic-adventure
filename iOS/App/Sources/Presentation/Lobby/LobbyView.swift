@@ -8,8 +8,13 @@
 import SwiftUI
 
 struct LobbyView: View {
-    @State private var viewModel = LobbyViewModel()
     @Environment(\.scenePhase) private var scenePhase
+    @Environment(AppRouter.self) private var router: AppRouter
+    @State private var viewModel: LobbyViewModel
+
+    init(viewModel: LobbyViewModel) {
+        _viewModel = State(initialValue: viewModel)
+    }
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -30,6 +35,7 @@ struct LobbyView: View {
                 
                 PrimaryGradientButton(title: Constants.Lobby.startButtonTitle) {
                     viewModel.startSoloAdventure()
+                    router.push(.game)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 70)
@@ -267,6 +273,6 @@ private extension LobbyView {
 
 struct LobbyView_Previews: PreviewProvider {
     static var previews: some View {
-        LobbyView()
+        LobbyView(viewModel: AppContainer().makeLobbyViewModel())
     }
 }

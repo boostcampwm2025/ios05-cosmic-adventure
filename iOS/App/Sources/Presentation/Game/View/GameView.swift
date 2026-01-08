@@ -10,6 +10,8 @@ import SpriteKit
 import SwiftUI
 
 public struct GameView: View {
+    // TODO: 네트워크계층이랑 연결할 수 있게 주입식으로 변경
+
     @State private var gameplayManager = GameplayManager()
     @State private var gameScene: GameScene?
 

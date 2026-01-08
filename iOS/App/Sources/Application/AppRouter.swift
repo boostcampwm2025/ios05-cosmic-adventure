@@ -6,6 +6,7 @@
 //
 
 import Observation
+import SwiftUI
 
 @MainActor
 @Observable
@@ -43,11 +44,15 @@ final class AppRouter {
 
     // MARK: - Root
     func setRoot(_ route: AppRoute) {
-        root = route
-        path.removeAll()
+        var transaction = Transaction()
+        transaction.disablesAnimations = true
+        withTransaction(transaction) {
+            root = route
+            path.removeAll()
+        }
     }
 
     func resetToHome() {
-        setRoot(.home)
+        setRoot(.lobby)
     }
 }
