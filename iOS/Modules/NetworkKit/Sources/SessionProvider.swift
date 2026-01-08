@@ -26,8 +26,7 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     
     // MARK: - Callbacks
     
-    public var onLocalNetworkPermissionGranted: (() -> Void)?
-    public var onLocalNetworkPermissionDenied: (() -> Void)?
+    public var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)?
     
     // MARK: - Initialization
     
@@ -67,6 +66,8 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
         
         hostGranted = nil
         clientGranted = nil
+        
+        onPermissionResult = nil
     }
     
     // MARK: - Private Methods
@@ -77,9 +78,9 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
             self?.checkBothPermission()
         }
         
-        host.onPermissionDeniedOrFailed = { [weak self] _ in
+        host.onPermissionDeniedOrFailed = { [weak self] error in
             self?.hostGranted = false
-            self?.onLocalNetworkPermissionDenied?()
+            self?.handlePermissionError(error)
         }
         
         client.onPermissionGranted = { [weak self] in
@@ -87,9 +88,9 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
             self?.checkBothPermission()
         }
         
-        client.onPermissionDeniedOrFailed = { [weak self] _ in
+        client.onPermissionDeniedOrFailed = { [weak self] error in
             self?.clientGranted = false
-            self?.onLocalNetworkPermissionDenied?()
+            self?.handlePermissionError(error)
         }
         
         client.onPeersUpdated = { [weak self] peers in
@@ -110,9 +111,26 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
         }
     }
     
+    private func handlePermissionError(_ error: Error) {
+        let isDenied = (error as NSError).code == -65570
+        
+        if isDenied {
+            onPermissionResult?(.failure(.denied))
+        } else {
+            onPermissionResult?(.failure(.unknown))
+        }
+    }
+    
     private func checkBothPermission() {
-        if hostGranted == true && clientGranted == true {
-            onLocalNetworkPermissionGranted?()
+        guard let hostGranted,
+              let clientGranted else {
+            return
+        }
+        
+        if hostGranted && clientGranted {
+            onPermissionResult?(.success(()))
+        } else {
+            onPermissionResult?(.failure(.unknown))
         }
     }
 }

@@ -12,6 +12,7 @@ enum Constants {
         static let permissionAlertTitle: LocalizedStringKey = "권한이 필요해요"
         static let goToSettings: LocalizedStringKey = "설정으로 이동"
         static let cancel: LocalizedStringKey = "취소"
+        static let confirm: LocalizedStringKey = "확인"
     }
     
     enum PermissionSetup {
@@ -50,5 +51,11 @@ enum Constants {
             static let leftWall = "leftWall"
             static let rightWall = "rightWall"
         }
+    }
+    
+    enum Alert {
+        static let defaultTitle: LocalizedStringKey = "오류 발생"
+        static let localNetworkSubTitle: LocalizedStringKey = "근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요. 설정에서 권한을 허용해주세요."
+        static let unknownSubTitle: LocalizedStringKey = "알 수 없는 네트워크 오류가 발생했습니다."
     }
 }

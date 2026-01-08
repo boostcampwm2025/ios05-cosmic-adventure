@@ -123,10 +123,8 @@ final class ClientManager: ClientManaging {
         case .failed(let error):
             logger.error("탐색 준비 실패: \(error.localizedDescription)")
             onPermissionDeniedOrFailed?(error)
-
         case .cancelled:
             logger.info("탐색 종료")
-
         default:
             break
         }
