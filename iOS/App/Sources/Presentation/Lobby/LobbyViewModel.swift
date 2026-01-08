@@ -69,11 +69,11 @@ final class LobbyViewModel {
     // MARK: - Actions
 
     private func setupSessionManager() {
+        activeAlert = .none
         sessionManager.onPermissionResult = { [weak self] result in
             guard case .failure(let error) = result else { return }
             
-            Task { @MainActor in
-                guard self?.activeAlert == LobbyAlert.none else { return }
+            Task { @MainActor in 
                 self?.activeAlert = (error == .denied) ? .permissionDenied : .unknownNetworkError
             }
         }
