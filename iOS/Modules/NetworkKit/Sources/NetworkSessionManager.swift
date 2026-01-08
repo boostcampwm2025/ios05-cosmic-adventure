@@ -18,6 +18,8 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     private var host: HostManaging
     private var client: ClientManaging
 
+    private var hostGranted: Bool? = nil
+    private var clientGranted: Bool? = nil
     private var myNickname: String?
     public var nearbyPlayer: [Peer] = []
 
@@ -30,8 +32,7 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
     // MARK: - Callbacks
 
-    public var onLocalNetworkPermissionGranted: (() -> Void)?
-    public var onLocalNetworkPermissionDenied: ((Error) -> Void)?
+    public var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)?
     public var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)?
 //    public var onReceiveGamePacket: ((Data, Data) -> Void)?
 
@@ -46,45 +47,49 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     }
 
     public convenience init() {
-        self.init(
-            host: HostManager(),
-            client: ClientManager()
-        )
-    }
+         self.init(
+             host: HostManager(),
+             client: ClientManager()
+         )
+     }
 
-    // MARK: - Public Methods
+     // MARK: - Public Methods
 
-    public func activate(nickname: String) {
-        logger.info("호스팅, 탐색 시작")
-        logger.info("내 닉네임: \(nickname)")
+     public func activate(nickname: String) {
+         logger.info("호스팅, 탐색 시작")
 
-        myNickname = nickname
+         myNickname = nickname
 
-        host.startHosting(nickName: nickname, status: .available)
-        client.startBrowsing()
-    }
+         host.startHosting(nickName: nickname, status: .available)
+         client.startBrowsing()
+     }
 
-    public func deactive() {
-        logger.info("호스팅, 탐색 중단")
+     public func deactive() {
+         logger.info("호스팅, 탐색 중단")
 
-        host.stopHosting()
-        client.stopBrowsing()
+         host.stopHosting()
+         client.stopBrowsing()
 
-        nearbyPlayer.removeAll()
-        myNickname = nil
-    }
+         nearbyPlayer.removeAll()
+         myNickname = nil
+
+         hostGranted = nil
+         clientGranted = nil
+
+         onPermissionResult = nil
+     }
 
     // MARK: - Private Methods
 
     private func setupHostCallback() {
         host.onPermissionGranted = { [weak self] in
-            self?.logger.info("호스트 권한 확인")
-            self?.onLocalNetworkPermissionGranted?()
+            self?.hostGranted = true
+            self?.checkBothPermission()
         }
 
         host.onPermissionDeniedOrFailed = { [weak self] error in
-            self?.logger.error("호스트 권한 없음: \(error.localizedDescription)")
-            self?.onLocalNetworkPermissionDenied?(error)
+            self?.hostGranted = false
+            self?.handlePermissionError(error)
         }
 
         host.onDataReceived = { [weak self] data, connection in
@@ -94,13 +99,13 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
     private func setupClientCallback() {
         client.onPermissionGranted = { [weak self] in
-            self?.logger.info("클라이언트 권한 확인")
-            self?.onLocalNetworkPermissionGranted?()
+            self?.clientGranted = true
+            self?.checkBothPermission()
         }
 
         client.onPermissionDeniedOrFailed = { [weak self] error in
-            self?.logger.error("클라이언트 권한 없음: \(error.localizedDescription)")
-            self?.onLocalNetworkPermissionDenied?(error)
+            self?.clientGranted = false
+            self?.handlePermissionError(error)
         }
 
         client.onPeersUpdated = { [weak self] peers in
@@ -122,6 +127,29 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
         client.onDataReceived = { [weak self] data in
             self?.handleReceivedData(data)
+        }
+    }
+
+    private func handlePermissionError(_ error: Error) {
+        let isDenied = (error as NSError).code == -65570
+
+        if isDenied {
+            onPermissionResult?(.failure(.denied))
+        } else {
+            onPermissionResult?(.failure(.unknown))
+        }
+    }
+
+    private func checkBothPermission() {
+        guard let hostGranted,
+              let clientGranted else {
+            return
+        }
+
+        if hostGranted && clientGranted {
+            onPermissionResult?(.success(()))
+        } else {
+            onPermissionResult?(.failure(.unknown))
         }
     }
 

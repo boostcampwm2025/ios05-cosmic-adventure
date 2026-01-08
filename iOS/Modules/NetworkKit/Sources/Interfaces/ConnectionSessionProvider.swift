@@ -15,8 +15,7 @@ public enum LocalNetworkError: Error {
 public protocol ConnectionSessionProvider {
     var nearbyPlayer: [Peer] { get }
 
-    var onLocalNetworkPermissionGranted: (() -> Void)? { get set }
-    var onLocalNetworkPermissionDenied: ((Error) -> Void)? { get set }
+    var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)? { get set }
     var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)? { get set }
 //    var onReceiveGamePacket: ((Data, Data) -> Void)? { get set }
 
