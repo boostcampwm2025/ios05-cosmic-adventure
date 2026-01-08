@@ -16,6 +16,6 @@ public protocol ClientManaging {
 
     func startBrowsing()
     func stopBrowsing()
-    func connectToHost(result: NWBrowser.Result)
+    func connectToHost(endpoint: NWEndpoint) async throws
     func sendData(_ data: Data)
 }

@@ -68,28 +68,43 @@ final class ClientManager: ClientManaging {
         browser = nil
     }
 
-    func connectToHost(result: NWBrowser.Result) {
+    func connectToHost(endpoint: NWEndpoint) async throws {
         connection?.cancel()
 
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = true
 
-        connection = NWConnection(to: result.endpoint, using: parameters)
-        connection?.stateUpdateHandler = { [weak self] state in
-            self?.logger.info("연결 상태 변경: \(String(describing: state))")
+        let connection = NWConnection(to: endpoint, using: parameters)
+        self.connection = connection
+
+        let stateStream = AsyncStream<NWConnection.State> { continuation in
+            connection.stateUpdateHandler = { state in
+                continuation.yield(state)
+            }
+
+            connection.start(queue: self.networkQueue)
+        }
+
+        for await state in stateStream {
+            self.logger.info("연결 상태 변경: \(String(describing: state))")
 
             switch state {
             case .ready:
-                self?.logger.info("호스트에 연결 성공")
-                self?.receiveData()
+                self.logger.info("호스트에 연결 성공")
+                self.receiveData()
+                return
+
             case .failed(let error):
-                self?.logger.error("연결 실패: \(error.localizedDescription)")
+                self.logger.error("연결 실패: \(error.localizedDescription)")
+                throw error
+
+            case .cancelled:
+                throw NWError.posix(.ECANCELED)
+
             default:
                 break
             }
         }
-
-        connection?.start(queue: networkQueue)
     }
 
     func sendData(_ data: Data) {
