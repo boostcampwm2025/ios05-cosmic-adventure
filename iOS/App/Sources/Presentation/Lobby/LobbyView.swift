@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LobbyView: View {
     @State private var viewModel = LobbyViewModel()
+    @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
         @Bindable var viewModel = viewModel
@@ -40,6 +41,11 @@ struct LobbyView: View {
         .onDisappear {
             viewModel.stopNetworkExploration()
         }
+        .onChange(of: scenePhase, { oldValue, newValue in
+            if newValue == .active {
+                viewModel.startNetworkExploration()
+            }
+        })
         .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
             Button(viewModel.activeAlert.primaryButtonTitle) {
                 if viewModel.activeAlert == .permissionDenied {
