@@ -9,7 +9,7 @@ import SwiftUI
 
 struct LobbyView: View {
     @State private var viewModel = LobbyViewModel()
-    
+
     var body: some View {
         @Bindable var viewModel = viewModel
         
@@ -33,6 +33,18 @@ struct LobbyView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 70)
             }
+        }
+        .onAppear {
+            viewModel.startNetworkExploration()
+        }
+        .onDisappear {
+            viewModel.stopNetworkExploration()
+        }
+        .alert(Constants.Common.permissionAlertTitle,
+               isPresented: $viewModel.showPermissionAlert) {
+            Button(Constants.Common.goToSettings) { viewModel.openAppSettings() }
+        } message: {
+            Text("근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요.")
         }
     }
 }
