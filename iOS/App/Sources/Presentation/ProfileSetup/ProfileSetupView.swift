@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ProfileSetupView: View {
+    @EnvironmentObject private var router: AppRouter
     @State private var viewModel = ProfileSetupViewModel()
     
     private let columns = [
@@ -38,6 +39,7 @@ struct ProfileSetupView: View {
                 
                 PrimaryGradientButton(title: Constants.ProfileSetup.startButtonTitle) {
                     viewModel.proceedToLobby()
+                    router.setRoot(.home)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 70)
