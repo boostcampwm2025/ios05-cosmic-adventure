@@ -7,5 +7,5 @@
 
 public protocol NetworkTransferable: Encodable {
     var type: NetworkPacketType { get }
-    var senderName: String { get }
+    var senderIdentifier: String { get }
 }

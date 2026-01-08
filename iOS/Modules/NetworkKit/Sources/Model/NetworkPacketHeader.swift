@@ -7,5 +7,5 @@
 
 public struct NetworkPacketHeader: Codable {
     public let type: NetworkPacketType
-    public let senderName: String
+    public let senderIdentifier: String
 }

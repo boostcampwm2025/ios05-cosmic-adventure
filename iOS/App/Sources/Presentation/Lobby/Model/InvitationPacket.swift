@@ -9,5 +9,5 @@ import NetworkKit
 
 struct InvitationPacket: NetworkTransferable {
     let type: NetworkPacketType
-    let senderName: String
+    let senderIdentifier: String
 }
