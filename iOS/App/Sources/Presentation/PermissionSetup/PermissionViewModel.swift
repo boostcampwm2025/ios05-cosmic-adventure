@@ -10,20 +10,20 @@ import NetworkKit
 import Observation
 import UIKit
 
-protocol LocalNetworkPermissionRequesting {
-    func requestPermission() async -> Bool
+public enum PermissionState: String, Codable {
+    case unknown
+    case allowed
+    case denied
 }
 
-final class StubLocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
-    func requestPermission() async -> Bool {
-        true
-    }
+protocol LocalNetworkPermissionRequesting {
+    func requestPermission(hostName: String) async -> Bool
 }
 
 final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
     private let sessionProvider = NetworkSessionManager()
 
-    func requestPermission() async -> Bool {
+    func requestPermission(hostName: String) async -> Bool {
         await withCheckedContinuation { continuation in
             var hasResumed = false
 
@@ -40,20 +40,16 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
             }
 
             // TODO: - 실제 사용자 닉네임으로 수정
-            sessionProvider.activate(nickname: "permission-check")
+            sessionProvider.activate(nickname: hostName)
         }
     }
 }
 
 @MainActor
 @Observable
-final class PermissionManager {
+final class PermissionViewModel {
 
-    enum PermissionState {
-        case unknown
-        case allowed
-        case denied
-    }
+    // MARK: - Properties
 
     private(set) var cameraState: PermissionState = .unknown
     private(set) var localNetworkState: PermissionState = .unknown
@@ -67,6 +63,8 @@ final class PermissionManager {
     @ObservationIgnored
     private let localNetworkRequester: LocalNetworkPermissionRequesting
 
+    // MARK: - Initialization
+    
     init(localNetworkRequester: LocalNetworkPermissionRequesting) {
         self.localNetworkRequester = localNetworkRequester
         refreshCameraState()
@@ -108,25 +106,30 @@ final class PermissionManager {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
             cameraState = .allowed
+            UserDefaultsList.Permission.cameraPermission = true
             return true
         case .denied, .restricted:
             cameraState = .denied
+            UserDefaultsList.Permission.cameraPermission = false
             return false
         case .notDetermined:
             let granted = await withCheckedContinuation { cont in
                 AVCaptureDevice.requestAccess(for: .video) { cont.resume(returning: $0) }
             }
             cameraState = granted ? .allowed : .denied
+            UserDefaultsList.Permission.cameraPermission = granted
             return granted
         @unknown default:
             cameraState = .unknown
+            UserDefaultsList.Permission.cameraPermission = false
             return false
         }
     }
 
     private func requestLocalNetworkPermissionIfNeeded() async -> Bool {
-        let isGranted = await localNetworkRequester.requestPermission()
+        let isGranted = await localNetworkRequester.requestPermission(hostName: "permission-check")
         localNetworkState = isGranted ? .allowed : .denied
+        UserDefaultsList.Permission.localNetworkPermission = isGranted
         return isGranted
     }
 
