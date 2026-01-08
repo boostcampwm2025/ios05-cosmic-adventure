@@ -117,7 +117,9 @@ final class ClientManager: ClientManaging {
         case .ready:
             logger.info("탐색 준비 완료: 권한 확인")
             onPermissionGranted?()
-
+        case .waiting(let error):
+            logger.error("탐색 준비 중: \(error.localizedDescription)")
+            onPermissionDeniedOrFailed?(error)
         case .failed(let error):
             logger.error("탐색 준비 실패: \(error.localizedDescription)")
             onPermissionDeniedOrFailed?(error)
