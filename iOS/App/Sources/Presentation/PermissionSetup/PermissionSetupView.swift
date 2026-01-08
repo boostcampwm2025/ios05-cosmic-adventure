@@ -10,10 +10,12 @@ import NetworkKit
 
 struct PermissionSetupView: View {
     @Environment(AppRouter.self) private var router: AppRouter
-    @State private var permissionManager = PermissionViewModel(localNetworkRequester: LocalNetworkPermissionRequester(sessionProvider: NetworkSessionManager()))
+    @State private var viewModel = PermissionSetupViewModel(
+        service: DefaultPermissionService(localNetworkRequester: LocalNetworkPermissionRequester(sessionProvider: NetworkSessionManager()))
+    )
     
     var body: some View {
-        @Bindable var permissionManager = permissionManager
+        @Bindable var viewModel = viewModel
         
         BackgroundContainerView {
             VStack(spacing: 0) {
@@ -32,7 +34,7 @@ struct PermissionSetupView: View {
                 
                 PrimaryGradientButton(title: Constants.PermissionSetup.requestButtonTitle) {
                     Task {
-                        await permissionManager.requestPermissionsOnNextTapped()
+                        await viewModel.onNextTapped()
                     }
                 }
                 .padding(.top, 24)
@@ -40,20 +42,19 @@ struct PermissionSetupView: View {
             }
             .padding(.horizontal, 20)
         }
-        .alert(Constants.Common.permissionAlertTitle, isPresented: $permissionManager.showSettingsAlert) {
-            Button(Constants.Common.goToSettings) { permissionManager.openAppSettings()
-            }
+        .alert(Constants.Common.permissionAlertTitle, isPresented: $viewModel.showSettingsAlert) {
+            Button(Constants.Common.goToSettings) { viewModel.openAppSettings() }
             Button(Constants.Common.cancel, role: .cancel) { }
         } message: {
-            Text(permissionManager.settingsAlertMessage)
+            Text(viewModel.settingsAlertMessage)
         }
         .onAppear {
-            permissionManager.refreshCameraState()
+            viewModel.refreshPermissionStates()
         }
-        .onChange(of: permissionManager.shouldNavigateNext) {
-            guard permissionManager.shouldNavigateNext else { return }
+        .onChange(of: viewModel.shouldNavigateNext) {
+            guard viewModel.shouldNavigateNext else { return }
             router.push(.profileSetup)
-            permissionManager.shouldNavigateNext = false
+            viewModel.shouldNavigateNext = false
         }
     }
     
