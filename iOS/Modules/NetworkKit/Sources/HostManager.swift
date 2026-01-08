@@ -25,7 +25,8 @@ final class HostManager: HostManaging {
 
     var onPermissionGranted: (() -> Void)?
     var onPermissionDeniedOrFailed: ((Error) -> Void)?
-
+    var onDataReceived: ((Data, NWConnection) -> Void)?
+    
     // MARK: - Initialization
 
     init() { }
@@ -135,7 +136,7 @@ final class HostManager: HostManaging {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
-                // TODO: 데이터 처리 로직 추가
+                self?.onDataReceived?(data, connection)
             }
 
             if let error = error {
