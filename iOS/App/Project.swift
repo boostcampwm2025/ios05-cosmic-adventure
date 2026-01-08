@@ -46,7 +46,13 @@ let project = Project(
                 .project(target: "InputSystem", path: "../Modules/InputSystem"),
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
                 .project(target: "NetworkKit", path: "../Modules/NetworkKit"),
-            ]
+            ],
+            settings: .settings(
+                base: [
+                    "DEVELOPMENT_TEAM": "B3PWYBKFUK",
+                    "CODE_SIGN_STYLE": "Automatic",
+                ]
+            )
         ),
         Target.target(
             name: "AppTests",
