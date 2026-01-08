@@ -26,11 +26,9 @@ struct RootView: View {
         case .permissionSetup:
             PermissionSetupView()
         case .profileSetup:
-            // TODO: profileSetupView 연결
-            EmptyView()
+            ProfileSetupView()
         case .home:
-            // TODO: HomeView 연결
-            EmptyView()
+            LobbyView()
         case .dashboard:
             // TODO: DashboardView 연결
             EmptyView()
