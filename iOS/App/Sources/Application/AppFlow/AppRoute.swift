@@ -11,7 +11,7 @@ enum AppRoute: Hashable {
     case profileSetup
 
     // Main
-    case home
+    case lobby
     case settings
     case dashboard
 

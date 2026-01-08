@@ -8,7 +8,13 @@
 import SwiftUI
 
 struct RootView: View {
-    @State var router = AppRouter()
+    private let viewModelFactory: ViewModelFactory
+    @State var router: AppRouter
+
+    init(container: AppContainer? = nil, router: AppRouter? = nil) {
+        self.viewModelFactory = container ?? AppContainer()
+        _router = State(initialValue: router ?? AppRouter())
+    }
 
     var body: some View {
         NavigationStack(path: $router.path) {
@@ -24,11 +30,11 @@ struct RootView: View {
     func screen(_ route: AppRoute) -> some View {
         switch route {
         case .permissionSetup:
-            PermissionSetupView()
+            PermissionSetupView(viewModel: viewModelFactory.makePermissionSetupViewModel())
         case .profileSetup:
-            ProfileSetupView()
-        case .home:
-            LobbyView()
+            ProfileSetupView(viewModel: viewModelFactory.makeProfileSetupViewModel())
+        case .lobby:
+            LobbyView(viewModel: viewModelFactory.makeLobbyViewModel())
         case .dashboard:
             // TODO: DashboardView 연결
             EmptyView()
@@ -36,8 +42,7 @@ struct RootView: View {
             // TODO: SettingsView 연결
             EmptyView()
         case .game:
-            // TODO: GameView 연결
-            EmptyView()
+            GameView()
         case .result:
             // TODO: ResultView 연결
             EmptyView()
