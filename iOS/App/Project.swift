@@ -8,6 +8,7 @@ let project = Project(
             destinations: .iOS,
             product: .app,
             bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure",
+            deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(with: [
                 "UILaunchScreen": .array([
                     .dictionary([
