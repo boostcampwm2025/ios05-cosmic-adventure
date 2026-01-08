@@ -6,6 +6,7 @@
 //
 
 import Games
+import InputSystem
 import SpriteKit
 import SwiftUI
 
@@ -14,7 +15,8 @@ public struct GameView: View {
 
     @State private var gameplayManager = GameplayManager()
     @State private var gameScene: GameScene?
-
+    @State private var inputProvider = FaceTrackingGameInputProvider()
+    
     public init() {}
 
     public var body: some View {
@@ -29,25 +31,53 @@ public struct GameView: View {
                     .edgesIgnoringSafeArea(.all)
             }
             
-            VStack {
-                Spacer()
-                AppAsset.Image.monsterOverlay.swiftUIImage
-                    .resizable()
-                    .scaledToFit()
-                    .offset(y: 50)
-            }
-            .edgesIgnoringSafeArea(.all)
-            .allowsHitTesting(false)
+            monsterOverlay
+            
+            facePreviewOverlay
+                .padding( 20)
         }
         .onAppear {
             setupGame()
-            gameplayManager.bind(input: FaceTrackingGameInputProvider())
+            gameplayManager.bind(input: inputProvider)
         }
         .onDisappear {
             gameplayManager.unbind()
         }
     }
+    
+    private var monsterOverlay: some View {
+        VStack {
+            Spacer()
+            AppAsset.Image.monsterOverlay.swiftUIImage
+                .resizable()
+                .scaledToFit()
+                .offset(y: 50)
+        }
+        .edgesIgnoringSafeArea(.all)
+        .allowsHitTesting(false)
+    }
+    
+    private var facePreviewOverlay: some View {
+        VStack {
+            Spacer()
+            HStack {
+                Spacer()
 
+                if let session = inputProvider.previewSession() {
+                    FacePreviewView(session: session)
+                        .frame(width: 140, height: 180)
+                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                .stroke(.white.opacity(0.7), lineWidth: 1)
+                        )
+                        .shadow(radius: 6)
+                }
+            }
+        }
+        .allowsHitTesting(false)
+    }
+    
     private func setupGame() {
         let scene = GameScene(
             size: UIScreen.main.bounds.size,

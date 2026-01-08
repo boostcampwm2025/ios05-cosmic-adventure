@@ -5,6 +5,7 @@
 //  Created by 영빈 on 1/8/26.
 //
 
+import ARKit
 import Games
 import InputSystem
 
@@ -45,5 +46,11 @@ public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked
                 task.cancel()
             }
         }
+    }
+}
+
+extension FaceTrackingGameInputProvider {
+    func previewSession() -> ARSession? {
+        inputSystem.previewSession()
     }
 }
