@@ -6,7 +6,6 @@
 //
 
 import AVFoundation
-import NetworkKit
 import Observation
 import UIKit
 
@@ -14,35 +13,6 @@ public enum PermissionState: String, Codable {
     case unknown
     case allowed
     case denied
-}
-
-protocol LocalNetworkPermissionRequesting {
-    func requestPermission(hostName: String) async -> Bool
-}
-
-final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
-    private let sessionProvider = NetworkSessionManager()
-
-    func requestPermission(hostName: String) async -> Bool {
-        await withCheckedContinuation { continuation in
-            var hasResumed = false
-
-            sessionProvider.onLocalNetworkPermissionGranted = {
-                guard !hasResumed else { return }
-                hasResumed = true
-                continuation.resume(returning: true)
-            }
-
-            sessionProvider.onLocalNetworkPermissionDenied = { _ in
-                guard !hasResumed else { return }
-                hasResumed = true
-                continuation.resume(returning: false)
-            }
-
-            // TODO: - 실제 사용자 닉네임으로 수정
-            sessionProvider.activate(nickname: hostName)
-        }
-    }
 }
 
 @MainActor

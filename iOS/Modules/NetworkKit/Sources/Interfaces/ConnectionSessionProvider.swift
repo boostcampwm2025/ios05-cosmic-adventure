@@ -11,7 +11,7 @@ public protocol ConnectionSessionProvider {
     var nearbyPlayer: [Peer] { get }
 
     var onLocalNetworkPermissionGranted: (() -> Void)? { get set }
-    var onLocalNetworkPermissionDenied: ((Error) -> Void)? { get set }
+    var onLocalNetworkPermissionDenied: (() -> Void)? { get set }
 
     func activate(nickname: String)
     func deactive()
