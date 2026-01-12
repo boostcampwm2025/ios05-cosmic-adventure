@@ -10,15 +10,20 @@ import SwiftUI
 import UIKit
 import NetworkKit
 
+enum NetworkMode {
+    case local
+    case remote
+}
+
 @MainActor
 @Observable
 final class LobbyViewModel {
 
     // MARK: - Properties
 
-    private let decoder = JSONDecoder()
+    let decoder = JSONDecoder()
     private(set) var myExplorer: LobbyExplorer
-    private(set) var peers: [LobbyExplorer]
+    var peers: [LobbyExplorer]
     var selectedPeerID: UUID?
     var userName: String
 
@@ -27,15 +32,26 @@ final class LobbyViewModel {
         get { activeAlert != .none }
         set { if !newValue { activeAlert = .none } }
     }
+    
+    var isConnected = false
+    let networkMode: NetworkMode
 
     var matchStatus: GameMatchStatus = .idle
 
     @ObservationIgnored
-    private let sessionManager: NetworkSessionManager
+    let sessionManager: NetworkSessionManager?
+    
+    @ObservationIgnored
+    let webSocketSessionManager: WebSocketSessionManaging?
+    
+    @ObservationIgnored
+    var playerIdMapping: [String: UUID] = [:]
+    
+    @ObservationIgnored
+    private var isExplorationStarted = false
 
     // MARK: - Computed Properties
 
-    /// proximity 내림차순 정렬 (클수록 가까움 → 안쪽 궤도)
     var orderedPeers: [LobbyExplorer] {
         peers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
@@ -46,12 +62,17 @@ final class LobbyViewModel {
             }
         }
     }
-
-    //MARK: - Initialization
-
-    init(sessionManager: NetworkSessionManager) {
+    
+    // MARK: - Initialization
+    
+    init(
+        sessionManager: NetworkSessionManager,
+        webSocketSessionManager: WebSocketSessionManaging?,
+        nickname: String
+    ) {
         self.sessionManager = sessionManager
-
+        self.webSocketSessionManager = webSocketSessionManager
+        
         self.userName = "건방진 탐험가 123"
 
         self.myExplorer = LobbyExplorer(
@@ -59,7 +80,8 @@ final class LobbyViewModel {
             displayName: "나",
             avatar: .character3
         )
-
+        
+        // TODO: P2P 연동 후 제거
         self.peers = [
             LobbyExplorer(role: .peer, displayName: "건방진 탐험가 1", avatar: .character1, proximity: 0.72),
             LobbyExplorer(role: .peer, displayName: "호기심천국", avatar: .character2, proximity: 0.95),
@@ -67,88 +89,40 @@ final class LobbyViewModel {
             LobbyExplorer(role: .peer, displayName: "행복한 탐험가1", avatar: .character5, proximity: 0.55),
             LobbyExplorer(role: .peer, displayName: "우주방랑자", avatar: .character6, proximity: 0.10)
         ]
-
         self.selectedPeerID = nil
     }
-
-    // MARK: - Actions
-
-    private func setupSessionManager() {
-        activeAlert = .none
-        sessionManager.onPermissionResult = { [weak self] result in
-            guard case .failure(let error) = result else { return }
-
-            Task { @MainActor in
-                self?.activeAlert = (error == .denied) ? .permissionDenied : .unknownNetworkError
-            }
-        }
-
-        sessionManager.onReceiveInvitationPacket = { [weak self] type, data in
-            self?.handleInvitationPacket(type: type, data: data)
-        }
+    
+    init(webSocketSessionManager: WebSocketSessionManager, nickname: String) {
+        self.networkMode = .remote
+        self.sessionManager = nil
+        self.webSocketSessionManager = webSocketSessionManager
+        
+        self.userName = nickname
+        
+        self.myExplorer = LobbyExplorer(
+            role: .me,
+            displayName: "나",
+            avatar: .character3
+        )
+        
+        self.peers = []
+        self.selectedPeerID = nil
+        
+        setupWebSocketCallbacks()
     }
+    
+    // MARK: - Common Actions
 
-    private func handleInvitationPacket(type: NetworkPacketType, data: Data) {
-        // 보낸 사람(Peer) 찾기
-        guard let packet = try? decoder.decode(InvitationPacket.self, from: data),
-              let peer = peers.first(where: { $0.displayName == packet.senderIdentifier }) else {
-            return }
-
-        Task { @MainActor in
-            switch type {
-            case .invite:
-                switch matchStatus {
-                case .idle:
-                    matchStatus.receiveInvite(from: peer)
-
-                case .gameReady, .gameStart:
-                    declineInGame(peer: peer)
-
-                default:
-                    break
-                }
-
-            case .accept:
-                if case .sendingRequest = matchStatus {
-                    matchStatus.setGameReady(with: peer)
-                }
-
-            case .cancelInvite:
-                if case .receivedInvite = matchStatus {
-                    resetToIdle()
-                }
-
-            case .decline:
-                if case .sendingRequest = matchStatus {
-                    matchStatus.requestDeclined(by: peer)
-                }
-            }
-        }
-    }
-
-    private func declineInGame(peer: LobbyExplorer) {
-        let packet = InvitationPacket(type: .decline, senderIdentifier: userName)
-        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
-    }
-
-    private func resetToIdle() {
-        matchStatus.reset()
-        selectedPeerID = nil
-    }
-
-    // MARK: - Proximity Update (TODO)
-
+    
     // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요?)
     // TODO: proximity 변경에 따른 재정렬 애니메이션 정책 (너무 자주 움직이면 UX 저하)
     func updateProximity(for explorerID: UUID, value: Double) {
         guard let index = peers.firstIndex(where: { $0.id == explorerID }) else { return }
         peers[index].proximity = max(0, min(1, value))
     }
-
-    // TODO: GameView로 네비게이션 연결
-
+    
     func startSoloAdventure() {
-        // Solo 모드 시작 로직
+        // TODO: GameView로 네비게이션 연결
     }
 
     func selectPeer(_ peer: LobbyExplorer) {
@@ -162,12 +136,27 @@ final class LobbyViewModel {
     }
 
     func startNetworkExploration() {
-        setupSessionManager()
-        sessionManager.activate(nickname: userName)
+        guard !isExplorationStarted else { return }
+        isExplorationStarted = true
+        
+        switch networkMode {
+        case .local:
+            setupSessionManager()
+            sessionManager?.activate(nickname: userName)
+        case .remote:
+            webSocketSessionManager?.activate(nickname: userName)
+        }
     }
 
     func stopNetworkExploration() {
-        sessionManager.deactive()
+        isExplorationStarted = false
+        
+        switch networkMode {
+        case .local:
+            sessionManager?.deactive()
+        case .remote:
+            webSocketSessionManager?.deactivate()
+        }
     }
 
     func sendInviteRequest() {
@@ -175,15 +164,15 @@ final class LobbyViewModel {
         matchStatus.sendRequest()
 
         let packet = InvitationPacket(type: .invite, senderIdentifier: userName)
-        if let targetPeer = sessionManager.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
-            sessionManager.requestInvite(to: targetPeer, packet: packet)
+        if let targetPeer = sessionManager?.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
+            sessionManager?.requestInvite(to: targetPeer, packet: packet)
         }
     }
 
     func cancelInviteRequest() {
         if case .sendingRequest(let peer) = matchStatus {
             let packet = InvitationPacket(type: .cancelInvite, senderIdentifier: userName)
-            sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+            sessionManager?.replyToInvite(to: peer.displayName, packet: packet)
         }
 
         resetToIdle()

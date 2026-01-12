@@ -19,13 +19,19 @@ final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
 
     private let networkSessionManager: NetworkSessionManager
+    private let webSocketService: WebSocketService
+    private let webSocketSessionManager: WebSocketSessionManaging?
     // TODO: 유저 프로필 관리 객체 소유
     
     init(
         permissionService: PermissionServicing? = nil,
-        networkSessionManager: NetworkSessionManager = NetworkSessionManager()
+        networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
+        webSocketService: WebSocketService = WebSocketService(),
+        webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
         self.networkSessionManager = networkSessionManager
+        self.webSocketService = webSocketService
+        self.webSocketSessionManager = webSocketSessionManager
         self.permissionService = permissionService
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
@@ -44,6 +50,10 @@ final class AppContainer: ViewModelFactory {
     
     func makeLobbyViewModel() -> LobbyViewModel {
         LobbyViewModel(sessionManager: networkSessionManager)
+    }
+
+    func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager {
+        WebSocketSessionManager(service: webSocketService, serverURL: serverURL, channelId: channelId)
     }
 
     // TODO: 게임 화면 서비스 객체 연결
