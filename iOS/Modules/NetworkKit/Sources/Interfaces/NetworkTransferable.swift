@@ -5,7 +5,7 @@
 //  Created by soyoung on 1/9/26.
 //
 
-public protocol NetworkTransferable: Encodable {
+public protocol NetworkTransferable: Codable {
     var type: NetworkPacketType { get }
     var senderIdentifier: String { get }
 }
