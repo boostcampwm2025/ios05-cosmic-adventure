@@ -7,6 +7,6 @@
 
 import ARKit
 
-public protocol ARSessionPreviewProviding {
+protocol ARSessionPreviewProviding {
     func previewSession() -> ARSession
 }

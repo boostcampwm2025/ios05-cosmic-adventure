@@ -2,8 +2,8 @@
 import ARKit
 import Foundation
 
-public final class InputSystem {
-    public let hub: InputEventHub
+public final class InputManager {
+    private let hub: InputEventHub
     private let source: InputSource
 
     public init(makeSource: (InputEventHub) -> InputSource) {
@@ -24,9 +24,9 @@ public final class InputSystem {
     }
 }
 
-public extension InputSystem {
+public extension InputManager {
     enum FaceTrackingStrategyOption {
-        case tiltAndPucker(puckerThreshold: Double = 0.5)
+        case tiltAndPucker(puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold)
         case custom(FaceInputStrategy)
 
         var strategy: FaceInputStrategy {

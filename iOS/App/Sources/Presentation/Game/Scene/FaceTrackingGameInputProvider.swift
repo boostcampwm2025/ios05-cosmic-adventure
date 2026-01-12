@@ -10,22 +10,22 @@ import Games
 import InputSystem
 
 public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked Sendable {
-    private let inputSystem: InputSystem
+    private let inputManager: InputManager
 
     public init() {
-        self.inputSystem = InputSystem(source: .faceTracking())
+        self.inputManager = InputManager(source: .faceTracking())
     }
 
     public func start() {
-        inputSystem.start()
+        inputManager.start()
     }
 
     public func stop() {
-        inputSystem.stop()
+        inputManager.stop()
     }
 
     public func events() async -> AsyncStream<GameInputEvent> {
-        let rawStream = await inputSystem.events()
+        let rawStream = await inputManager.events()
 
         return AsyncStream { continuation in
             let task = Task {
@@ -51,6 +51,6 @@ public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked
 
 extension FaceTrackingGameInputProvider {
     func previewSession() -> ARSession? {
-        inputSystem.previewSession()
+        inputManager.previewSession()
     }
 }
