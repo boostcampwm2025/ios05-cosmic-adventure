@@ -77,6 +77,15 @@ struct LobbyView: View {
                             .transition(.opacity.combined(with: .scale))
                             .padding(.horizontal, 24)
 
+                    case .receivedInvite(let peer):
+                        VStack {
+                            Spacer()
+                            inviteReceivedSheet(peer: peer)
+                        }
+                        .transition(.move(edge: .bottom))
+                        .zIndex(1)
+                        .ignoresSafeArea(edges: .bottom)
+
                     case .requestDeclined(let peer):
                         declineModal(peer: peer)
                             .transition(.opacity.combined(with: .scale))
@@ -89,6 +98,40 @@ struct LobbyView: View {
                     }
                 }
                 .zIndex(1)
+
+                if viewModel.activeAlert.hasCancelButton {
+                    Button(Constants.Common.cancel, role: .cancel) { }
+                }
+            }
+
+            switch viewModel.matchStatus {
+            case .readyToSend(let peer), .sendingRequest(let peer):
+                Color.black.opacity(0.7).ignoresSafeArea()
+
+                requestModal(peer: peer)
+                    .transition(.opacity.combined(with: .scale))
+
+            case .receivedInvite(let peer):
+                Color.black.opacity(0.7).ignoresSafeArea()
+
+                VStack {
+                    Spacer()
+                    inviteReceivedSheet(peer: peer)
+                }
+                .transition(.move(edge: .bottom))
+                .zIndex(1)
+                .ignoresSafeArea(edges: .bottom)
+
+            case .requestDeclined(let peer):
+                Color.black.opacity(0.7).ignoresSafeArea()
+
+                declineModal(peer: peer)
+                    .transition(.opacity.combined(with: .scale))
+
+                //            case .gameReady(let peer):
+                //                // TODO: GameReadyView 로 전환
+            default:
+                EmptyView()
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.matchStatus)
@@ -444,6 +487,93 @@ private extension LobbyView {
             .foregroundStyle(AppAsset.Color.subButton.swiftUIColor)
             .multilineTextAlignment(.center)
             .frame(height: 20)
+    }
+}
+
+// MARK: - 초대 수신 Bottom Sheet
+
+private extension LobbyView {
+    func inviteReceivedSheet(peer: LobbyExplorer) -> some View {
+        VStack(spacing: 24) {
+            inviteSheetHeader
+
+            inviteSheetContent(for: peer)
+
+            HStack(spacing: 12) {
+                inviteAcceptButton
+                inviteDeclineButton
+            }
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 40)
+        .background(AppAsset.Color.subSelect.swiftUIColor)
+        .clipShape(
+            .rect(
+                topLeadingRadius: 30,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 30
+            )
+        )
+        .shadow(radius: 10)
+    }
+
+    var inviteSheetHeader: some View {
+        Text(Constants.Lobby.InviteReceivedSheet.title)
+            .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+            .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    func inviteSheetContent(for peer: LobbyExplorer) -> some View {
+        HStack(spacing: 16) {
+            ZStack {
+                Circle()
+                    .fill(.white.opacity(0.5))
+                    .frame(width: 100, height: 100)
+                    .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5)
+
+                peer.avatar.image
+                    .resizable()
+                    .scaledToFit()
+                    .frame(width: 85, height: 85)
+            }
+
+            (Text("'\(peer.displayName)'")
+                .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 22))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+             +
+             Text(Constants.Lobby.InviteReceivedSheet.messageSuffix)
+                .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 20))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            )
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .padding(.vertical, 10)
+    }
+
+    var inviteAcceptButton: some View {
+        PrimaryGradientButton(
+            title: Constants.Lobby.InviteReceivedSheet.acceptButton,
+            cornerRadius: 16,
+            verticalPadding: 14
+        ) {
+            viewModel.acceptInvite()
+        }
+    }
+
+    var inviteDeclineButton: some View {
+        Button(action: viewModel.declineInvite) {
+            Text(Constants.Lobby.InviteReceivedSheet.declineButton)
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(AppAsset.Color.subButton.swiftUIColor)
+                .foregroundStyle(.white)
+                .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
 }
 
