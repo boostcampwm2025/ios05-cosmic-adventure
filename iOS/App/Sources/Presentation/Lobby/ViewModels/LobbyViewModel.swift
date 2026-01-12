@@ -35,14 +35,14 @@ final class LobbyViewModel {
     
     var isConnected = false
     
-    var networkMode: NetworkMode {
-        connectivityMonitor.isConnected ? .remote : .local
-    }
+    private(set) var networkMode: NetworkMode = .local
+    
+    private(set) var selectedChannelId: String?
 
     var matchStatus: GameMatchStatus = .idle
 
     @ObservationIgnored
-    let connectivityMonitor: ConnectivityMonitoring
+    var connectivityMonitor: ConnectivityMonitoring
     
     @ObservationIgnored
     var sessionManager: ConnectionSessionProvider
@@ -57,6 +57,10 @@ final class LobbyViewModel {
     private var isExplorationStarted = false
 
     // MARK: - Computed Properties
+    
+    var isNetworkAvailable: Bool {
+        connectivityMonitor.isConnected
+    }
 
     var orderedPeers: [LobbyExplorer] {
         peers.sorted { lhs, rhs in
@@ -98,8 +102,27 @@ final class LobbyViewModel {
         ]
         self.selectedPeerID = nil
         
-        connectivityMonitor.start()
+        setupConnectivityMonitor()
         setupWebSocketCallbacks()
+    }
+    
+    private func setupConnectivityMonitor() {
+        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
+            Task { @MainActor in
+                self?.handleConnectivityChange(isConnected: isConnected)
+            }
+        }
+        connectivityMonitor.start()
+        networkMode = connectivityMonitor.isConnected ? .remote : .local
+    }
+    
+    private func handleConnectivityChange(isConnected: Bool) {
+        if isConnected {
+            networkMode = .remote
+        } else {
+            networkMode = .local
+            selectedChannelId = nil
+        }
     }
     
     // MARK: - Common Actions
@@ -115,7 +138,19 @@ final class LobbyViewModel {
     func startSoloAdventure() {
         // TODO: GameView로 네비게이션 연결
     }
-
+    
+    func switchToLocalMode() {
+        networkMode = .local
+        stopNetworkExploration()
+        startNetworkExploration()
+    }
+    
+    func switchToRemoteMode() {
+        networkMode = .remote
+        selectedChannelId = nil
+        stopNetworkExploration()
+    }
+    
     func selectPeer(_ peer: LobbyExplorer) {
         self.selectedPeerID = peer.id
         self.matchStatus.select(peer)
@@ -135,7 +170,8 @@ final class LobbyViewModel {
             setupSessionManager()
             sessionManager.activate(nickname: userName)
         case .remote:
-            webSocketSessionManager?.activate(nickname: userName)
+            guard let channelId = selectedChannelId else { return }
+            webSocketSessionManager?.activate(channelId: channelId, nickname: userName)
         }
     }
 
@@ -189,5 +225,15 @@ final class LobbyViewModel {
         sessionManager.replyToInvite(to: peer.displayName, packet: packet)
 
         resetToIdle()
+    }
+    
+    func selectChannel(_ channelId: String) {
+        selectedChannelId = channelId
+    }
+    
+    func leaveChannel() {
+        stopNetworkExploration()
+        selectedChannelId = nil
+        peers = []
     }
 }

@@ -20,6 +20,7 @@ public final class ConnectivityMonitor: ConnectivityMonitoring, @unchecked Senda
 
     public private(set) var isConnected: Bool = false
     public private(set) var connectionType: ConnectionType = .unknown
+    public var onStatusChanged: ((Bool) -> Void)?
 
     private let monitor: NWPathMonitor
     private let queue: DispatchQueue
@@ -36,8 +37,15 @@ public final class ConnectivityMonitor: ConnectivityMonitoring, @unchecked Senda
     public func start() {
         monitor.pathUpdateHandler = { [weak self] path in
             DispatchQueue.main.async {
-                self?.isConnected = path.status == .satisfied
+                let wasConnected = self?.isConnected ?? false
+                let nowConnected = path.status == .satisfied
+                
+                self?.isConnected = nowConnected
                 self?.connectionType = self?.detectConnectionType(path) ?? .unknown
+                
+                if wasConnected != nowConnected {
+                    self?.onStatusChanged?(nowConnected)
+                }
             }
         }
         monitor.start(queue: queue)

@@ -13,6 +13,7 @@ protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
     func makeLobbyViewModel() -> LobbyViewModel
+    func makeChannelListViewModel() -> ChannelListViewModel
 }
 
 final class AppContainer: ViewModelFactory {
@@ -21,7 +22,7 @@ final class AppContainer: ViewModelFactory {
     private let networkSessionManager: ConnectionSessionProvider
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
-    // TODO: 유저 프로필 관리 객체 소유
+    private let channelService: ChannelServiceProtocol
     
     init(
         permissionService: PermissionServicing? = nil,
@@ -34,6 +35,10 @@ final class AppContainer: ViewModelFactory {
         self.networkSessionManager = networkSessionManager
         self.webSocketService = webSocketService
         self.webSocketSessionManager = webSocketSessionManager
+        self.channelService = ChannelService(
+            httpClient: HTTPClient(),
+            baseURL: "http://localhost:8080"
+        )
         self.permissionService = permissionService
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
@@ -57,6 +62,10 @@ final class AppContainer: ViewModelFactory {
             webSocketSessionManager: webSocketSessionManager,
             nickname: "건방진 탐험가 123"
         )
+    }
+    
+    func makeChannelListViewModel() -> ChannelListViewModel {
+        ChannelListViewModel(channelService: channelService)
     }
 
     func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager {
