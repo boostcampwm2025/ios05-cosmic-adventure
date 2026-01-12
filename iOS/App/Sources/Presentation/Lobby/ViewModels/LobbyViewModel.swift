@@ -34,10 +34,16 @@ final class LobbyViewModel {
     }
     
     var isConnected = false
-    let networkMode: NetworkMode
+    
+    var networkMode: NetworkMode {
+        connectivityMonitor.isConnected ? .remote : .local
+    }
 
     var matchStatus: GameMatchStatus = .idle
 
+    @ObservationIgnored
+    let connectivityMonitor: ConnectivityMonitoring
+    
     @ObservationIgnored
     let sessionManager: NetworkSessionManager?
     
@@ -66,15 +72,16 @@ final class LobbyViewModel {
     // MARK: - Initialization
     
     init(
+        connectivityMonitor: ConnectivityMonitoring,
         sessionManager: NetworkSessionManager,
         webSocketSessionManager: WebSocketSessionManaging?,
         nickname: String
     ) {
+        self.connectivityMonitor = connectivityMonitor
         self.sessionManager = sessionManager
         self.webSocketSessionManager = webSocketSessionManager
+        self.userName = nickname
         
-        self.userName = "건방진 탐험가 123"
-
         self.myExplorer = LobbyExplorer(
             role: .me,
             displayName: "나",
@@ -90,24 +97,8 @@ final class LobbyViewModel {
             LobbyExplorer(role: .peer, displayName: "우주방랑자", avatar: .character6, proximity: 0.10)
         ]
         self.selectedPeerID = nil
-    }
-    
-    init(webSocketSessionManager: WebSocketSessionManager, nickname: String) {
-        self.networkMode = .remote
-        self.sessionManager = nil
-        self.webSocketSessionManager = webSocketSessionManager
         
-        self.userName = nickname
-        
-        self.myExplorer = LobbyExplorer(
-            role: .me,
-            displayName: "나",
-            avatar: .character3
-        )
-        
-        self.peers = []
-        self.selectedPeerID = nil
-        
+        connectivityMonitor.start()
         setupWebSocketCallbacks()
     }
     

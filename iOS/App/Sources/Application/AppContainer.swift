@@ -17,7 +17,7 @@ protocol ViewModelFactory {
 
 final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
-
+    private let connectivityMonitor: ConnectivityMonitoring
     private let networkSessionManager: NetworkSessionManager
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
@@ -25,10 +25,12 @@ final class AppContainer: ViewModelFactory {
     
     init(
         permissionService: PermissionServicing? = nil,
+        connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
         networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
         webSocketService: WebSocketService = WebSocketService(),
         webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
+        self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketService = webSocketService
         self.webSocketSessionManager = webSocketSessionManager
@@ -49,7 +51,12 @@ final class AppContainer: ViewModelFactory {
     }
     
     func makeLobbyViewModel() -> LobbyViewModel {
-        LobbyViewModel(sessionManager: networkSessionManager)
+        LobbyViewModel(
+            connectivityMonitor: connectivityMonitor,
+            sessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager,
+            nickname: "건방진 탐험가 123"
+        )
     }
 
     func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager {
