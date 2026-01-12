@@ -45,7 +45,7 @@ final class LobbyViewModel {
     let connectivityMonitor: ConnectivityMonitoring
     
     @ObservationIgnored
-    let sessionManager: NetworkSessionManager?
+    var sessionManager: ConnectionSessionProvider?
     
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
@@ -70,7 +70,7 @@ final class LobbyViewModel {
     
     init(
         connectivityMonitor: ConnectivityMonitoring,
-        sessionManager: NetworkSessionManager,
+        sessionManager: ConnectionSessionProvider,
         webSocketSessionManager: WebSocketSessionManaging?,
         nickname: String
     ) {

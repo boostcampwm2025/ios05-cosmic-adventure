@@ -18,14 +18,14 @@ protocol ViewModelFactory {
 final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
     private let connectivityMonitor: ConnectivityMonitoring
-    private let networkSessionManager: NetworkSessionManager
+    private let networkSessionManager: ConnectionSessionProvider
     private let webSocketSessionManager: WebSocketSessionManaging?
     // TODO: 유저 프로필 관리 객체 소유
     
     init(
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
-        networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
+        networkSessionManager: ConnectionSessionProvider = NetworkSessionManager(),
         webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
         self.connectivityMonitor = connectivityMonitor

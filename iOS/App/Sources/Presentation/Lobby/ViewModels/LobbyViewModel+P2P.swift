@@ -13,10 +13,10 @@ import NetworkKit
 extension LobbyViewModel {
 
     func setupSessionManager() {
-        guard let sessionManager else { return }
+        guard sessionManager != nil else { return }
         
         activeAlert = .none
-        sessionManager.onPermissionResult = { [weak self] result in
+        sessionManager?.onPermissionResult = { [weak self] result in
             guard case .failure(let error) = result else { return }
             
             Task { @MainActor in 
