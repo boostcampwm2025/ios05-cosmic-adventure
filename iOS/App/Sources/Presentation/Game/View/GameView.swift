@@ -39,9 +39,11 @@ public struct GameView: View {
         .onAppear {
             setupGame()
             gameplayManager.bind(input: inputProvider)
+            UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
             gameplayManager.unbind()
+            UIApplication.shared.isIdleTimerDisabled = false
         }
     }
     
