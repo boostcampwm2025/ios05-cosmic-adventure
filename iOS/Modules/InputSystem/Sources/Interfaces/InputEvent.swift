@@ -6,8 +6,8 @@
 //
 
 public enum InputAction: Sendable, Equatable {
-    case primary      // jump
-    case custom(String) // 나중에 Action 추가할 수 있도록 분리
+    case jump
+    case custom(String)
 }
 
 public enum InputEvent: Sendable, Equatable {
