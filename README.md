@@ -26,23 +26,36 @@
 
 ## Development
 
-프로젝트를 실행하기 위해 다음의 명령어로 Tuist를 설치해야 합니다.
+### 사전 요구사항
 
 ```bash
 brew install tuist
 ```
 
-다음의 명령어로 프로젝트를 생성하고 실행할 수 있습니다.
+### 초기 설정
 
 ```bash
-# tuist generate
-tuist install
-tuist generate
+make setup
+```
 
-# iOS
-tuist run iOS
+### 실행
 
-# Backend
-cd backend
-swift run App
+```bash
+make ios        # iOS 앱 실행
+make backend    # 백엔드 서버 실행
+```
+
+### 마이그레이션
+
+```bash
+make generate   # 마이그레이션 파일 생성
+make migrate    # DB에 적용
+make db-reset   # DB 초기화
+```
+
+### 기타
+
+```bash
+make test       # 테스트 실행
+make clean      # 정리
 ```
