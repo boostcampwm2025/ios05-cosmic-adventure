@@ -1,5 +1,5 @@
 {
-  "originHash" : "5259707232cbc55e4882a00a6ffc647ff886d28455814dd1201fed0544353929",
+  "originHash" : "ee2f2c93c52fc0dd3dd9b7900be4351daf8e86a5a1ba52293a352a46da089a27",
   "pins" : [
     {
       "identity" : "async-http-client",
@@ -47,12 +47,12 @@
       }
     },
     {
-      "identity" : "fluent-postgres-driver",
+      "identity" : "fluent-sqlite-driver",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/fluent-postgres-driver.git",
+      "location" : "https://github.com/vapor/fluent-sqlite-driver.git",
       "state" : {
-        "revision" : "59bff45a41d1ece1950bb8a6e0006d88c1fb6e69",
-        "version" : "2.12.0"
+        "revision" : "73529a63ab11c7fe87da17b5a67a1b1f58c020f8",
+        "version" : "4.8.1"
       }
     },
     {
@@ -62,24 +62,6 @@
       "state" : {
         "revision" : "3498e60218e6003894ff95192d756e238c01f44e",
         "version" : "4.7.1"
-      }
-    },
-    {
-      "identity" : "postgres-kit",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/postgres-kit.git",
-      "state" : {
-        "revision" : "fe44bbe35a6852730e76891b1fb36c533ecec3f6",
-        "version" : "2.15.0"
-      }
-    },
-    {
-      "identity" : "postgres-nio",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/vapor/postgres-nio.git",
-      "state" : {
-        "revision" : "4795a0b0762c5cca843a720969c9dfee378e5120",
-        "version" : "1.29.0"
       }
     },
     {
@@ -98,6 +80,24 @@
       "state" : {
         "revision" : "c0ea243ffeb8b5ff9e20a281e44003c6abb8896f",
         "version" : "3.34.0"
+      }
+    },
+    {
+      "identity" : "sqlite-kit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/sqlite-kit.git",
+      "state" : {
+        "revision" : "f35a863ecc2da5d563b836a9a696b148b0f4169f",
+        "version" : "4.5.2"
+      }
+    },
+    {
+      "identity" : "sqlite-nio",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/vapor/sqlite-nio.git",
+      "state" : {
+        "revision" : "2ab61385b70da8ed74958ce62fa9ebf0359cb08b",
+        "version" : "1.12.2"
       }
     },
     {
