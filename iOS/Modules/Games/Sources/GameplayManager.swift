@@ -10,7 +10,7 @@ import Foundation
 @Observable
 @MainActor
 public final class GameplayManager {
-    public var state = CharacterState()
+    public var state = GameState()
 
     public var isJumpRequested: Bool = false
     private let maxJumpCount = 2
@@ -26,6 +26,10 @@ public final class GameplayManager {
 
     private var inputProvider: (any GameInputProviding)?
     private var inputTask: Task<Void, Never>?
+
+    public var isRespawning: Bool {
+        state.respawn.isRespawning
+    }
 
     public init() {}
 
@@ -63,7 +67,7 @@ public final class GameplayManager {
     }
 
     private func updateMoveX(_ moveX: Double) {
-        state.moveX = moveX
+        state.character.moveX = moveX
         timeSinceLastInput = 0
     }
 
@@ -72,10 +76,10 @@ public final class GameplayManager {
 
         guard currentTime - lastLandingTime > landingCooldown else { return }
         guard currentTime - lastJumpTime > jumpCooldown else { return }
-        guard state.jumpCount < maxJumpCount else { return }
+        guard state.character.jumpCount < maxJumpCount else { return }
 
-        state.jumpCount += 1
-        state.isGrounded = false
+        state.character.jumpCount += 1
+        state.character.isGrounded = false
         isJumpRequested = true
 
         lastJumpTime = currentTime
@@ -87,7 +91,7 @@ public final class GameplayManager {
         timeSinceLastInput += deltaTime
 
         if timeSinceLastInput > inputTimeout { // 입력 없이 0.2초가 지났다면
-            state.moveX = 0 // 정지
+            state.character.moveX = 0 // 정지
         }
     }
 
@@ -98,9 +102,9 @@ public final class GameplayManager {
     public func handleContact(_ type: GameContactType) {
         switch type {
         case .ground:
-            if !state.isGrounded {
-                state.isGrounded = true
-                state.jumpCount = 0
+            if !state.character.isGrounded {
+                state.character.isGrounded = true
+                state.character.jumpCount = 0
                 lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
             }
         case .monster:
@@ -110,7 +114,26 @@ public final class GameplayManager {
 
     public func handleSeparation(from type: GameContactType) {
         if type == .ground {
-            state.isGrounded = false
+            state.character.isGrounded = false
         }
+    }
+}
+
+// MARK: 리스폰 처리
+
+extension GameplayManager {
+    public func requestRespawn(_ reason: RespawnReason) {
+        guard state.respawn.isRespawning == false else { return }
+        state.respawn.isRespawning = true
+        state.respawn.pendingReason = reason
+    }
+
+    public func consumeRespawnRequestReason() -> RespawnReason? {
+        defer { state.respawn.pendingReason = nil }
+        return state.respawn.pendingReason
+    }
+
+    public func finishRespawn() {
+        state.respawn.isRespawning = false
     }
 }
