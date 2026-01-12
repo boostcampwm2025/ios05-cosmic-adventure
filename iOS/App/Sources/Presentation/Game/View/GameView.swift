@@ -30,9 +30,7 @@ public struct GameView: View {
                 SpriteView(scene: scene, options: [.allowsTransparency])
                     .edgesIgnoringSafeArea(.all)
             }
-            
-            monsterOverlay
-            
+                        
             facePreviewOverlay
                 .padding( 20)
         }

@@ -14,16 +14,17 @@ final class GameScene: SKScene {
     private var physicsCore: PhysicsCore?
     private var cameraSystem: CameraSystem?
     private var platformController: PlatformController?
+    private var monsterController: MonsterController?
     private var playerNode: SKSpriteNode?
 
-    private let deadZoneThreshold: CGFloat = 100
+    private let outOfBoundsMargin: CGFloat = 100
 
     private var lastUpdateTime: TimeInterval = 0
 
     // 기울기 효과
     private let maxTiltAngle: CGFloat = 0.2 // 최대 기울기
     private let tiltSpeed: CGFloat = 0.2 // 기울어지는 속도 (0.0 ~ 1.0)
-
+        
     init(size: CGSize, gameplayManager: GameplayManager) {
         self.gameplayManager = gameplayManager
         super.init(size: size)
@@ -41,17 +42,27 @@ final class GameScene: SKScene {
         self.backgroundColor = .clear
 
         // 카메라 설정
-        cameraSystem = CameraSystem(scene: self)
+        let cameraSystem = CameraSystem(scene: self)
+        self.cameraSystem = cameraSystem
+        
+        // 맵 설정
         platformController = PlatformController(scene: self)
+        platformController?.setupInitialPlatforms()
+
+        // 몬스터 설정
+        monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
+        monsterController?.setupInitialMonster()
 
         // 요소 배치
         setupWalls()
         setupPlayer()
-        platformController?.setupInitialPlatforms()
 
         if let player = playerNode, let playerBody = player.physicsBody {
             // 카메라가 플레이어를 따라가도록 설정
-            cameraSystem?.follow(player)
+            cameraSystem.follow(player)
+            
+            // follow 이후 카메라 기준으로 몬스터 위치 보정
+            monsterController?.resetBelowCamera()
 
             // 물리 엔진 연결
             physicsCore = PhysicsCore(body: playerBody)
@@ -89,21 +100,24 @@ final class GameScene: SKScene {
 
         // 카메라 업데이트
         cameraSystem.update()
-
+        
+        // 몬스터 업데이트
+        monsterController?.update(deltaTime: deltaTime)
+        
         updateWalls()
         platformController?.update(cameraY: cameraSystem.cameraNode.position.y, sceneHeight: size.height)
 
-        // 리스폰 체크
-        // TODO: 리스폰 조건 처리, 카메라 범위 로직 제거
+        // 화면(카메라) 아래로 떨어진 경우: 즉시 리스폰
         if let player = playerNode {
             let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
-            if player.position.y < cameraBottom - deadZoneThreshold {
-                gameplayManager.requestRespawn(.fell)
+            if player.position.y < cameraBottom - outOfBoundsMargin {
+                gameplayManager.onPlayerFellOutOfBounds()
             }
         }
         
         if let reason = gameplayManager.consumeRespawnRequestReason() {
             performRespawn(for: reason)
+            return
         }
     }
 
@@ -170,44 +184,47 @@ final class GameScene: SKScene {
 
     // 플레이어 리스폰
     private func performRespawn(for reason: RespawnReason) {
-        let startDelay: TimeInterval
-        switch reason {
-        case .fell:
-            startDelay = 0
-        case .hitMonster:
-            startDelay = 3.0
-        }
+        guard let gameplayManager else { return }
+        let startDelay = gameplayManager.respawnDelay(for: reason)
 
         respawnPlayer(startDelay: startDelay)
     }
-
+    
     private func respawnPlayer(startDelay: TimeInterval) {
-        guard let gameplayManager = gameplayManager else { return }
-        guard let player = playerNode,
-              let cameraSystem = cameraSystem,
-              let platformController = platformController else {
-            gameplayManager.finishRespawn()
-            return
-        }
+        guard let gameplayManager, let player = playerNode else { return }
 
         // 물리 정지
         player.physicsBody?.velocity = .zero
         player.physicsBody?.isDynamic = false // 잠깐 멈춤
 
-        // 위치 이동 (마지막 안전 발판 + 조금 위)
-        let lastSafePosition = platformController.lastSafePosition
-        let targetPosition = (lastSafePosition == .zero) ? CGPoint(x: 0, y: -100) : lastSafePosition
-        player.position = CGPoint(x: targetPosition.x, y: targetPosition.y + 100)
+        let wait = SKAction.wait(forDuration: startDelay)
+        let moveAndCamera = SKAction.run { [weak self] in
+            guard let self,
+                  let cameraSystem = self.cameraSystem,
+                  let platformController = self.platformController,
+                  let player = self.playerNode else {
+                self?.gameplayManager?.finishRespawn()
+                return
+            }
 
-        let cameraOffset: CGFloat = 200
-        let newCameraPos = CGPoint(x: 0, y: player.position.y - cameraOffset)
-        cameraSystem.setPosition(newCameraPos)
+            // 위치 이동 (마지막 안전 발판 + 조금 위)
+            let lastSafe = platformController.lastSafePosition
+            let target = (lastSafe == .zero) ? CGPoint(x: 0, y: -100) : lastSafe
+            player.position = CGPoint(x: target.x, y: target.y + 100)
+
+            cameraSystem.setPosition(CGPoint(x: 0, y: player.position.y - 200))
+        }
 
         // 0.1초 뒤 다시 시작
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
-            player.physicsBody?.isDynamic = true
-            self?.gameplayManager?.state.respawn.isRespawning = false
-        }
+        let resume = SKAction.sequence([
+            SKAction.wait(forDuration: 0.1),
+            SKAction.run { [weak self] in
+                self?.playerNode?.physicsBody?.isDynamic = true
+                self?.gameplayManager?.finishRespawn()
+            }
+        ])
+
+        run(.sequence([wait, moveAndCamera, resume]))
     }
 
     private func animatePlayer(moveX: Double) {

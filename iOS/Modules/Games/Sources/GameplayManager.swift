@@ -108,7 +108,7 @@ public final class GameplayManager {
                 lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
             }
         case .monster:
-            break
+            requestRespawn(.hitMonster)
         }
     }
 
@@ -136,4 +136,18 @@ extension GameplayManager {
     public func finishRespawn() {
         state.respawn.isRespawning = false
     }
+
+    public func onPlayerFellOutOfBounds() {
+        requestRespawn(.fell)
+    }
+
+    public func respawnDelay(for reason: RespawnReason) -> TimeInterval {
+        switch reason {
+        case .fell:
+            return 0
+        case .hitMonster:
+            return 3.0
+        }
+    }
+
 }
