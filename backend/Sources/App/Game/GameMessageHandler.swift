@@ -32,7 +32,7 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
     private func handleChannelJoin(session: WSSession, manager: WSSessionManager) async {
         guard let channelId = session.metadata["channelId"] else { return }
 
-        _ = await ChannelManager.shared.join(channelId)
+        _ = await ChannelManager.shared.join(channelId, session: session)
 
         let playerInfo = buildPlayerInfo(from: session)
         let joinedMessage = WSMessage(
@@ -40,7 +40,7 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
             senderId: session.id,
             payload: playerInfo
         )
-        await manager.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
+        await ChannelManager.shared.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
 
         await sendPlayerList(to: session, manager: manager)
     }
@@ -48,19 +48,19 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
     private func handleChannelLeave(session: WSSession, manager: WSSessionManager) async {
         guard let channelId = session.metadata["channelId"] else { return }
 
-        await ChannelManager.shared.leave(channelId)
+        await ChannelManager.shared.leave(channelId, sessionId: session.id)
 
         let leftMessage = WSMessage(
             type: GameMessageType.playerLeft.rawValue,
             senderId: session.id
         )
-        await manager.broadcastToChannel(channelId, message: leftMessage, exclude: session.id)
+        await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: session.id)
     }
 
     private func sendPlayerList(to session: WSSession, manager: WSSessionManager) async {
         guard let channelId = session.metadata["channelId"] else { return }
 
-        let players = await manager.getSessionsInChannel(channelId)
+        let players = await ChannelManager.shared.getSessionsInChannel(channelId)
         let playerInfos = players.map { buildPlayerInfo(from: $0) }
         let payload = playerInfos.joined(separator: "|")
 
