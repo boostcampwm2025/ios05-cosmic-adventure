@@ -97,17 +97,16 @@ final class LobbyViewModel {
         Task { @MainActor in
             switch type {
                 // TODO: 수신 로직에서 추가
-            case .invite:
-                break
+//            case .invite:
 
             case .accept:
                 if case .sendingRequest = matchStatus {
-                    matchStatus = .gameReady(peer: peer)
+                    matchStatus.setGameReady(with: peer)
                 }
 
             case .decline:
                 if case .sendingRequest = matchStatus {
-                    matchStatus = .requestDeclined(peer: peer)
+                    matchStatus.requestDeclined(by: peer)
                 }
 
             default: break
@@ -116,7 +115,7 @@ final class LobbyViewModel {
     }
 
     private func resetToIdle() {
-        matchStatus = .idle
+        matchStatus.reset()
         selectedPeerID = nil
     }
 
@@ -137,7 +136,7 @@ final class LobbyViewModel {
 
     func selectPeer(_ peer: LobbyExplorer) {
         self.selectedPeerID = peer.id
-        self.matchStatus = .readyToSend(peer: peer)
+        self.matchStatus.select(peer)
     }
 
     func openAppSettings() {
@@ -156,7 +155,7 @@ final class LobbyViewModel {
 
     func sendInviteRequest() {
         guard case .readyToSend(let peer) = matchStatus else { return }
-        matchStatus = .sendingRequest(peer: peer)
+        matchStatus.sendRequest()
 
         let packet = InvitationPacket(type: .invite, senderIdentifier: userName)
         if let targetPeer = sessionManager.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
