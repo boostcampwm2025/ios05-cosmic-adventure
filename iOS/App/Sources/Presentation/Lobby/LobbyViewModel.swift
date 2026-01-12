@@ -99,7 +99,7 @@ final class LobbyViewModel {
             case .invite:
                 switch matchStatus {
                 case .idle:
-                    matchStatus = .receivedInvite(peer: peer)
+                    matchStatus.receiveInvite(from: peer)
 
                 case .gameReady, .gameStart:
                     declineInGame(peer: peer)
@@ -199,7 +199,7 @@ final class LobbyViewModel {
         let packet = InvitationPacket(type: .accept, senderIdentifier: userName)
         sessionManager.replyToInvite(to: peer.displayName, packet: packet)
 
-        matchStatus = .gameReady(peer: peer)
+        matchStatus.setGameReady(with: peer)
     }
 
     func declineInvite() {
