@@ -15,8 +15,8 @@ private func registerModules(_ app: Application) throws {
         "Cosmic Adventure Server OK"
     }
 
-    // TODO: 모듈 등록
     let modules: [any AppModule] = [
+        ChannelsModule(),
     ]
 
     for module in modules {
