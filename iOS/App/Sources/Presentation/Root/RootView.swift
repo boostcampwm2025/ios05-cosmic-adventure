@@ -34,7 +34,10 @@ struct RootView: View {
         case .profileSetup:
             ProfileSetupView(viewModel: viewModelFactory.makeProfileSetupViewModel())
         case .lobby:
-            LobbyView(viewModel: viewModelFactory.makeLobbyViewModel())
+            LobbyView(
+                viewModel: viewModelFactory.makeLobbyViewModel(),
+                channelListViewModel: viewModelFactory.makeChannelListViewModel()
+            )
         case .dashboard:
             // TODO: DashboardView 연결
             EmptyView()

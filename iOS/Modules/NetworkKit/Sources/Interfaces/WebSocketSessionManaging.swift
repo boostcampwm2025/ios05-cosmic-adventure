@@ -22,7 +22,7 @@ public protocol WebSocketSessionManaging: AnyObject {
     var onInputReceived: ((String, String) -> Void)? { get set }
     var onConnectionStateChanged: ((Bool) -> Void)? { get set }
     
-    func activate(nickname: String)
+    func activate(channelId: String, nickname: String)
     func deactivate()
     func sendInvite(to playerId: String)
     func acceptInvite(from playerId: String)

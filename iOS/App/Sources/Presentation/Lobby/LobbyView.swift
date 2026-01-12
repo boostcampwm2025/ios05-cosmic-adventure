@@ -11,9 +11,11 @@ struct LobbyView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: LobbyViewModel
+    @State private var channelListViewModel: ChannelListViewModel
 
-    init(viewModel: LobbyViewModel) {
+    init(viewModel: LobbyViewModel, channelListViewModel: ChannelListViewModel) {
         _viewModel = State(initialValue: viewModel)
+        _channelListViewModel = State(initialValue: channelListViewModel)
     }
 
     var body: some View {
@@ -24,34 +26,28 @@ struct LobbyView: View {
                 topBar
                     .padding(.top, 60)
                     .padding(.horizontal, 20)
-
-                greetingCard
-                    .padding(.top, 40)
-                    .padding(.horizontal, 30)
-
-                explorerOrbitSelector
-
-                Spacer()
-
-                PrimaryGradientButton(title: Constants.Lobby.startButtonTitle) {
-                    viewModel.startSoloAdventure()
-                    router.push(.game)
+                
+                if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
+                    channelListContent
+                } else {
+                    lobbyContent
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 70)
             }
         }
         .onAppear {
-            viewModel.startNetworkExploration()
+            handleNetworkModeChange()
         }
         .onDisappear {
             viewModel.stopNetworkExploration()
         }
-        .onChange(of: scenePhase, { oldValue, newValue in
+        .onChange(of: scenePhase) { _, newValue in
             if newValue == .active {
-                viewModel.startNetworkExploration()
+                handleNetworkModeChange()
             }
-        })
+        }
+        .onChange(of: viewModel.networkMode) { _, newMode in
+            handleNetworkModeChange()
+        }
         .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
             Button(viewModel.activeAlert.primaryButtonTitle) {
                 if viewModel.activeAlert == .permissionDenied {
@@ -110,6 +106,99 @@ struct LobbyView: View {
         default:
             return false
         }
+    }
+    
+    private func handleNetworkModeChange() {
+        viewModel.stopNetworkExploration()
+        
+        switch viewModel.networkMode {
+        case .local:
+            viewModel.startNetworkExploration()
+        case .remote:
+            if viewModel.selectedChannelId == nil {
+                Task {
+                    await channelListViewModel.fetchChannels()
+                }
+            } else {
+                viewModel.startNetworkExploration()
+            }
+        }
+    }
+}
+
+// MARK: - Lobby View Content
+
+private extension LobbyView {
+    @ViewBuilder
+    var lobbyContent: some View {
+        greetingCard
+            .padding(.top, 40)
+            .padding(.horizontal, 30)
+        
+        explorerOrbitSelector
+        
+        Spacer()
+        
+        bottomButtons(
+            secondaryTitle: Constants.Lobby.remoteGalaxyButtonTitle,
+            secondaryAction: { viewModel.switchToRemoteMode() },
+            showSecondary: viewModel.isNetworkAvailable
+        )
+    }
+
+    // TODO: 채널 목록 로드 실패 시 분기 처리 (네트워크 끊김 등)
+    @ViewBuilder
+    var channelListContent: some View {
+        AppAsset.Image.titleLogo.swiftUIImage
+            .resizable()
+            .scaledToFit()
+            .frame(height: 100)
+            .padding(.top, 20)
+        
+        ScrollView {
+            LazyVStack(spacing: 12) {
+                ForEach(channelListViewModel.channels) { channel in
+                    // TODO: 채널 입장 후 연결 실패 시 분기 처리
+                    ChannelRowView(channel: channel) {
+                        viewModel.selectChannel(channel.id)
+                        viewModel.startNetworkExploration()
+                    }
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+        }
+        
+        Spacer()
+        
+        bottomButtons(
+            secondaryTitle: Constants.Lobby.localGalaxyButtonTitle,
+            secondaryAction: { viewModel.switchToLocalMode() }
+        )
+    }
+    
+    @ViewBuilder
+    func bottomButtons(
+        secondaryTitle: LocalizedStringKey,
+        secondaryAction: @escaping () -> Void,
+        showSecondary: Bool = true
+    ) -> some View {
+        VStack(spacing: 12) {
+            PrimaryGradientButton(title: Constants.Lobby.soloAdventureButtonTitle) {
+                viewModel.startSoloAdventure()
+                router.push(.game)
+            }
+            
+            if showSecondary {
+                PrimaryGradientButton(title: secondaryTitle) {
+                    withAnimation(.easeInOut(duration: 0.1)) {
+                        secondaryAction()
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 50)
     }
 }
 
@@ -547,6 +636,10 @@ private extension LobbyView {
 
 struct LobbyView_Previews: PreviewProvider {
     static var previews: some View {
-        LobbyView(viewModel: AppContainer().makeLobbyViewModel())
+        let container = AppContainer()
+        LobbyView(
+            viewModel: container.makeLobbyViewModel(),
+            channelListViewModel: container.makeChannelListViewModel()
+        )
     }
 }

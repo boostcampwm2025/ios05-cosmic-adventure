@@ -41,7 +41,9 @@ enum Constants {
     enum Lobby {
         static let greetingSuffix: LocalizedStringKey = " 님 함께"
         static let greetingMessage: LocalizedStringKey = "모험을 떠날 탐험가를 골라주세요"
-        static let startButtonTitle: LocalizedStringKey = "혼자 모험 떠나기"
+        static let soloAdventureButtonTitle: LocalizedStringKey = "혼자 모험 떠나기"
+        static let remoteGalaxyButtonTitle: LocalizedStringKey = "더 먼 은하로 가기"
+        static let localGalaxyButtonTitle: LocalizedStringKey = "근처의 은하 탐색하기"
 
         enum RequestModal {
             static let title: LocalizedStringKey = "함께 모험을 떠나요"

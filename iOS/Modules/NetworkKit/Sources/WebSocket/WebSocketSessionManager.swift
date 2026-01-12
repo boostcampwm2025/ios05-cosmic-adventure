@@ -25,7 +25,6 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     private let service: WebSocketService
     private let serverURL: String
-    private let channelId: String
     
     public private(set) var players: [WebSocketPlayer] = []
     public private(set) var isConnected = false
@@ -48,14 +47,13 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public init(service: WebSocketService, serverURL: String, channelId: String) {
         self.service = service
         self.serverURL = serverURL
-        self.channelId = channelId
         
         setupCallbacks()
     }
     
     // MARK: - Public Methods
     
-    public func activate(nickname: String) {
+    public func activate(channelId: String, nickname: String) {
         service.connect(to: serverURL, channelId: channelId, nickname: nickname)
     }
     
