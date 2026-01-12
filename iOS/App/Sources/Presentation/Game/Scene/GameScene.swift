@@ -77,6 +77,11 @@ final class GameScene: SKScene {
         }
         
         gameplayManager.update(deltaTime: deltaTime)
+        
+        if gameplayManager.endReason != nil {
+            characterController.freezePhysics()
+            return
+        }
 
         // Event 좌우
         let moveX = gameplayManager.state.character.moveX
@@ -198,6 +203,9 @@ extension GameScene: SKPhysicsContactDelegate {
 
                 gameplayManager?.handleContact(.ground)
                 platformController?.updateLastSafePlatform(platformNode)
+                if let idx = platformController?.lastSafePlatformIndex {
+                        gameplayManager?.updateLandedPlatformIndex(idx)
+                }
             }
 
         case .monster:
