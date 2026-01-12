@@ -19,11 +19,13 @@ final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
 
     private let networkSessionManager: NetworkSessionManager
+    private let webSocketSessionManager: WebSocketSessionManaging?
     // TODO: 유저 프로필 관리 객체 소유
     
     init(
         permissionService: PermissionServicing? = nil,
-        networkSessionManager: NetworkSessionManager = NetworkSessionManager()
+        networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
+        webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
         self.networkSessionManager = networkSessionManager
         self.permissionService = permissionService
