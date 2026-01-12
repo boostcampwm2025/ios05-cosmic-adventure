@@ -454,4 +454,3 @@ struct LobbyView_Previews: PreviewProvider {
         LobbyView(viewModel: AppContainer().makeLobbyViewModel())
     }
 }
-
