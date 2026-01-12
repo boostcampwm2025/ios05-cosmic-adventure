@@ -16,7 +16,8 @@ actor ChannelManager {
                 id: id,
                 name: "은하수 \(i)",
                 currentPlayers: 0,
-                maxPlayers: maxPlayersPerChannel
+                maxPlayers: maxPlayersPerChannel,
+                status: .available
             )
         }
     }
@@ -36,9 +37,12 @@ actor ChannelManager {
         }
 
         channel.currentPlayers += 1
+        if channel.isFull {
+            channel.status = .full
+        }
         channels[channelId] = channel
 
-        await checkAndScaleUp()
+        checkAndScaleUp()
         return true
     }
 
@@ -46,12 +50,15 @@ actor ChannelManager {
         guard var channel = channels[channelId] else { return }
 
         channel.currentPlayers = max(0, channel.currentPlayers - 1)
+        if channel.status == .full {
+            channel.status = .available
+        }
         channels[channelId] = channel
 
-        await checkAndScaleDown()
+        checkAndScaleDown()
     }
 
-    private func checkAndScaleUp() async {
+    private func checkAndScaleUp() {
         let totalCapacity = channels.count * maxPlayersPerChannel
         let totalPlayers = channels.values.reduce(0) { $0 + $1.currentPlayers }
         let occupancyRate = Double(totalPlayers) / Double(totalCapacity)
@@ -62,12 +69,13 @@ actor ChannelManager {
                 id: newId,
                 name: "은하수 \(channels.count + 1)",
                 currentPlayers: 0,
-                maxPlayers: maxPlayersPerChannel
+                maxPlayers: maxPlayersPerChannel,
+                status: .available
             )
         }
     }
 
-    private func checkAndScaleDown() async {
+    private func checkAndScaleDown() {
         guard channels.count > minChannels else { return }
 
         let emptyChannelIds = channels

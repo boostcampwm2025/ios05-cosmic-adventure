@@ -34,8 +34,12 @@ actor WSSessionManager {
             return
         }
 
-        for handler in handlers {
-            await handler.handle(message, from: session, manager: self)
+        await withTaskGroup(of: Void.self) { group in
+            for handler in handlers {
+                group.addTask {
+                    await handler.handle(message, from: session, manager: self)
+                }
+            }
         }
     }
 
@@ -50,10 +54,16 @@ actor WSSessionManager {
     func broadcast(_ message: WSMessage, exclude: String? = nil) async {
         guard let text = message.encode() else { return }
 
-        for session in sessions.values {
-            if let excludeId = exclude, session.id == excludeId { continue }
-            if !session.isClosed {
-                await session.send(text)
+        let sessionsToSend = sessions.values.filter { session in
+            if let excludeId = exclude, session.id == excludeId { return false }
+            return !session.isClosed
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            for session in sessionsToSend {
+                group.addTask {
+                    await session.send(text)
+                }
             }
         }
     }

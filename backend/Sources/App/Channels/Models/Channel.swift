@@ -5,9 +5,7 @@ struct Channel: Codable, Identifiable, Sendable {
     let name: String
     var currentPlayers: Int
     let maxPlayers: Int
-    var status: ChannelStatus {
-        isFull ? .full : .available
-    }
+    var status: ChannelStatus
 
     var isFull: Bool {
         currentPlayers >= maxPlayers
@@ -21,4 +19,5 @@ struct Channel: Codable, Identifiable, Sendable {
 enum ChannelStatus: String, Codable, Sendable {
     case available
     case full
+    case maintenance
 }
