@@ -3,15 +3,14 @@ import Foundation
 struct Channel: Codable, Identifiable, Sendable {
     let id: String
     let name: String
-    var currentPlayers: Int
     let maxPlayers: Int
     var status: ChannelStatus
 
-    var isFull: Bool {
+    func isFull(currentPlayers: Int) -> Bool {
         currentPlayers >= maxPlayers
     }
 
-    var occupancyRate: Double {
+    func occupancyRate(currentPlayers: Int) -> Double {
         Double(currentPlayers) / Double(maxPlayers)
     }
 }
@@ -19,5 +18,4 @@ struct Channel: Codable, Identifiable, Sendable {
 enum ChannelStatus: String, Codable, Sendable {
     case available
     case full
-    case maintenance
 }
