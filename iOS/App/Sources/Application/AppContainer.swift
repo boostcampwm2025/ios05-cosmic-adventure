@@ -17,17 +17,20 @@ protocol ViewModelFactory {
 
 final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
-
+    private let connectivityMonitor: ConnectivityMonitoring
     private let networkSessionManager: NetworkSessionManager
     private let webSocketSessionManager: WebSocketSessionManaging?
     // TODO: 유저 프로필 관리 객체 소유
     
     init(
         permissionService: PermissionServicing? = nil,
+        connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
         networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
         webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
+        self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
+        self.webSocketSessionManager = webSocketSessionManager
         self.permissionService = permissionService
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
@@ -45,7 +48,12 @@ final class AppContainer: ViewModelFactory {
     }
     
     func makeLobbyViewModel() -> LobbyViewModel {
-        LobbyViewModel(sessionManager: networkSessionManager)
+        LobbyViewModel(
+            connectivityMonitor: connectivityMonitor,
+            sessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager,
+            nickname: "건방진 탐험가 123"
+        )
     }
 
     // TODO: 게임 화면 서비스 객체 연결
