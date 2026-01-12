@@ -9,14 +9,13 @@ struct WSController: RouteCollection {
 
             print("[WS] Client connected: \(sessionId)")
 
-            let ready = Task {
+            Task {
                 await WSSessionManager.shared.addSession(session)
             }
 
             ws.onText { ws, text in
                 print("[WS] Received: \(text)")
                 Task {
-                    _ = await ready.value
                     await WSSessionManager.shared.handleMessage(text, from: sessionId)
                 }
             }
@@ -24,7 +23,6 @@ struct WSController: RouteCollection {
             ws.onClose.whenComplete { _ in
                 print("[WS] Client disconnected: \(sessionId)")
                 Task {
-                    _ = await ready.value
                     await WSSessionManager.shared.removeSession(sessionId)
                 }
             }
