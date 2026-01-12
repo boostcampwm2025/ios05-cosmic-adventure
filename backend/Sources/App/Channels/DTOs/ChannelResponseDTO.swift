@@ -9,7 +9,7 @@ struct ChannelResponseDTO: Content {
 }
 
 extension Channel {
-    func toResponseDTO() -> ChannelResponseDTO {
+    func toResponseDTO(currentPlayers: Int) -> ChannelResponseDTO {
         ChannelResponseDTO(
             id: id,
             name: name,

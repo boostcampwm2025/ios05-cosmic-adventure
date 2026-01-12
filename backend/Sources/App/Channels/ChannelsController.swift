@@ -11,7 +11,12 @@ struct ChannelsController: RouteCollection {
     @Sendable
     func index(req: Request) async throws -> [ChannelResponseDTO] {
         let channels = await ChannelManager.shared.getChannels()
-        return channels.map { $0.toResponseDTO() }
+        var result: [ChannelResponseDTO] = []
+        for channel in channels {
+            let playerCount = await ChannelManager.shared.getPlayerCount(channel.id)
+            result.append(channel.toResponseDTO(currentPlayers: playerCount))
+        }
+        return result
     }
 
     @Sendable
@@ -20,6 +25,7 @@ struct ChannelsController: RouteCollection {
               let channel = await ChannelManager.shared.getChannel(id) else {
             throw Abort(.notFound, reason: "Channel not found")
         }
-        return channel.toResponseDTO()
+        let playerCount = await ChannelManager.shared.getPlayerCount(id)
+        return channel.toResponseDTO(currentPlayers: playerCount)
     }
 }

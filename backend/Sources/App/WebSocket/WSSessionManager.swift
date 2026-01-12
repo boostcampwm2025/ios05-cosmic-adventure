@@ -28,21 +28,6 @@ actor WSSessionManager {
         Array(sessions.values)
     }
 
-    func getSessionsInChannel(_ channelId: String) -> [WSSession] {
-        sessions.values.filter { $0.metadata["channelId"] == channelId }
-    }
-
-    func broadcastToChannel(_ channelId: String, message: WSMessage, exclude: String? = nil) async {
-        guard let text = message.encode() else { return }
-
-        for session in getSessionsInChannel(channelId) {
-            if let excludeId = exclude, session.id == excludeId { continue }
-            if !session.isClosed {
-                await session.send(text)
-            }
-        }
-    }
-
     func handleMessage(_ text: String, from sessionId: String) async {
         guard let session = sessions[sessionId],
               let message = WSMessage.decode(from: text) else {
