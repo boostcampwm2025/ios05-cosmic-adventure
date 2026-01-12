@@ -42,6 +42,21 @@ enum Constants {
         static let greetingSuffix: LocalizedStringKey = " 님 함께"
         static let greetingMessage: LocalizedStringKey = "모험을 떠날 탐험가를 골라주세요"
         static let startButtonTitle: LocalizedStringKey = "혼자 모험 떠나기"
+
+        enum RequestModal {
+            static let title: LocalizedStringKey = "함께 모험을 떠나요"
+            static let requestButtonTitle: LocalizedStringKey = "요청하기"
+            static let sendingButtonTitle: LocalizedStringKey = "요청 중..."
+            static let cancelButtonTitle: LocalizedStringKey = "취소하기"
+            static let guideMessage: LocalizedStringKey = "함께 떠나고 싶은 탐험가에게 요청을 보내세요"
+            static let waitingMessage: LocalizedStringKey = "상대방의 수락을 기다리고 있어요"
+        }
+
+        enum DeclineModal {
+            static let invitationDeclinedTitle: LocalizedStringKey = "모험 요청 거절"
+            static let invitationDeclinedMessage: LocalizedStringKey = " 님이\n 모험 요청을 거절했습니다."
+            static let guideMessage: LocalizedStringKey = "다른 탐험가에게 요청을 보내세요"
+        }
     }
     
     enum Alert {
