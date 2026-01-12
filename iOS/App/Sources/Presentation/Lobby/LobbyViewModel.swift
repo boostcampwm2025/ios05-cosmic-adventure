@@ -96,20 +96,25 @@ final class LobbyViewModel {
 
         Task { @MainActor in
             switch type {
-                // TODO: 수신 로직에서 추가
-//            case .invite:
+            case .invite:
+                if matchStatus == .idle {
+                    matchStatus = .receivedInvite(peer: peer)
+                }
 
             case .accept:
                 if case .sendingRequest = matchStatus {
                     matchStatus.setGameReady(with: peer)
                 }
 
+            case .cancelInvite:
+                if case .receivedInvite = matchStatus {
+                    resetToIdle()
+                }
+
             case .decline:
                 if case .sendingRequest = matchStatus {
                     matchStatus.requestDeclined(by: peer)
                 }
-
-            default: break
             }
         }
     }
@@ -173,6 +178,24 @@ final class LobbyViewModel {
     }
 
     func confirmDecline() {
+        resetToIdle()
+    }
+
+    func acceptInvite() {
+        guard case .receivedInvite(let peer) = matchStatus else { return }
+
+        let packet = InvitationPacket(type: .accept, senderIdentifier: userName)
+        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+
+        matchStatus = .gameReady(peer: peer)
+    }
+
+    func declineInvite() {
+        guard case .receivedInvite(let peer) = matchStatus else { return }
+
+        let packet = InvitationPacket(type: .decline, senderIdentifier: userName)
+        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+
         resetToIdle()
     }
 }
