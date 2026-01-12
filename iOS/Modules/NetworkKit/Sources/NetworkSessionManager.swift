@@ -34,7 +34,6 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
     public var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)?
     public var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)?
-//    public var onReceiveGamePacket: ((Data, Data) -> Void)?
 
     // MARK: - Initialization
 
@@ -164,9 +163,6 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
             switch header.type {
             case .invite, .accept, .decline, .cancelInvite:
                 self?.onReceiveInvitationPacket?(header.type, data)
-
-//            case .gameData:
-//                self?.onReceiveGamePacket?(data)
             }
         }
     }
@@ -195,7 +191,4 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     }
 
     // TODO: 게임 데이터 전송
-//    public func send<T: NetworkTransferable>(_ packet: T) {
-//        guard let data = try? encoder.encode(packet) else { return }
-//    }
 }
