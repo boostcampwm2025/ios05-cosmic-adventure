@@ -149,5 +149,4 @@ extension GameplayManager {
             return 3.0
         }
     }
-
 }
