@@ -96,10 +96,16 @@ final class LobbyViewModel {
 
         Task { @MainActor in
             switch type {
-                // TODO: 수신 로직에서 추가
             case .invite:
-                if matchStatus == .idle {
+                switch matchStatus {
+                case .idle:
                     matchStatus = .receivedInvite(peer: peer)
+
+                case .gameReady, .gameStart:
+                    declineInGame(peer: peer)
+
+                default:
+                    break
                 }
 
             case .accept:
@@ -118,6 +124,11 @@ final class LobbyViewModel {
                 }
             }
         }
+    }
+
+    private func declineInGame(peer: LobbyExplorer) {
+        let packet = InvitationPacket(type: .decline, senderIdentifier: userName)
+        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
     }
 
     private func resetToIdle() {
