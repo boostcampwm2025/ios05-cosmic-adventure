@@ -36,7 +36,7 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
 
         if let pucker = anchor.blendShapes[.mouthPucker]?.doubleValue,
            pucker > puckerThreshold {
-            out.append(.action(.primary, value: min(1.0, pucker)))
+            out.append(.action(.jump, value: min(1.0, pucker)))
         }
 
         return out

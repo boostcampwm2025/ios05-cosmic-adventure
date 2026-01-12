@@ -16,7 +16,10 @@ public final class GameplayManager {
     private let maxJumpCount = 2
 
     private let jumpCooldown: TimeInterval = 0.4
+    private let landingCooldown: TimeInterval = 0.3
+    
     private var lastJumpTime: TimeInterval = 0
+    private var lastLandingTime: TimeInterval = 0
 
     private var timeSinceLastInput: TimeInterval = 0
     private let inputTimeout: TimeInterval = 0.2
@@ -52,8 +55,10 @@ public final class GameplayManager {
         switch event {
         case .horizontal(let x):
             updateMoveX(x)
-        case .jump:
-            tryJump()
+        case .jump(let isActive):
+            if isActive {
+                tryJump()
+            }
         }
     }
 
@@ -65,6 +70,7 @@ public final class GameplayManager {
     private func tryJump() {
         let currentTime = Date().timeIntervalSince1970
 
+        guard currentTime - lastLandingTime > landingCooldown else { return }
         guard currentTime - lastJumpTime > jumpCooldown else { return }
         guard state.jumpCount < maxJumpCount else { return }
 
@@ -95,6 +101,7 @@ public final class GameplayManager {
             if !state.isGrounded {
                 state.isGrounded = true
                 state.jumpCount = 0
+                lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
             }
         case .monster:
             break
