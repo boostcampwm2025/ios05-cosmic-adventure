@@ -11,6 +11,7 @@ enum GameMatchStatus: Equatable {
     case idle
     case readyToSend(peer: LobbyExplorer)
     case sendingRequest(peer: LobbyExplorer)
+    case receivedInvite(peer: LobbyExplorer)
     case requestDeclined(peer: LobbyExplorer)
     case gameReady(peer: LobbyExplorer)
     case gameStart
