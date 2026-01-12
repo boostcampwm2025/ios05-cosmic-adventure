@@ -17,7 +17,6 @@ final class GameScene: SKScene {
     private var playerNode: SKSpriteNode?
 
     private let deadZoneThreshold: CGFloat = 100
-    private var isRespawning: Bool = false
 
     private var lastUpdateTime: TimeInterval = 0
 
@@ -75,8 +74,8 @@ final class GameScene: SKScene {
         }
 
         gameplayManager.update(deltaTime: deltaTime)
-        animatePlayer(moveX: gameplayManager.state.moveX)
-
+        animatePlayer(moveX: gameplayManager.state.character.moveX)
+        
         // Event 점프
         if gameplayManager.isJumpRequested {
             physicsCore.applyJumpImpulse()
@@ -84,8 +83,8 @@ final class GameScene: SKScene {
         }
 
         // Physics 상태 적용
-        let moveX = gameplayManager.state.moveX
-        let isGrounded = gameplayManager.state.isGrounded
+        let moveX = gameplayManager.state.character.moveX
+        let isGrounded = gameplayManager.state.character.isGrounded
         physicsCore.applyState(deltaTime: deltaTime, moveX: moveX, isGrounded: isGrounded)
 
         // 카메라 업데이트
@@ -95,11 +94,16 @@ final class GameScene: SKScene {
         platformController?.update(cameraY: cameraSystem.cameraNode.position.y, sceneHeight: size.height)
 
         // 리스폰 체크
+        // TODO: 리스폰 조건 처리, 카메라 범위 로직 제거
         if let player = playerNode {
             let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
             if player.position.y < cameraBottom - deadZoneThreshold {
-                respawnPlayer()
+                gameplayManager.requestRespawn(.fell)
             }
+        }
+        
+        if let reason = gameplayManager.consumeRespawnRequestReason() {
+            performRespawn(for: reason)
         }
     }
 
@@ -165,13 +169,24 @@ final class GameScene: SKScene {
     }
 
     // 플레이어 리스폰
-    private func respawnPlayer() {
-        if isRespawning { return }
-        isRespawning = true
+    private func performRespawn(for reason: RespawnReason) {
+        let startDelay: TimeInterval
+        switch reason {
+        case .fell:
+            startDelay = 0
+        case .hitMonster:
+            startDelay = 3.0
+        }
 
+        respawnPlayer(startDelay: startDelay)
+    }
+
+    private func respawnPlayer(startDelay: TimeInterval) {
+        guard let gameplayManager = gameplayManager else { return }
         guard let player = playerNode,
               let cameraSystem = cameraSystem,
               let platformController = platformController else {
+            gameplayManager.finishRespawn()
             return
         }
 
@@ -191,7 +206,7 @@ final class GameScene: SKScene {
         // 0.1초 뒤 다시 시작
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { [weak self] in
             player.physicsBody?.isDynamic = true
-            self?.isRespawning = false
+            self?.gameplayManager?.state.respawn.isRespawning = false
         }
     }
 
@@ -246,7 +261,7 @@ extension GameScene: SKPhysicsContactDelegate {
         switch contactType {
         case .ground:
             // 땅 로직: 리스폰 중 X
-            if !isRespawning,
+            if gameplayManager?.isRespawning == false,
                let player = playerNode,
                let platformNode = otherBody.node {
                 // 위에서 아래로 내려올 때만

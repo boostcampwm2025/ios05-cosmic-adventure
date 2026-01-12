@@ -7,8 +7,18 @@
 
 import Foundation
 
-public struct CharacterState: Equatable {
+public struct CharacterState: Equatable, Sendable {
     public var moveX: Double = 0 // 좌우 이동 속도 비율 (-1.0 ~ 1.0)
     public var jumpCount: Int = 0
     public var isGrounded: Bool = false
+    
+    public init(
+        moveX: Double = 0,
+        jumpCount: Int = 0,
+        isGrounded: Bool = true
+    ) {
+        self.moveX = moveX
+        self.jumpCount = jumpCount
+        self.isGrounded = isGrounded
+    }
 }
