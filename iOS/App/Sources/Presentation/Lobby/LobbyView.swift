@@ -91,47 +91,13 @@ struct LobbyView: View {
                             .transition(.opacity.combined(with: .scale))
                             .padding(.horizontal, 24)
 
-                        //                    case .gameReady(let peer):
-                        //                        // TODO: GameReadyView 로 전환
+//                    case .gameReady(let peer):
+//                        // TODO: GameReadyView 로 전환
                     default:
                         EmptyView()
                     }
                 }
                 .zIndex(1)
-
-                if viewModel.activeAlert.hasCancelButton {
-                    Button(Constants.Common.cancel, role: .cancel) { }
-                }
-            }
-
-            switch viewModel.matchStatus {
-            case .readyToSend(let peer), .sendingRequest(let peer):
-                Color.black.opacity(0.7).ignoresSafeArea()
-
-                requestModal(peer: peer)
-                    .transition(.opacity.combined(with: .scale))
-
-            case .receivedInvite(let peer):
-                Color.black.opacity(0.7).ignoresSafeArea()
-
-                VStack {
-                    Spacer()
-                    inviteReceivedSheet(peer: peer)
-                }
-                .transition(.move(edge: .bottom))
-                .zIndex(1)
-                .ignoresSafeArea(edges: .bottom)
-
-            case .requestDeclined(let peer):
-                Color.black.opacity(0.7).ignoresSafeArea()
-
-                declineModal(peer: peer)
-                    .transition(.opacity.combined(with: .scale))
-
-                //            case .gameReady(let peer):
-                //                // TODO: GameReadyView 로 전환
-            default:
-                EmptyView()
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.matchStatus)
@@ -139,7 +105,7 @@ struct LobbyView: View {
 
     private var isModalPresented: Bool {
         switch viewModel.matchStatus {
-        case .readyToSend, .sendingRequest, .requestDeclined:
+        case .readyToSend, .sendingRequest, .requestDeclined, .receivedInvite:
             return true
         default:
             return false

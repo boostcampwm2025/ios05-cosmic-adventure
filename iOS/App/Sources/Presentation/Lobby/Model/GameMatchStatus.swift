@@ -34,9 +34,9 @@ enum GameMatchStatus: Equatable {
         self = .requestDeclined(peer: peer)
     }
 
-//    mutating func receiveInvite(from peer: LobbyExplorer) {
-//        self = .receivedInvite(peer: peer)
-//    }
+    mutating func receiveInvite(from peer: LobbyExplorer) {
+        self = .receivedInvite(peer: peer)
+    }
 
     mutating func setGameReady(with peer: LobbyExplorer) {
         self = .gameReady(peer: peer)
