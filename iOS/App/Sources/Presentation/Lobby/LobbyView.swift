@@ -19,74 +19,88 @@ struct LobbyView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
 
-        ZStack {
-            BackgroundContainerView {
-                VStack(spacing: 0) {
-                    topBar
-                        .padding(.top, 60)
-                        .padding(.horizontal, 20)
-
-                    greetingCard
-                        .padding(.top, 40)
-                        .padding(.horizontal, 30)
-
-                    explorerOrbitSelector
-
-                    Spacer()
-
-                    PrimaryGradientButton(title: Constants.Lobby.startButtonTitle) {
-                        viewModel.startSoloAdventure()
-                        router.push(.game)
-                    }
+        BackgroundContainerView {
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.top, 60)
                     .padding(.horizontal, 20)
-                    .padding(.bottom, 70)
+
+                greetingCard
+                    .padding(.top, 40)
+                    .padding(.horizontal, 30)
+
+                explorerOrbitSelector
+
+                Spacer()
+
+                PrimaryGradientButton(title: Constants.Lobby.startButtonTitle) {
+                    viewModel.startSoloAdventure()
+                    router.push(.game)
                 }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 70)
             }
-            .onAppear {
+        }
+        .onAppear {
+            viewModel.startNetworkExploration()
+        }
+        .onDisappear {
+            viewModel.stopNetworkExploration()
+        }
+        .onChange(of: scenePhase, { oldValue, newValue in
+            if newValue == .active {
                 viewModel.startNetworkExploration()
             }
-            .onDisappear {
-                viewModel.stopNetworkExploration()
-            }
-            .onChange(of: scenePhase, { oldValue, newValue in
-                if newValue == .active {
-                    viewModel.startNetworkExploration()
+        })
+        .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
+            Button(viewModel.activeAlert.primaryButtonTitle) {
+                if viewModel.activeAlert == .permissionDenied {
+                    viewModel.openAppSettings()
                 }
-            })
-            .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
-                Button(viewModel.activeAlert.primaryButtonTitle) {
-                    if viewModel.activeAlert == .permissionDenied {
-                        viewModel.openAppSettings()
+            }
+
+            if viewModel.activeAlert.hasCancelButton {
+                Button(Constants.Common.cancel, role: .cancel) { }
+            }
+        } message: {
+            Text(viewModel.activeAlert.message)
+        }
+        .overlay {
+            if isModalPresented {
+                ZStack {
+                    Color.black.opacity(0.7)
+                        .ignoresSafeArea()
+
+                    switch viewModel.matchStatus {
+                    case .readyToSend(let peer), .sendingRequest(let peer):
+                        requestModal(peer: peer)
+                            .transition(.opacity.combined(with: .scale))
+                            .padding(.horizontal, 24)
+
+                    case .requestDeclined(let peer):
+                        declineModal(peer: peer)
+                            .transition(.opacity.combined(with: .scale))
+                            .padding(.horizontal, 24)
+
+                        //                    case .gameReady(let peer):
+                        //                        // TODO: GameReadyView 로 전환
+                    default:
+                        EmptyView()
                     }
                 }
-
-                if viewModel.activeAlert.hasCancelButton {
-                    Button(Constants.Common.cancel, role: .cancel) { }
-                }
-            } message: {
-                Text(viewModel.activeAlert.message)
-            }
-
-            switch viewModel.matchStatus {
-            case .readyToSend(let peer), .sendingRequest(let peer):
-                Color.black.opacity(0.7).ignoresSafeArea()
-
-                requestModal(peer: peer)
-                    .transition(.opacity.combined(with: .scale))
-
-            case .requestDeclined(let peer):
-                Color.black.opacity(0.7).ignoresSafeArea()
-
-                declineModal(peer: peer)
-                    .transition(.opacity.combined(with: .scale))
-
-                //            case .gameReady(let peer):
-                //                // TODO: GameReadyView 로 전환
-            default:
-                EmptyView()
+                .zIndex(1)
             }
         }
         .animation(.spring(response: 0.4, dampingFraction: 0.8), value: viewModel.matchStatus)
+    }
+
+    private var isModalPresented: Bool {
+        switch viewModel.matchStatus {
+        case .readyToSend, .sendingRequest, .requestDeclined:
+            return true
+        default:
+            return false
+        }
     }
 }
 
@@ -299,32 +313,24 @@ private extension LobbyView {
             return false
         }()
 
-        return VStack(spacing: 0) {
+        return VStack(spacing: 24) {
             modalTitle(Constants.Lobby.RequestModal.title)
-
-            Spacer()
 
             modalAvatarView(for: peer, isGrayscale: false)
 
-            Spacer()
-
             modalDisplayName(for: peer)
-
-            Spacer()
 
             HStack(spacing: 12) {
                 requestButton(isSending: isSending)
                 cancelButton
             }
-            .padding(.top, 10)
 
             requestModalFooter(isSending: isSending)
         }
-        .padding(30)
+        .padding(24)
         .frame(height: 400)
         .background(AppAsset.Color.subSelect.swiftUIColor)
         .cornerRadius(30)
-        .padding(.horizontal, 24)
         .shadow(radius: 10)
     }
 
@@ -345,7 +351,7 @@ private extension LobbyView {
                 .resizable()
                 .scaledToFit()
                 .frame(width: 85, height: 85)
-                .grayscale(isGrayscale ? 1.0 : 0.0) // 흑백 여부 처리
+                .grayscale(isGrayscale ? 1.0 : 0.0)
                 .opacity(isGrayscale ? 0.8 : 1.0)
         }
     }
@@ -386,7 +392,6 @@ private extension LobbyView {
             .foregroundStyle(AppAsset.Color.subButton.swiftUIColor)
             .multilineTextAlignment(.center)
             .frame(height: 20)
-            .padding(.top, 16)
             .animation(.none, value: isSending)
     }
 }
@@ -395,28 +400,21 @@ private extension LobbyView {
 
 private extension LobbyView {
     func declineModal(peer: LobbyExplorer) -> some View {
-        VStack(spacing: 0) {
+        VStack(spacing: 24) {
             modalTitle(Constants.Lobby.DeclineModal.invitationDeclinedTitle)
-
-            Spacer()
 
             modalAvatarView(for: peer, isGrayscale: true)
 
-            Spacer()
-
             declineModalMessage(for: peer)
-
-            Spacer()
 
             declineModalConfirmButton
 
             declineModalFooter
         }
-        .padding(30)
+        .padding(24)
         .frame(height: 400)
         .background(AppAsset.Color.subSelect.swiftUIColor)
         .cornerRadius(30)
-        .padding(.horizontal, 24)
         .shadow(radius: 10)
     }
 
@@ -426,6 +424,8 @@ private extension LobbyView {
         .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
         .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
         .multilineTextAlignment(.center)
+        .lineLimit(nil)
+        .fixedSize(horizontal: false, vertical: true)
     }
 
     var declineModalConfirmButton: some View {
@@ -436,7 +436,6 @@ private extension LobbyView {
         ) {
             viewModel.confirmDecline()
         }
-        .padding(.top, 10)
     }
 
     var declineModalFooter: some View {
@@ -445,7 +444,6 @@ private extension LobbyView {
             .foregroundStyle(AppAsset.Color.subButton.swiftUIColor)
             .multilineTextAlignment(.center)
             .frame(height: 20)
-            .padding(.top, 16)
     }
 }
 
@@ -456,3 +454,4 @@ struct LobbyView_Previews: PreviewProvider {
         LobbyView(viewModel: AppContainer().makeLobbyViewModel())
     }
 }
+
