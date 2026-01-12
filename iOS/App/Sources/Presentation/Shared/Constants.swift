@@ -80,6 +80,7 @@ enum Constants {
             static let player = "player"
             static let leftWall = "leftWall"
             static let rightWall = "rightWall"
+            static let monster = "monster"
         }
     }
 }
