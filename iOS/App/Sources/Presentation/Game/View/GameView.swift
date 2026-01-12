@@ -17,8 +17,10 @@ public struct GameView: View {
     @State private var gameScene: GameScene?
     @State private var inputProvider = FaceTrackingGameInputProvider()
     
-    public init() {}
-
+    public init(endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 30, targetPlatformIndex: 4)) {
+        _gameplayManager = State(initialValue: GameplayManager(endCondition: endCondition))
+    }
+    
     public var body: some View {
         ZStack {
             AppAsset.Image.background.swiftUIImage
@@ -30,18 +32,30 @@ public struct GameView: View {
                 SpriteView(scene: scene, options: [.allowsTransparency])
                     .edgesIgnoringSafeArea(.all)
             }
-                        
+            
+            gameHUD
+
+            if let reason = gameplayManager.endReason {
+                gameEndOverlay(reason: reason)
+            }
+            
             facePreviewOverlay
                 .padding( 20)
         }
         .onAppear {
             setupGame()
+            gameplayManager.startNewGame()
             gameplayManager.bind(input: inputProvider)
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
             gameplayManager.unbind()
             UIApplication.shared.isIdleTimerDisabled = false
+        }
+        .onChange(of: gameplayManager.endReason) { _, newValue in
+            if newValue != nil {
+                gameplayManager.unbind()
+            }
         }
     }
     
@@ -87,4 +101,53 @@ public struct GameView: View {
         scene.backgroundColor = .clear
         gameScene = scene
     }
+    
+    private var gameHUD: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            if let remain = gameplayManager.remainingSeconds {
+                Text("남은 시간: \(remain)s")
+                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+                    .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            } else {
+                Text("경과 시간: \(gameplayManager.elapsedSeconds)s")
+                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+                    .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            }
+        }
+        .padding(12)
+        .background(.white.opacity(0.8))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+        .padding(16)
+        .allowsHitTesting(false)
+    }
+
+    private func gameEndOverlay(reason: GameEndReason) -> some View {
+        let title: String
+        switch reason {
+        case .timeout:
+            title = "시간 종료"
+        case .reachedFinish:
+            title = "결승 도착!"
+        }
+
+        return ZStack {
+            Color.black.opacity(0.55)
+                .ignoresSafeArea()
+
+            VStack(spacing: 12) {
+                Text(title)
+                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 32))
+                    .foregroundStyle(.white)
+
+                Text("경과 시간: \(gameplayManager.elapsedSeconds)s")
+                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+                    .foregroundStyle(.white)
+            }
+            .padding(20)
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
+        .transition(.opacity)
+    }
+    
 }
