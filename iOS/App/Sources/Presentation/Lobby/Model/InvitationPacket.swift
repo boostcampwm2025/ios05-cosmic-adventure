@@ -7,7 +7,7 @@
 
 import NetworkKit
 
-struct InvitationPacket: NetworkTransferable {
+struct InvitationPacket: NetworkTransferable, Decodable {
     let type: NetworkPacketType
     let senderIdentifier: String
 }
