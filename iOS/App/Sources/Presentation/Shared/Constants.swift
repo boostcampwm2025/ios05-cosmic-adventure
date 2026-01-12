@@ -57,6 +57,13 @@ enum Constants {
             static let invitationDeclinedMessage: LocalizedStringKey = " 님이\n 모험 요청을 거절했습니다."
             static let guideMessage: LocalizedStringKey = "다른 탐험가에게 요청을 보내세요"
         }
+
+        enum InviteReceivedSheet {
+            static let title: LocalizedStringKey = "✉️ 새로운 모험 요청"
+            static let messageSuffix: LocalizedStringKey = " 님과 \n함께 모험을 떠나볼까요?"
+            static let acceptButton: LocalizedStringKey = "수락하기"
+            static let declineButton: LocalizedStringKey = "거절하기"
+        }
     }
     
     enum Alert {
