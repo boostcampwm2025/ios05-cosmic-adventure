@@ -25,7 +25,7 @@ final class MonsterController {
     }
     
     func setupInitialMonster() {
-        guard let scene, let cameraSystem else { return }
+        guard let scene else { return }
 
         let texture = SKTexture(imageNamed: AppAsset.Image.monsterOverlay.name)
         let sprite = SKSpriteNode(texture: texture)

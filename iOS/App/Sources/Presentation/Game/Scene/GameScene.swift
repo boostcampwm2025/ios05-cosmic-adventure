@@ -11,20 +11,15 @@ import SpriteKit
 
 final class GameScene: SKScene {
     private var gameplayManager: GameplayManager?
-    private var physicsCore: PhysicsCore?
     private var cameraSystem: CameraSystem?
     private var platformController: PlatformController?
     private var monsterController: MonsterController?
-    private var playerNode: SKSpriteNode?
+    private var characterController: CharacterController?
 
     private let outOfBoundsMargin: CGFloat = 100
 
     private var lastUpdateTime: TimeInterval = 0
 
-    // 기울기 효과
-    private let maxTiltAngle: CGFloat = 0.2 // 최대 기울기
-    private let tiltSpeed: CGFloat = 0.2 // 기울어지는 속도 (0.0 ~ 1.0)
-        
     init(size: CGSize, gameplayManager: GameplayManager) {
         self.gameplayManager = gameplayManager
         super.init(size: size)
@@ -48,25 +43,22 @@ final class GameScene: SKScene {
         // 맵 설정
         platformController = PlatformController(scene: self)
         platformController?.setupInitialPlatforms()
+        setupWalls()
 
         // 몬스터 설정
         monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
         monsterController?.setupInitialMonster()
 
-        // 요소 배치
-        setupWalls()
-        setupPlayer()
-
-        if let player = playerNode, let playerBody = player.physicsBody {
+        // 캐릭터 설정
+        characterController = CharacterController(scene: self, cameraSystem: cameraSystem)
+        characterController?.setupPlayer()
+        
+        if let player = characterController?.playerNode{
             // 카메라가 플레이어를 따라가도록 설정
             cameraSystem.follow(player)
             
             // follow 이후 카메라 기준으로 몬스터 위치 보정
             monsterController?.resetBelowCamera()
-
-            // 물리 엔진 연결
-            physicsCore = PhysicsCore(body: playerBody)
-            playerBody.usesPreciseCollisionDetection = true
         }
     }
 
@@ -79,24 +71,23 @@ final class GameScene: SKScene {
         lastUpdateTime = currentTime
 
         guard let gameplayManager = gameplayManager,
-              let physicsCore = physicsCore,
+              let characterController = characterController,
               let cameraSystem = cameraSystem else {
             return
         }
-
+        
         gameplayManager.update(deltaTime: deltaTime)
-        animatePlayer(moveX: gameplayManager.state.character.moveX)
+
+        // Event 좌우
+        let moveX = gameplayManager.state.character.moveX
+        let isGrounded = gameplayManager.state.character.isGrounded
+        characterController.applyMovement(deltaTime: deltaTime, moveX: moveX, isGrounded: isGrounded)
         
         // Event 점프
         if gameplayManager.isJumpRequested {
-            physicsCore.applyJumpImpulse()
+            characterController.applyJump()
             gameplayManager.resetJumpRequest()
         }
-
-        // Physics 상태 적용
-        let moveX = gameplayManager.state.character.moveX
-        let isGrounded = gameplayManager.state.character.isGrounded
-        physicsCore.applyState(deltaTime: deltaTime, moveX: moveX, isGrounded: isGrounded)
 
         // 카메라 업데이트
         cameraSystem.update()
@@ -104,21 +95,15 @@ final class GameScene: SKScene {
         // 몬스터 업데이트
         monsterController?.update(deltaTime: deltaTime)
         
+        // 맵 업데이트
         updateWalls()
         platformController?.update(cameraY: cameraSystem.cameraNode.position.y, sceneHeight: size.height)
 
-        // 화면(카메라) 아래로 떨어진 경우: 즉시 리스폰
-        if let player = playerNode {
-            let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
-            if player.position.y < cameraBottom - outOfBoundsMargin {
-                gameplayManager.onPlayerFellOutOfBounds()
-            }
-        }
-        
-        if let reason = gameplayManager.consumeRespawnRequestReason() {
-            performRespawn(for: reason)
-            return
-        }
+        // 화면(카메라) 아래로 떨어진 경우 체크
+        handleOutOfBounds(cameraSystem: cameraSystem, gameplayManager: gameplayManager)
+
+        // 리스폰 적용 여부 판단
+        handleRespawnRequest(gameplayManager: gameplayManager)
     }
 
     private func setupWalls() {
@@ -151,26 +136,6 @@ final class GameScene: SKScene {
         addChild(rightWall)
     }
 
-    private func setupPlayer() {
-        let player = SKSpriteNode(imageNamed: AppAsset.Image.character1.name)
-
-        player.name = Constants.Game.NodeName.player
-        player.size = CGSize(width: 50, height: 60) // 적절한 크기 조절
-        player.position = CGPoint(x: 0, y: -50)
-
-        player.physicsBody = SKPhysicsBody(circleOfRadius: player.size.width / 2)
-        player.physicsBody?.isDynamic = true
-        player.physicsBody?.allowsRotation = false
-
-        player.physicsBody?.categoryBitMask = PhysicsCategory.player.rawValue
-        player.physicsBody?.collisionBitMask = PhysicsCategory.playerCollidesWith.rawValue
-        player.physicsBody?.contactTestBitMask = PhysicsCategory.playerContactsWith.rawValue
-        player.physicsBody?.velocity = .zero
-
-        addChild(player)
-        playerNode = player
-    }
-
     private func updateWalls() {
         guard let cameraSystem = cameraSystem else { return }
         let currentCameraY = cameraSystem.cameraNode.position.y
@@ -180,74 +145,6 @@ final class GameScene: SKScene {
             leftWall.position.y = currentCameraY
             rightWall.position.y = currentCameraY
         }
-    }
-
-    // 플레이어 리스폰
-    private func performRespawn(for reason: RespawnReason) {
-        guard let gameplayManager else { return }
-        let startDelay = gameplayManager.respawnDelay(for: reason)
-
-        respawnPlayer(startDelay: startDelay)
-    }
-    
-    private func respawnPlayer(startDelay: TimeInterval) {
-        guard let gameplayManager, let player = playerNode else { return }
-
-        // 물리 정지
-        player.physicsBody?.velocity = .zero
-        player.physicsBody?.isDynamic = false // 잠깐 멈춤
-
-        let wait = SKAction.wait(forDuration: startDelay)
-        let moveAndCamera = SKAction.run { [weak self] in
-            guard let self,
-                  let cameraSystem = self.cameraSystem,
-                  let platformController = self.platformController,
-                  let player = self.playerNode else {
-                self?.gameplayManager?.finishRespawn()
-                return
-            }
-
-            // 위치 이동 (마지막 안전 발판 + 조금 위)
-            let lastSafe = platformController.lastSafePosition
-            let target = (lastSafe == .zero) ? CGPoint(x: 0, y: -100) : lastSafe
-            player.position = CGPoint(x: target.x, y: target.y + 100)
-
-            cameraSystem.setPosition(CGPoint(x: 0, y: player.position.y - 200))
-        }
-
-        // 0.1초 뒤 다시 시작
-        let resume = SKAction.sequence([
-            SKAction.wait(forDuration: 0.1),
-            SKAction.run { [weak self] in
-                self?.playerNode?.physicsBody?.isDynamic = true
-                self?.gameplayManager?.finishRespawn()
-            }
-        ])
-
-        run(.sequence([wait, moveAndCamera, resume]))
-    }
-
-    private func animatePlayer(moveX: Double) {
-        guard let player = playerNode else { return }
-
-        // 좌우 반전
-        if moveX < -0.01 {
-            // 왼쪽 이동
-            player.xScale = abs(player.xScale)
-        } else if moveX > 0.01 {
-            // 오른쪽 이동
-            player.xScale = -abs(player.xScale)
-        }
-
-        // 기울기
-        // 목표 각도: 왼쪽으로 가면(+) 오른쪽으로 가면(-) 기울임
-        let targetRotation = -CGFloat(moveX) * maxTiltAngle
-
-        // 현재 각도에서 목표 각도로 부드럽게 이동 (Lerp)
-        let currentRotation = player.zRotation
-        let newRotation = currentRotation + (targetRotation - currentRotation) * tiltSpeed
-
-        player.zRotation = newRotation
     }
 
     // BitMask -> GameContactType으로 변환
@@ -279,11 +176,12 @@ extension GameScene: SKPhysicsContactDelegate {
         case .ground:
             // 땅 로직: 리스폰 중 X
             if gameplayManager?.isRespawning == false,
-               let player = playerNode,
                let platformNode = otherBody.node {
                 // 위에서 아래로 내려올 때만
-                let dy = player.physicsBody?.velocity.dy ?? 0
-                if dy <= 5.0 && player.position.y > platformNode.position.y {
+                let dy = characterController?.velocityDY ?? 0
+                let playerY = characterController?.positionY ?? 0
+
+                if dy <= 5.0 && playerY > platformNode.position.y {
                     gameplayManager?.handleContact(.ground)
                     platformController?.updateLastSafePosition(platformNode.position)
                 }
@@ -303,5 +201,65 @@ extension GameScene: SKPhysicsContactDelegate {
         guard let contactType = convert(from: otherMask) else { return }
         // 매니저에게 떨어짐을 전달
         gameplayManager?.handleSeparation(from: contactType)
+    }
+}
+
+// MARK: 리스폰 처리
+
+extension GameScene {
+    // 플레이 영역 밖일 때 리스폰
+    private func handleOutOfBounds(cameraSystem: CameraSystem, gameplayManager: GameplayManager) {
+        let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
+        if characterController?.isBelow(cameraBottom: cameraBottom, margin: outOfBoundsMargin) == true {
+            gameplayManager.onPlayerFellOutOfBounds()
+        }
+    }
+
+    private func handleRespawnRequest(gameplayManager: GameplayManager) {
+        guard let reason = gameplayManager.consumeRespawnRequestReason() else { return }
+        performRespawn(for: reason)
+        return
+    }
+    
+    // 플레이어 리스폰
+    private func performRespawn(for reason: RespawnReason) {
+        guard let gameplayManager else { return }
+        let startDelay = gameplayManager.respawnDelay(for: reason)
+
+        respawnPlayer(startDelay: startDelay, reason: reason)
+    }
+    
+    private func respawnPlayer(startDelay: TimeInterval, reason: RespawnReason) {
+        guard let characterController, let platformController else { return }
+        
+        characterController.freezePhysics()
+        characterController.beginRespawn(reason: reason, duration: startDelay)
+        characterController.moveToRespawn(lastSafePosition: platformController.lastSafePosition)
+
+        let wait = SKAction.wait(forDuration: startDelay)
+        let moveAndCamera = SKAction.run { [weak self] in
+            guard let self, let characterController = self.characterController else {
+                self?.gameplayManager?.finishRespawn()
+                return
+            }
+        }
+
+        // 0.1초 뒤 다시 시작
+        let resume = SKAction.sequence([
+            SKAction.wait(forDuration: 0.1),
+            SKAction.run { [weak self] in
+                guard let self,
+                      let characterController = self.characterController else {
+                    self?.gameplayManager?.finishRespawn()
+                    return
+                }
+
+                characterController.resumePhysics()
+                characterController.endRespawn()
+                self.gameplayManager?.finishRespawn()
+            }
+        ])
+
+        run(.sequence([wait, moveAndCamera, resume]))
     }
 }
