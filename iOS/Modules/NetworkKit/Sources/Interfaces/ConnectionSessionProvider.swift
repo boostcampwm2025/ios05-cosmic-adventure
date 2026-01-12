@@ -17,7 +17,6 @@ public protocol ConnectionSessionProvider {
 
     var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)? { get set }
     var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)? { get set }
-//    var onReceiveGamePacket: ((Data, Data) -> Void)? { get set }
 
     func activate(nickname: String)
     func deactive()
