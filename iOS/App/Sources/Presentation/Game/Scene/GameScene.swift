@@ -97,7 +97,9 @@ final class GameScene: SKScene {
         
         // 맵 업데이트
         updateWalls()
-        platformController?.update(cameraY: cameraSystem.cameraNode.position.y, sceneHeight: size.height)
+        platformController?.update(cameraY: cameraSystem.cameraNode.position.y, cullBelowY: monsterController?.topY)
+        // 플랫폼 충돌 창 업데이트: 점프 중 머리 박힘 방지(원웨이)
+        platformController?.updateCollisions(playerY: characterController.positionY, playerDY: characterController.velocityDY)
 
         // 화면(카메라) 아래로 떨어진 경우 체크
         handleOutOfBounds(cameraSystem: cameraSystem, gameplayManager: gameplayManager)
@@ -177,14 +179,25 @@ extension GameScene: SKPhysicsContactDelegate {
             // 땅 로직: 리스폰 중 X
             if gameplayManager?.isRespawning == false,
                let platformNode = otherBody.node {
-                // 위에서 아래로 내려올 때만
-                let dy = characterController?.velocityDY ?? 0
-                let playerY = characterController?.positionY ?? 0
-
-                if dy <= 5.0 && playerY > platformNode.position.y {
-                    gameplayManager?.handleContact(.ground)
-                    platformController?.updateLastSafePosition(platformNode.position)
+                
+                // 현재/이전/다음 플랫폼만 접지 판정 대상으로 (충돌 창과 동일)
+                guard platformController?.isInCollisionWindow(platformNode) == true else {
+                    return
                 }
+
+                // 위에서 밟는 접촉만 착지로 인정
+                let playerIsBodyA = (maskA == PhysicsCategory.player.rawValue)
+                let normalDY = contact.contactNormal.dy
+
+                // player가 위에서 플랫폼을 밟으면
+                // - player가 bodyA인 경우 normal은 아래 방향(음수)
+                // - player가 bodyB인 경우 normal은 위 방향(양수)
+                let isLandingFromAbove = playerIsBodyA ? (normalDY < -0.2) : (normalDY > 0.2)
+
+                guard isLandingFromAbove else { return }
+
+                gameplayManager?.handleContact(.ground)
+                platformController?.updateLastSafePlatform(platformNode)
             }
 
         case .monster:
