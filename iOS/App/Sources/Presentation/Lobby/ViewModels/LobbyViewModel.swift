@@ -45,7 +45,7 @@ final class LobbyViewModel {
     let connectivityMonitor: ConnectivityMonitoring
     
     @ObservationIgnored
-    var sessionManager: ConnectionSessionProvider?
+    var sessionManager: ConnectionSessionProvider
     
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
@@ -133,7 +133,7 @@ final class LobbyViewModel {
         switch networkMode {
         case .local:
             setupSessionManager()
-            sessionManager?.activate(nickname: userName)
+            sessionManager.activate(nickname: userName)
         case .remote:
             webSocketSessionManager?.activate(nickname: userName)
         }
@@ -144,7 +144,7 @@ final class LobbyViewModel {
         
         switch networkMode {
         case .local:
-            sessionManager?.deactive()
+            sessionManager.deactive()
         case .remote:
             webSocketSessionManager?.deactivate()
         }
@@ -155,15 +155,15 @@ final class LobbyViewModel {
         matchStatus.sendRequest()
 
         let packet = InvitationPacket(type: .invite, senderIdentifier: userName)
-        if let targetPeer = sessionManager?.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
-            sessionManager?.requestInvite(to: targetPeer, packet: packet)
+        if let targetPeer = sessionManager.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
+            sessionManager.requestInvite(to: targetPeer, packet: packet)
         }
     }
 
     func cancelInviteRequest() {
         if case .sendingRequest(let peer) = matchStatus {
             let packet = InvitationPacket(type: .cancelInvite, senderIdentifier: userName)
-            sessionManager?.replyToInvite(to: peer.displayName, packet: packet)
+            sessionManager.replyToInvite(to: peer.displayName, packet: packet)
         }
 
         resetToIdle()
