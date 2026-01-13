@@ -7,21 +7,19 @@ public func configure(_ app: Application) async throws {
 
     MigrationRegistry.registerAll(in: app)
 
-    try await registerModules(app)
+    try registerModules(app)
 }
 
-private func registerModules(_ app: Application) async throws {
+private func registerModules(_ app: Application) throws {
     app.get("status") { _ async in
         "Cosmic Adventure Server OK"
     }
 
     let modules: [any AppModule] = [
         ChannelsModule(),
-        WebSocketModule(),
-        GameModule(),
     ]
 
     for module in modules {
-        try await module.registerRoutes(app)
+        try module.registerRoutes(app)
     }
 }
