@@ -6,14 +6,16 @@
 //
 
 import Foundation
+
 import NetworkKit
 
 @MainActor
 protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
-    func makeLobbyViewModel() -> LobbyViewModel
+    func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
+    func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager
 }
 
 final class AppContainer: ViewModelFactory {
@@ -56,12 +58,13 @@ final class AppContainer: ViewModelFactory {
         ProfileSetupViewModel()
     }
     
-    func makeLobbyViewModel() -> LobbyViewModel {
+    func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel {
         LobbyViewModel(
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,
-            nickname: "건방진 탐험가 123"
+            nickname: nickname,
+            characterRawValue: characterType
         )
     }
     
