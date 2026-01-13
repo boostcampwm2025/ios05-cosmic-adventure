@@ -1,4 +1,7 @@
 import SwiftUI
+@_exported import SwiftData
+
+import StorageKit
 
 @main
 struct IOSApp: App {
@@ -6,5 +9,8 @@ struct IOSApp: App {
         WindowGroup {
             RootView(container: AppContainer())
         }
+        .modelContainer(for: [Player.self, GameRecord.self],
+                        isAutosaveEnabled: true,
+                        isUndoEnabled: false)
     }
 }
