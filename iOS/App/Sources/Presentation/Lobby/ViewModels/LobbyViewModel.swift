@@ -8,6 +8,7 @@
 import Observation
 import SwiftUI
 import UIKit
+
 import NetworkKit
 
 enum NetworkMode {
@@ -24,7 +25,6 @@ final class LobbyViewModel {
     private(set) var myExplorer: LobbyExplorer
     var peers: [LobbyExplorer]
     var selectedPeerID: UUID?
-    var userName: String
 
     var activeAlert: LobbyAlert = .none
     var showPermissionAlert: Bool {
@@ -78,20 +78,20 @@ final class LobbyViewModel {
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
-        nickname: String
+        nickname: String,
+        characterRawValue: String
     ) {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
-        self.userName = nickname
         
         self.myExplorer = LobbyExplorer(
             role: .me,
-            displayName: "나",
-            avatar: .character3
+            displayName: nickname,
+            avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
-        
-        // TODO: P2P 연동 후 제거
+
+        // TODO: 네트워크 탐색 결과 보여주면서 제거 예정
         self.peers = [
             LobbyExplorer(role: .peer, displayName: "건방진 탐험가 1", avatar: .character1, proximity: 0.72),
             LobbyExplorer(role: .peer, displayName: "호기심천국", avatar: .character2, proximity: 0.95),
@@ -127,7 +127,6 @@ final class LobbyViewModel {
     }
     
     // MARK: - Common Actions
-
     
     // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요?)
     // TODO: proximity 변경에 따른 재정렬 애니메이션 정책 (너무 자주 움직이면 UX 저하)
@@ -169,10 +168,10 @@ final class LobbyViewModel {
         switch networkMode {
         case .local:
             setupSessionManager()
-            networkSessionManager.activate(nickname: userName)
+            networkSessionManager.activate(nickname: myExplorer.displayName)
         case .remote:
             guard let channelId = selectedChannelId else { return }
-            webSocketSessionManager?.activate(channelId: channelId, nickname: userName)
+            webSocketSessionManager?.activate(channelId: channelId, nickname: myExplorer.displayName)
         }
     }
 

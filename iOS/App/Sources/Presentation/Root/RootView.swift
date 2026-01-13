@@ -6,10 +6,14 @@
 //
 
 import SwiftUI
+import SwiftData
+
+import StorageKit
 
 struct RootView: View {
     private let viewModelFactory: ViewModelFactory
     @State var router: AppRouter
+    @Query private var players: [Player]
 
     init(container: AppContainer? = nil, router: AppRouter? = nil) {
         self.viewModelFactory = container ?? AppContainer()
@@ -24,6 +28,9 @@ struct RootView: View {
                 }
         }
         .environment(router)
+        .onAppear {
+            self.checkUserStatus()
+        }
     }
 
     @ViewBuilder
@@ -34,10 +41,13 @@ struct RootView: View {
         case .profileSetup:
             ProfileSetupView(viewModel: viewModelFactory.makeProfileSetupViewModel())
         case .lobby:
-            LobbyView(
-                viewModel: viewModelFactory.makeLobbyViewModel(),
-                channelListViewModel: viewModelFactory.makeChannelListViewModel()
-            )
+            if let myExplorer = players.first {
+                LobbyView(viewModel:
+                            viewModelFactory.makeLobbyViewModel(nickname: myExplorer.nickname,
+                                                                characterType: myExplorer.character),
+                          channelListViewModel: viewModelFactory.makeChannelListViewModel()
+                )
+            }
         case .dashboard:
             // TODO: DashboardView 연결
             EmptyView()
@@ -49,6 +59,16 @@ struct RootView: View {
         case .result:
             // TODO: ResultView 연결
             EmptyView()
+        }
+    }
+}
+
+extension RootView {
+    private func checkUserStatus() {
+        if !players.isEmpty {
+            router.setRoot(.lobby)
+        } else {
+            router.setRoot(.permissionSetup)
         }
     }
 }

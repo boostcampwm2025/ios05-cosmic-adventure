@@ -1,6 +1,0 @@
-// Environment configuration template
-// Copy this file to Environment.xcconfig and fill in your values
-
-// 본인 Mac의 로컬 IP 또는 서버 URL로 변경 (ifconfig | grep inet)
-// 예: http://192.168.0.10:8080
-API_BASE_URL = http:/$()/YOUR_LOCAL_IP:8080

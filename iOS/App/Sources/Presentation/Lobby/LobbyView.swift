@@ -252,7 +252,7 @@ private extension LobbyView {
     var greetingCard: some View {
         VStack(spacing: 4) {
             HStack(spacing: 0) {
-                Text(viewModel.userName)
+                Text(viewModel.myExplorer.displayName)
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
                 Text(Constants.Lobby.greetingSuffix)
                     .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
@@ -638,7 +638,7 @@ struct LobbyView_Previews: PreviewProvider {
     static var previews: some View {
         let container = AppContainer()
         LobbyView(
-            viewModel: container.makeLobbyViewModel(),
+            viewModel: container.makeLobbyViewModel(nickname: "코스믹어드벤처", characterType: "character1"),
             channelListViewModel: container.makeChannelListViewModel()
         )
     }
