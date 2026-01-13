@@ -67,7 +67,12 @@ extension LobbyViewModel {
         }
     }
 
-    private func resetToIdle() {
+    private func declineInGame(peer: LobbyExplorer) {
+        let packet = InvitationPacket(type: .decline, senderIdentifier: userName)
+        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+    }
+
+    func resetToIdle() {
         matchStatus.reset()
         selectedPeerID = nil
     }
