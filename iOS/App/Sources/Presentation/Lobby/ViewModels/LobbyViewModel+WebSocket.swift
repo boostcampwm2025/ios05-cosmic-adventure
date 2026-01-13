@@ -13,9 +13,15 @@ import NetworkKit
 extension LobbyViewModel {
 
     func setupWebSocketCallbacks() {
-        guard let webSocketSessionManager else { return }
-        
-        webSocketSessionManager.onConnectionStateChanged = { [weak self] connected in
+        guard webSocketSessionManager != nil else { return }
+
+        setupConnectionCallbacks()
+        setupPlayerManagementCallbacks()
+        setupInvitationCallbacks()
+    }
+
+    private func setupConnectionCallbacks() {
+        webSocketSessionManager?.onConnectionStateChanged = { [weak self] connected in
             Task { @MainActor in
                 self?.isConnected = connected
                 if !connected {
@@ -26,26 +32,59 @@ extension LobbyViewModel {
                 }
             }
         }
-        
-        webSocketSessionManager.onPlayersUpdated = { [weak self] players in
+    }
+
+    private func setupPlayerManagementCallbacks() {
+        webSocketSessionManager?.onPlayersUpdated = { [weak self] players in
             Task { @MainActor in
                 self?.updatePeersFromPlayers(players)
             }
         }
-        
-        webSocketSessionManager.onPlayerJoined = { [weak self] player in
+
+        webSocketSessionManager?.onPlayerJoined = { [weak self] player in
             Task { @MainActor in
                 self?.addPeer(from: player)
             }
         }
-        
-        webSocketSessionManager.onPlayerLeft = { [weak self] playerId in
+
+        webSocketSessionManager?.onPlayerLeft = { [weak self] playerId in
             Task { @MainActor in
                 self?.removePeer(playerId: playerId)
             }
         }
     }
-    
+
+    private func setupInvitationCallbacks() {
+        webSocketSessionManager?.onInviteReceived = { [weak self] senderName in
+            Task { @MainActor in
+                self?.handleInviteReceived(from: senderName)
+            }
+        }
+
+        webSocketSessionManager?.onInviteAccepted = { [weak self] senderName in
+            Task { @MainActor in
+                self?.handleInviteAccepted(from: senderName)
+            }
+        }
+
+        webSocketSessionManager?.onInviteDeclined = { [weak self] senderName in
+            Task { @MainActor in
+                self?.handleInviteDeclined(from: senderName)
+            }
+        }
+
+        webSocketSessionManager?.onInviteCancelled = { [weak self] senderName in
+            Task { @MainActor in
+                self?.handleInviteCancelled(from: senderName)
+            }
+        }
+    }
+}
+
+// MARK: - Helper Methods (Player Management)
+
+extension LobbyViewModel {
+
     func updatePeersFromPlayers(_ players: [WebSocketPlayer]) {
         playerIdMapping.removeAll()
         peers = players.map { player in
@@ -60,13 +99,13 @@ extension LobbyViewModel {
             )
         }
     }
-    
+
     func addPeer(from player: WebSocketPlayer) {
         guard playerIdMapping[player.id] == nil else { return }
-        
+
         let uuid = UUID()
         playerIdMapping[player.id] = uuid
-        
+
         let explorer = LobbyExplorer(
             id: uuid,
             role: .peer,
@@ -76,46 +115,33 @@ extension LobbyViewModel {
         )
         peers.append(explorer)
     }
-    
+
     func removePeer(playerId: String) {
         guard let uuid = playerIdMapping[playerId] else { return }
         peers.removeAll { $0.id == uuid }
         playerIdMapping.removeValue(forKey: playerId)
-        
+
         if selectedPeerID == uuid {
             selectedPeerID = nil
         }
     }
-    
+
     func randomAvatar() -> CharacterAvatar {
         let avatars: [CharacterAvatar] = [.character1, .character2, .character3, .character4, .character5, .character6]
         return avatars.randomElement() ?? .character1
     }
 }
 
-// MARK: - Invite Actions
+// MARK: - Channel Actions
 
 extension LobbyViewModel {
+    func selectChannel(_ channelId: String) {
+        selectedChannelId = channelId
+    }
 
-    func sendInvite(to peerId: UUID) {
-        guard networkMode == .remote,
-              let playerId = playerIdMapping.first(where: { $0.value == peerId })?.key else { return }
-        webSocketSessionManager?.sendInvite(to: playerId)
-    }
-    
-    func acceptInvite(from playerId: String) {
-        guard networkMode == .remote else { return }
-        webSocketSessionManager?.acceptInvite(from: playerId)
-    }
-    
-    func declineInvite(from playerId: String) {
-        guard networkMode == .remote else { return }
-        webSocketSessionManager?.declineInvite(from: playerId)
-    }
-    
-    func cancelInvite(to peerId: UUID) {
-        guard networkMode == .remote,
-              let playerId = playerIdMapping.first(where: { $0.value == peerId })?.key else { return }
-        webSocketSessionManager?.cancelInvite(to: playerId)
+    func leaveChannel() {
+        stopNetworkExploration()
+        selectedChannelId = nil
+        peers = []
     }
 }
