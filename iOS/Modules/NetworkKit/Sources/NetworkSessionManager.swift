@@ -27,13 +27,18 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     private let encoder = JSONEncoder()
 
     private var pendingInviteConnections: [String: NWConnection] = [:]
+    private var activeGameConnection: NWConnection?
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "NetworkSessionManager")
 
     // MARK: - Callbacks
 
     public var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)?
-    public var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)?
+    public var onInviteReceived: ((String) -> Void)?
+    public var onInviteAccepted: ((String) -> Void)?
+    public var onInviteDeclined: ((String) -> Void)?
+    public var onInviteCancelled: ((String) -> Void)?
+    public var onInputReceived: ((String, Data) -> Void)?
 
     // MARK: - Initialization
 
@@ -77,6 +82,46 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
          onPermissionResult = nil
      }
+
+    public func sendInvite(to peerName: String) {
+        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
+        let packet = NetworkPacket(type: .invite, senderIdentifier: myNickname ?? "Unknown")
+
+        requestInvite(to: targetPeer, packet: packet)
+    }
+
+    public func acceptInvite(from targetName: String) {
+        let packet = NetworkPacket(type: .inviteAccept, senderIdentifier: myNickname ?? "Unknown")
+        sendResponse(to: targetName, packet: packet)
+    }
+
+    public func declineInvite(from targetName: String) {
+        let packet = NetworkPacket(type: .inviteDecline, senderIdentifier: myNickname ?? "Unknown")
+        sendResponse(to: targetName, packet: packet)
+    }
+
+    public func cancelInvite(from targetName: String) {
+        let packet = NetworkPacket(type: .inviteCancel, senderIdentifier: myNickname ?? "Unknown")
+        sendResponse(to: targetName, packet: packet)
+    }
+
+    public func sendInput<T: Codable>(_ data: T) {
+        guard let payload = try? encoder.encode(data) else { return }
+        let packet = NetworkPacket(
+            type: .input,
+            senderIdentifier: myNickname ?? "Unknown",
+            payload: payload
+        )
+        guard let encodedPacket = try? encoder.encode(packet) else { return }
+
+        if let connection = self.activeGameConnection {
+            connection.send(content: encodedPacket, completion: .contentProcessed { error in
+                if let error = error {
+                    self.logger.error("전송 실패: \(error.localizedDescription)")
+                }
+            })
+        }
+    }
 
     // MARK: - Private Methods
 
@@ -153,42 +198,57 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
     }
 
     private func handleReceivedData(_ data: Data, from connection: NWConnection? = nil) {
-        guard let header = try? decoder.decode(NetworkPacketHeader.self, from: data) else { return }
+        guard let packet = try? decoder.decode(NetworkPacket.self, from: data) else { return }
 
-        if header.type == .invite, let connection = connection {
-            self.pendingInviteConnections[header.senderIdentifier] = connection
+        if packet.type == .invite, let connection = connection {
+            self.pendingInviteConnections[packet.senderIdentifier] = connection
         }
 
         DispatchQueue.main.async { [weak self] in
-            switch header.type {
-            case .invite, .accept, .decline, .cancelInvite:
-                self?.onReceiveInvitationPacket?(header.type, data)
+            switch packet.type {
+            case .invite:
+                self?.onInviteReceived?(packet.senderIdentifier)
+
+            case .inviteAccept:
+                if let connection = connection {
+                    self?.activeGameConnection = connection
+                     self?.pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
+                }
+                self?.onInviteAccepted?(packet.senderIdentifier)
+
+            case .inviteDecline:
+                self?.onInviteDeclined?(packet.senderIdentifier)
+
+            case .inviteCancel:
+                self?.onInviteCancelled?(packet.senderIdentifier)
+
+            case .input:
+                if let payload = packet.payload {
+                    self?.onInputReceived?(packet.senderIdentifier, payload)
+                }
             }
         }
     }
 
-    public func requestInvite<T: NetworkTransferable>(to peer: Peer, packet: T) {
+    private func requestInvite(to peer: Peer, packet: NetworkPacket) {
         guard let data = try? encoder.encode(packet) else { return }
 
         Task {
             do {
                 try await client.connectToHost(endpoint: peer.endpoint)
                 client.sendData(data)
-
             } catch {
                 logger.error("연결 실패: \(error.localizedDescription)")
             }
         }
     }
 
-    public func replyToInvite<T: NetworkTransferable>(to targetName: String, packet: T) {
+    private func sendResponse(to targetName: String, packet: NetworkPacket) {
         guard let connection = self.pendingInviteConnections[targetName] else { return }
-        guard let data = try? encoder.encode(packet) else { return }
 
+        guard let data = try? encoder.encode(packet) else { return }
         host.sendData(data, to: connection)
 
         self.pendingInviteConnections.removeValue(forKey: targetName)
     }
-
-    // TODO: 게임 데이터 전송
 }

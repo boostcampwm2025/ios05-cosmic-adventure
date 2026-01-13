@@ -28,5 +28,5 @@ public protocol WebSocketSessionManaging: AnyObject {
     func acceptInvite(from playerId: String)
     func declineInvite(from playerId: String)
     func cancelInvite(to playerId: String)
-    func sendInput(_ data: String, to playerId: String)
+    func sendInput<T: Codable>(_ data: T, to playerId: String)
 }

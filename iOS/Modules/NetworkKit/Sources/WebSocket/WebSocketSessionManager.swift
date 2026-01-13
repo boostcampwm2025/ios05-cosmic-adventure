@@ -80,10 +80,13 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         service.cancelInvite(to: playerId)
     }
     
-    public func sendInput(_ data: String, to playerId: String) {
-        service.sendInput(data, to: playerId)
+    public func sendInput<T: Codable>(_ data: T, to playerId: String) {
+        guard let jsonData = try? JSONEncoder().encode(data) else { return }
+        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+
+        service.sendInput(jsonString, to: playerId)
     }
-    
+
     // MARK: - Private Methods
     
     private func setupCallbacks() {
