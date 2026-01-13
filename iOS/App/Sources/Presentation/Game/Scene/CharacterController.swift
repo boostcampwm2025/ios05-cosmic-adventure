@@ -13,6 +13,8 @@ final class CharacterController {
     private weak var scene: SKScene?
     private let cameraSystem: CameraSystem
     
+    let playerRole: PlayerRole
+
     private(set) var playerNode: SKSpriteNode?
     private(set) var physicsCore: PhysicsCore?
 
@@ -30,9 +32,10 @@ final class CharacterController {
     var positionY: CGFloat? { playerNode?.position.y }
     var velocityDY: CGFloat { playerNode?.physicsBody?.velocity.dy ?? 0 }
     
-    init(scene: SKScene, cameraSystem: CameraSystem) {
+    init(scene: SKScene, cameraSystem: CameraSystem, playerRole: PlayerRole = .me) {
         self.scene = scene
         self.cameraSystem = cameraSystem
+        self.playerRole = playerRole
     }
     
     func setupPlayer(
@@ -43,13 +46,18 @@ final class CharacterController {
         guard let scene else { return }
         
         let player = SKSpriteNode(imageNamed: AppAsset.Image.character1.name)
-        player.name = L10N.Game.NodeName.player
+        player.name = "\(L10N.Game.NodeName.player)_\(playerRole.rawValue)"
         player.size = size
         player.position = initialPosition
+        
+        if playerRole == .opponent {
+            player.alpha = 0.4
+        }
         
         let body = SKPhysicsBody(circleOfRadius: size.width / 2)
         body.isDynamic = true
         body.allowsRotation = false
+        
         body.categoryBitMask = PhysicsCategory.player.rawValue
         body.collisionBitMask = PhysicsCategory.playerCollidesWith.rawValue
         body.contactTestBitMask = PhysicsCategory.playerContactsWith.rawValue
