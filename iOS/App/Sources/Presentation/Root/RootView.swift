@@ -65,8 +65,13 @@ struct RootView: View {
 
 extension RootView {
     private func checkUserStatus() {
-        if !players.isEmpty {
+        let hasCompletedPermission = UserDefaultsList.Permission.hasCompletedPermissionSetup
+        let hasPlayerProfile = !players.isEmpty
+
+        if hasPlayerProfile {
             router.setRoot(.lobby)
+        } else if hasCompletedPermission {
+            router.setRoot(.profileSetup)
         } else {
             router.setRoot(.permissionSetup)
         }
