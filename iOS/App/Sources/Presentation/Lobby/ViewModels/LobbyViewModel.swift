@@ -21,7 +21,6 @@ final class LobbyViewModel {
 
     // MARK: - Properties
 
-    let decoder = JSONDecoder()
     private(set) var myExplorer: LobbyExplorer
     var peers: [LobbyExplorer]
     var selectedPeerID: UUID?
@@ -37,7 +36,7 @@ final class LobbyViewModel {
     
     private(set) var networkMode: NetworkMode = .local
     
-    private(set) var selectedChannelId: String?
+    var selectedChannelId: String?
 
     var matchStatus: GameMatchStatus = .idle
 
@@ -103,6 +102,8 @@ final class LobbyViewModel {
         self.selectedPeerID = nil
         
         setupConnectivityMonitor()
+
+        setupP2PCallbacks()
         setupWebSocketCallbacks()
     }
     
@@ -186,7 +187,49 @@ final class LobbyViewModel {
         }
     }
 
-    func sendInviteRequest() {
+    func resetToIdle() {
+        matchStatus.reset()
+        selectedPeerID = nil
+    }
+}
+
+
+// MARK: - Invite Event Handlers
+extension LobbyViewModel {
+    func handleInviteReceived(from senderName: String) {
+        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+
+        switch matchStatus {
+        case .idle:
+            matchStatus.receiveInvite(from: peer)
+        default:
+            break
+        }
+    }
+
+    func handleInviteAccepted(from senderName: String) {
+        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+
+        if case .sendingRequest = matchStatus {
+            matchStatus.setGameReady(with: peer)
+        }
+    }
+
+    func handleInviteDeclined(from senderName: String) {
+        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+
+        if case .sendingRequest = matchStatus {
+            matchStatus.requestDeclined(by: peer)
+        }
+    }
+
+    func handleInviteCancelled(from senderName: String) {
+        if case .receivedInvite = matchStatus {
+            resetToIdle()
+        }
+    }
+}
+
         guard case .readyToSend(let peer) = matchStatus else { return }
         matchStatus.sendRequest()
 
