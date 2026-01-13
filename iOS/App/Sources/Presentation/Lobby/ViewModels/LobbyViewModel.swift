@@ -230,33 +230,52 @@ extension LobbyViewModel {
     }
 }
 
+// MARK: - Invite Actions
+
+extension LobbyViewModel {
+    func sendInvite() {
         guard case .readyToSend(let peer) = matchStatus else { return }
         matchStatus.sendRequest()
 
-        let packet = InvitationPacket(type: .invite, senderIdentifier: userName)
-        if let targetPeer = sessionManager.nearbyPlayer.first(where: { $0.name == peer.displayName }) {
-            sessionManager.requestInvite(to: targetPeer, packet: packet)
+        switch networkMode {
+        case .local:
+            sessionManager.sendInvite(to: peer.displayName)
+
+        case .remote:
+            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
+                webSocketSessionManager?.sendInvite(to: playerId)
+            }
         }
     }
 
-    func cancelInviteRequest() {
+    func cancelInvite() {
         if case .sendingRequest(let peer) = matchStatus {
-            let packet = InvitationPacket(type: .cancelInvite, senderIdentifier: userName)
-            sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+            switch networkMode {
+            case .local:
+                sessionManager.cancelInvite(from: peer.displayName)
+
+            case .remote:
+                if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
+                    webSocketSessionManager?.cancelInvite(to: playerId)
+                }
+            }
         }
 
-        resetToIdle()
-    }
-
-    func confirmDecline() {
         resetToIdle()
     }
 
     func acceptInvite() {
         guard case .receivedInvite(let peer) = matchStatus else { return }
 
-        let packet = InvitationPacket(type: .accept, senderIdentifier: userName)
-        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+        switch networkMode {
+        case .local:
+            sessionManager.acceptInvite(from: peer.displayName)
+
+        case .remote:
+            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
+                webSocketSessionManager?.acceptInvite(from: playerId)
+            }
+        }
 
         matchStatus.setGameReady(with: peer)
     }
@@ -264,19 +283,20 @@ extension LobbyViewModel {
     func declineInvite() {
         guard case .receivedInvite(let peer) = matchStatus else { return }
 
-        let packet = InvitationPacket(type: .decline, senderIdentifier: userName)
-        sessionManager.replyToInvite(to: peer.displayName, packet: packet)
+        switch networkMode {
+        case .local:
+            sessionManager.declineInvite(from: peer.displayName)
+
+        case .remote:
+            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
+                webSocketSessionManager?.declineInvite(from: playerId)
+            }
+        }
 
         resetToIdle()
     }
-    
-    func selectChannel(_ channelId: String) {
-        selectedChannelId = channelId
-    }
-    
-    func leaveChannel() {
-        stopNetworkExploration()
-        selectedChannelId = nil
-        peers = []
+
+    func confirmDecline() {
+        resetToIdle()
     }
 }

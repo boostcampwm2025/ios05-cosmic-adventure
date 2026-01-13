@@ -466,14 +466,14 @@ private extension LobbyView {
             cornerRadius: 16,
             verticalPadding: 14
         ) {
-            if !isSending { viewModel.sendInviteRequest() }
+            if !isSending { viewModel.sendInvite() }
         }
         .opacity(isSending ? 0.6 : 1.0)
         .disabled(isSending)
     }
 
     var cancelButton: some View {
-        Button(action: viewModel.cancelInviteRequest) {
+        Button(action: viewModel.cancelInvite) {
             Text(Constants.Lobby.RequestModal.cancelButtonTitle)
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
                 .frame(maxWidth: .infinity)
