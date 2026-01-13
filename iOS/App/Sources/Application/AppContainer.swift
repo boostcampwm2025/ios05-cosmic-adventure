@@ -18,7 +18,7 @@ protocol ViewModelFactory {
 final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
     private let connectivityMonitor: ConnectivityMonitoring
-    private let networkSessionManager: NetworkSessionManager
+    private let networkSessionManager: ConnectionSessionProvider
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
     // TODO: 유저 프로필 관리 객체 소유
@@ -26,7 +26,7 @@ final class AppContainer: ViewModelFactory {
     init(
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
-        networkSessionManager: NetworkSessionManager = NetworkSessionManager(),
+        networkSessionManager: ConnectionSessionProvider = NetworkSessionManager(),
         webSocketService: WebSocketService = WebSocketService(),
         webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
