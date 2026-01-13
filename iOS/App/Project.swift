@@ -23,6 +23,7 @@ let project = Project(
                 "NSBonjourServices": .array([
                     .string("_cosmicadventure._tcp"),
                 ]),
+                "API_BASE_URL": "$(API_BASE_URL)",
                 "UIAppFonts": [
                   "Fonts/Pretendard-Thin.otf",
                   "Fonts/Pretendard-ExtraLight.otf",
@@ -51,6 +52,10 @@ let project = Project(
                 base: [
                     "DEVELOPMENT_TEAM": "B3PWYBKFUK",
                     "CODE_SIGN_STYLE": "Automatic",
+                ],
+                configurations: [
+                    .debug(name: "Debug", xcconfig: "Environment.xcconfig"),
+                    .release(name: "Release", xcconfig: "Environment.xcconfig")
                 ]
             )
         ),

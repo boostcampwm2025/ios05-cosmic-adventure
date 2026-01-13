@@ -83,3 +83,6 @@ default.profraw
 .build
 Packages
 .package.resolved
+
+# Environment config (contains secrets)
+Environment.xcconfig
