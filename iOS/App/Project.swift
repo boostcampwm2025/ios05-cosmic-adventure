@@ -47,6 +47,7 @@ let project = Project(
                 .project(target: "InputSystem", path: "../Modules/InputSystem"),
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
                 .project(target: "NetworkKit", path: "../Modules/NetworkKit"),
+                .project(target: "StorageKit", path: "../Modules/StorageKit"),
             ],
             settings: .settings(
                 base: [
