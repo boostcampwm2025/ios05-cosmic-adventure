@@ -6,13 +6,12 @@
 //
 
 enum UserDefaultKeys: String {
-    case localNetworkPermission
-    case cameraPermission
+    case isPermissionChecked
 }
 
 public struct UserDefaultsList {
     public struct Permission {
-        @UserDefaultWrapper<Bool>(key: UserDefaultKeys.localNetworkPermission.rawValue) public static var localNetworkPermission
-        @UserDefaultWrapper<Bool>(key: UserDefaultKeys.cameraPermission.rawValue) public static var cameraPermission
+        @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isPermissionChecked.rawValue, defaultValue: false)
+        public static var hasCompletedPermissionSetup
     }
 }

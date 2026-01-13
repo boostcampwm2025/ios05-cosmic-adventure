@@ -33,26 +33,21 @@ final class DefaultPermissionService: PermissionServicing {
     func requestCameraIfNeeded() async -> Bool {
         switch AVCaptureDevice.authorizationStatus(for: .video) {
         case .authorized:
-            UserDefaultsList.Permission.cameraPermission = true
             return true
         case .denied, .restricted:
-            UserDefaultsList.Permission.cameraPermission = false
             return false
         case .notDetermined:
             let granted = await withCheckedContinuation { cont in
                 AVCaptureDevice.requestAccess(for: .video) { cont.resume(returning: $0) }
             }
-            UserDefaultsList.Permission.cameraPermission = granted
             return granted
         @unknown default:
-            UserDefaultsList.Permission.cameraPermission = false
             return false
         }
     }
 
     func requestLocalNetworkPermissionIfNeeded() async -> Bool {
         let isGranted = await localNetworkRequester.requestPermission(hostName: "permission-check")
-        UserDefaultsList.Permission.localNetworkPermission = isGranted
         return isGranted
     }
 

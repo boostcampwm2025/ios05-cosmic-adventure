@@ -59,6 +59,7 @@ final class PermissionSetupViewModel {
         }
         localNetworkState = .allowed
         
+        UserDefaultsList.Permission.hasCompletedPermissionSetup = true
         shouldNavigateNext = true
     }
 
