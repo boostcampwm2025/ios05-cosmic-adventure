@@ -16,10 +16,17 @@ public protocol ConnectionSessionProvider {
     var nearbyPlayer: [Peer] { get }
 
     var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)? { get set }
-    var onReceiveInvitationPacket: ((NetworkPacketType, Data) -> Void)? { get set }
+    var onInviteReceived: ((String) -> Void)? { get set }
+    var onInviteAccepted: ((String) -> Void)? { get set }
+    var onInviteDeclined: ((String) -> Void)? { get set }
+    var onInviteCancelled: ((String) -> Void)? { get set }
+    var onInputReceived: ((String, Data) -> Void)? { get set }
 
     func activate(nickname: String)
     func deactive()
-    func requestInvite<T: NetworkTransferable>(to peer: Peer, packet: T)
-    func replyToInvite<T: NetworkTransferable>(to targetName: String, packet: T)
+    func sendInvite(to peer: String)
+    func cancelInvite(from peer: String)
+    func acceptInvite(from peer: String)
+    func declineInvite(from peer: String)
+
 }
