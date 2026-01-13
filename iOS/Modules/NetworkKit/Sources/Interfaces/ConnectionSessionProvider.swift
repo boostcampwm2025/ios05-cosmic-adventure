@@ -28,5 +28,5 @@ public protocol ConnectionSessionProvider {
     func cancelInvite(from peer: String)
     func acceptInvite(from peer: String)
     func declineInvite(from peer: String)
-
+    func sendInput<T: Codable>(_ data: T)
 }
