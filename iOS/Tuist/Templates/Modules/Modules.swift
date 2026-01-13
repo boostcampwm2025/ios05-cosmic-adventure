@@ -9,11 +9,11 @@ let template = Template(
     ],
     items: [
         .file(
-            path: "iOS/Modules/\(moduleName)/Project.swift",
+            path: "Modules/\(moduleName)/Project.swift",
             templatePath: "Sources/Project.stencil"
         ),
         .file(
-            path: "iOS/Modules/\(moduleName)/Sources/\(moduleName).swift",
+            path: "Modules/\(moduleName)/Sources/\(moduleName).swift",
             templatePath: "Sources/Modules.swift.stencil"
         )
     ]

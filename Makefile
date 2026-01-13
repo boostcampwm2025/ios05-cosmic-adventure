@@ -46,3 +46,10 @@ clean:
 	@cd iOS && tuist clean
 	@cd backend && swift package clean
 	@rm -f backend/db.sqlite
+
+# 모듈생성
+module:
+	@read -p "생성할 모듈 이름을 입력하세요: " name; \
+	cd iOS && tuist scaffold Modules --name $$name; \
+	echo "✅ $$name 모듈이 생성되었습니다. Tuist 설정을 편집합니다..."; \
+	tuist edit
