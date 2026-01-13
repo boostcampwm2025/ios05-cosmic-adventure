@@ -35,9 +35,10 @@ final class AppContainer: ViewModelFactory {
         self.networkSessionManager = networkSessionManager
         self.webSocketService = webSocketService
         self.webSocketSessionManager = webSocketSessionManager
+        let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? "http://localhost:8080"
         self.channelService = ChannelService(
             httpClient: HTTPClient(),
-            baseURL: "http://localhost:8080"
+            baseURL: baseURL
         )
         self.permissionService = permissionService
             ?? DefaultPermissionService(

@@ -27,6 +27,9 @@ jobs:
       - name: Fetch Dependencies
         run: tuist install
 
+      - name: Create Environment.xcconfig
+        run: echo "${{ secrets.XCCONFIG_CONTENT }}" > iOS/App/Environment.xcconfig
+
       - name: Generate Project
         run: tuist generate --no-open
 
