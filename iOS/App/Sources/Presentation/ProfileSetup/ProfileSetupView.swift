@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct ProfileSetupView: View {
+    @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: ProfileSetupViewModel
 
@@ -42,7 +43,7 @@ struct ProfileSetupView: View {
                 Spacer()
                 
                 PrimaryGradientButton(title: Constants.ProfileSetup.startButtonTitle) {
-                    viewModel.proceedToLobby()
+                    viewModel.proceedToLobby(modelContext: modelContext)
                     router.setRoot(.lobby)
                 }
                 .padding(.horizontal, 20)

@@ -5,7 +5,11 @@
 // Created by 영빈 on 1/7/26.
 //
 
+import Foundation
 import Observation
+import SwiftData
+
+import StorageKit
 
 // MARK: - ViewModel
 
@@ -27,10 +31,18 @@ final class ProfileSetupViewModel {
         selectedAvatar = avatar
     }
     
-    // TODO: 랜덤 닉네임 생성 로직 적용
-    // TODO: UserDefaults에 프로필 저장/복원
-    
-    func proceedToLobby() {
+    func proceedToLobby(modelContext: ModelContext) {
+        // TODO: 랜덤 닉네임 생성 로직 적용
+        let finalNickname = nickname.isEmpty ? "건방진 탐험가123" : nickname
+        
+        let newPlayer = Player(
+            id: UUID(),
+            nickname: finalNickname,
+            character: self.selectedAvatar.rawValue
+        )
+        
+        modelContext.insert(newPlayer)
+        
         // TODO: LobbyView로 이동
     }
 }

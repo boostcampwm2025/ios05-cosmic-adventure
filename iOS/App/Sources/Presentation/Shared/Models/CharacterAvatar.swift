@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum CharacterAvatar: CaseIterable, Equatable {
+enum CharacterAvatar: String, Codable, CaseIterable, Equatable {
     case character1
     case character2
     case character3
