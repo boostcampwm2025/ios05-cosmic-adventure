@@ -15,19 +15,24 @@ final class GameScene: SKScene {
     private var platformController: PlatformController?
     private var monsterController: MonsterController?
     private var characterController: CharacterController?
-
+    private var opponentCharacterController: CharacterController?
+    
+    private let isTwoPlayerMode: Bool
+    
     private let outOfBoundsMargin: CGFloat = 100
 
     private var lastUpdateTime: TimeInterval = 0
 
-    init(size: CGSize, gameplayManager: GameplayManager) {
+    init(size: CGSize, gameplayManager: GameplayManager, isTwoPlayerMode: Bool = false) {
         self.gameplayManager = gameplayManager
+        self.isTwoPlayerMode = isTwoPlayerMode
         super.init(size: size)
         self.physicsWorld.gravity = CGVector(dx: 0, dy: PhysicsConstants.gravityDY)
         self.physicsWorld.contactDelegate = self
     }
 
     required init?(coder: NSCoder) {
+        self.isTwoPlayerMode = false
         super.init(coder: coder)
     }
 
@@ -45,9 +50,21 @@ final class GameScene: SKScene {
         platformController?.setupInitialPlatforms()
         setupWalls()
 
-        // 캐릭터 설정
-        characterController = CharacterController(scene: self, cameraSystem: cameraSystem)
-        characterController?.setupPlayer()
+        // 몬스터 설정
+        monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
+        monsterController?.setupInitialMonster()
+
+        // 캐릭터 설정 (항상 내 캐릭터는 생성)
+        characterController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .me)
+        characterController?.setupPlayer(initialPosition: CGPoint(x: 0, y: -50))
+
+        // 2인 모드일 때만 상대 캐릭터 생성
+        if isTwoPlayerMode {
+            opponentCharacterController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .opponent)
+            opponentCharacterController?.setupPlayer(initialPosition: CGPoint(x: 80, y: -50))
+        } else {
+            opponentCharacterController = nil
+        }
         
         if let player = characterController?.playerNode {
             // 카메라가 플레이어를 따라가도록 설정
