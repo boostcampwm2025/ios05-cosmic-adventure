@@ -7,6 +7,36 @@
 
 import Foundation
 
+/// 게임의 핵심 비즈니스 로직과 상태를 관리하는 중앙 컨트롤러
+///
+/// `GameplayManager`는 게임 규칙 적용, 상태 관리, 입력 처리를 담당합니다.
+/// 렌더링 엔진이나 물리 시뮬레이션과 완전히 독립되어 순수한 게임 로직만 처리합니다.
+///
+/// ## 주요 기능
+///
+/// - 캐릭터 상태 관리 (이동, 점프, 접지)
+/// - 게임 규칙 집행 (더블 점프, 쿨다운, 타임아웃)
+/// - 입력 이벤트 처리 및 변환
+/// - 리스폰 로직 관리
+/// - 게임 종료 조건 평가
+///
+/// ## 사용 예제
+///
+/// ```swift
+/// let manager = GameplayManager()
+/// let input = FaceTrackingGameInputProvider(inputSystem: inputSystem)
+/// manager.bind(input: input)
+///
+/// func update(_ deltaTime: TimeInterval) {
+///     manager.update(deltaTime: deltaTime)
+///
+///     if manager.isJumpRequested {
+///         physicsEngine.applyJumpImpulse()
+///         manager.resetJumpRequest()
+///     }
+/// }
+/// ```
+///
 @Observable
 @MainActor
 public final class GameplayManager {
