@@ -168,7 +168,7 @@ extension CharacterController {
         guard let playerNode else { return }
         let base = (lastSafePosition == .zero) ? CGPoint(x: 0, y: -100) : lastSafePosition
         playerNode.position = CGPoint(x: base.x, y: base.y + playerYOffset)
-        cameraSystem.setPosition(CGPoint(x: 0, y: playerNode.position.y - cameraYOffset))
+
         syncRespawnLabelPosition()
     }
     

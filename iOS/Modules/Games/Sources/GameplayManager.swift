@@ -40,26 +40,23 @@ import Foundation
 @Observable
 @MainActor
 public final class GameplayManager {
-    public var state = GameState()
-
-    public var isJumpRequested: Bool = false
+    public var state: GameState
+    
+    public let localPlayerID: UUID
+    public let opponentPlayerIDs: [UUID]
+    
+    private var jumpRequestedPlayerIDs: Set<UUID> = []
+    private var runtimeByPlayer: [UUID: PlayerRuntime] = [:]
+    
+    //
     private let maxJumpCount = 2
-
     private let jumpCooldown: TimeInterval = 0.4
     private let landingCooldown: TimeInterval = 0.3
-    
-    private var lastJumpTime: TimeInterval = 0
-    private var lastLandingTime: TimeInterval = 0
-
-    private var timeSinceLastInput: TimeInterval = 0
     private let inputTimeout: TimeInterval = 0.2
 
+    //
     private var inputProvider: (any GameInputProviding)?
     private var inputTask: Task<Void, Never>?
-
-    public var isRespawning: Bool {
-        state.respawn.isRespawning
-    }
     
     // MARK: Game End
     public private(set) var endReason: GameEndReason? = nil
@@ -71,15 +68,36 @@ public final class GameplayManager {
     private var timeLimit: TimeInterval? = nil
     private var endCondition: any GameEndCondition
 
-    public init(endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 30)) {
+    public init(
+        localPlayerID: UUID,
+        opponentPlayerIDs: [UUID] = [],
+        endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 30)
+    ) {
+        self.localPlayerID = localPlayerID
+        self.opponentPlayerIDs = opponentPlayerIDs
+        self.state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
+                
         self.endCondition = endCondition
         self.timeLimit = (endCondition as? TimeoutOrFinishEndCondition)?.limit
         if let limit = timeLimit {
             self.remainingSeconds = Int(limit)
         }
+        
+        self.initializeRuntimeByPlayer()
     }
     
-    public func bind(input: any GameInputProviding) {
+    private func initializeRuntimeByPlayer() {
+        runtimeByPlayer.removeAll(keepingCapacity: true)
+
+        runtimeByPlayer[localPlayerID] = PlayerRuntime()
+
+        for id in opponentPlayerIDs where id != localPlayerID {
+            runtimeByPlayer[id] = PlayerRuntime()
+        }
+    }
+    
+    // TODO: GameInputProviding 네트워크에서 받은 인풋 연결하기
+    public func bind(input: any GameInputProviding, for playerID: UUID) {
         unbind()
         inputProvider = input
         input.start()
@@ -89,7 +107,7 @@ public final class GameplayManager {
             let stream = await input.events()
             for await event in stream {
                 guard !Task.isCancelled else { break }
-                self.handleInput(event)
+                self.handleInput(event, for: playerID)
             }
         }
     }
@@ -101,33 +119,13 @@ public final class GameplayManager {
         inputProvider = nil
     }
 
-    private func handleInput(_ event: GameInputEvent) {
+    private func handleInput(_ event: GameInputEvent, for playerID: UUID) {
         switch event {
         case .horizontal(let x):
-            updateMoveX(x)
+            updateMoveX(x, for: playerID)
         case .jump:
-            tryJump()
+            tryJump(for: playerID)
         }
-    }
-
-    private func updateMoveX(_ moveX: Double) {
-        state.character.moveX = moveX
-        timeSinceLastInput = 0
-    }
-
-    private func tryJump() {
-        let currentTime = Date().timeIntervalSince1970
-
-        guard currentTime - lastLandingTime > landingCooldown else { return }
-        guard currentTime - lastJumpTime > jumpCooldown else { return }
-        guard state.character.jumpCount < maxJumpCount else { return }
-
-        state.character.jumpCount += 1
-        state.character.isGrounded = false
-        isJumpRequested = true
-
-        lastJumpTime = currentTime
-        timeSinceLastInput = 0
     }
 
     // Game Loop Update
@@ -138,57 +136,100 @@ public final class GameplayManager {
         publishTimeIfNeeded()
         evaluateEndConditionIfNeeded()
 
-        // 입력 처리
-        timeSinceLastInput += deltaTime
-        if timeSinceLastInput > inputTimeout { // 입력 없이 0.2초가 지났다면
-            state.character.moveX = 0 // 정지
+        // 입력 처리(플레이어별)
+        for playerID in state.characters.keys {
+            runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput += deltaTime
+
+            if runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput > inputTimeout {
+                state.setMoveX(0, for: playerID)
+            }
         }
     }
-
-    public func resetJumpRequest() {
-        isJumpRequested = false
-    }
-
-    public func handleContact(_ type: GameContactType) {
+    
+    public func handleContact(_ type: GameContactType, for playerID: UUID) {
         switch type {
         case .ground:
-            if !state.character.isGrounded {
-                state.character.isGrounded = true
-                state.character.jumpCount = 0
-                lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
+            guard let character = state.characters[playerID] else { return }
+            
+            if !character.isGrounded {
+                state.setGrounded(true, for: playerID)
+                state.setJumpCount(0, for: playerID)
+                runtimeByPlayer[playerID, default: PlayerRuntime()].lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
             }
         case .monster:
-            requestRespawn(.hitMonster)
+            requestRespawn(.hitMonster, for: playerID)
         }
     }
-
-    public func handleSeparation(from type: GameContactType) {
+    
+    public func handleSeparation(from type: GameContactType, for playerID: UUID) {
         if type == .ground {
-            state.character.isGrounded = false
+            state.setGrounded(false, for: playerID)
         }
+    }
+}
+
+// MARK: 캐릭터 input 처리
+
+extension GameplayManager {
+    private func updateMoveX(_ moveX: Double, for playerID: UUID) {
+        state.setMoveX(moveX, for: playerID)
+        runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput = 0
+    }
+    
+    private func tryJump(for playerID: UUID) {
+        let currentTime = Date().timeIntervalSince1970
+        
+        guard let playRuntime = runtimeByPlayer[playerID],
+              let character = state.characters[playerID] else { return }
+        
+        // 착지 직후 / 연속 점프 쿨다운
+        guard currentTime - playRuntime.lastLandingTime > landingCooldown else { return }
+        guard currentTime - playRuntime.lastJumpTime > jumpCooldown else { return }
+        
+        // 최대 점프 횟수 제한
+        guard character.jumpCount < maxJumpCount else { return }
+        
+        // 점프 확정
+        state.setJumpCount(character.jumpCount + 1, for: playerID)
+        state.setGrounded(false, for: playerID)
+        jumpRequestedPlayerIDs.insert(playerID)
+        
+        // 런타임 갱신
+        runtimeByPlayer[playerID]?.lastJumpTime = currentTime
+        runtimeByPlayer[playerID]?.timeSinceLastInput = 0
+    }
+    
+    public func isJumpRequested(for playerID: UUID) -> Bool {
+        jumpRequestedPlayerIDs.contains(playerID)
+    }
+    
+    public func resetJumpRequest(for playerID: UUID) {
+        jumpRequestedPlayerIDs.remove(playerID)
     }
 }
 
 // MARK: 리스폰 처리
 
 extension GameplayManager {
-    public func requestRespawn(_ reason: RespawnReason) {
-        guard state.respawn.isRespawning == false else { return }
-        state.respawn.isRespawning = true
-        state.respawn.pendingReason = reason
+    public func isRespawning(for playerID: UUID) -> Bool {
+        state.isRespawning(playerID)
+    }
+    
+    public func requestRespawn(_ reason: RespawnReason, for playerID: UUID) {
+        guard state.isRespawning(playerID) == false else { return }
+        state.setIsRespawning(true, reason, for: playerID)
     }
 
-    public func consumeRespawnRequestReason() -> RespawnReason? {
-        defer { state.respawn.pendingReason = nil }
-        return state.respawn.pendingReason
+    public func consumeRespawnRequestReason(for playerID: UUID) -> RespawnReason? {
+        return state.consumePendingRespawnReason(for: playerID)
     }
 
-    public func finishRespawn() {
-        state.respawn.isRespawning = false
+    public func finishRespawn(for playerID: UUID) {
+        state.setIsRespawning(false, for: playerID)
     }
 
-    public func onPlayerFellOutOfBounds() {
-        requestRespawn(.fell)
+    public func onPlayerFellOutOfBounds(for playerID: UUID) {
+        requestRespawn(.fell, for: playerID)
     }
 
     public func respawnDelay(for reason: RespawnReason) -> TimeInterval {
@@ -215,8 +256,9 @@ extension GameplayManager {
     }
 
     public func startNewGame() {
-        state = GameState()
-        isJumpRequested = false
+        state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
+
+        jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
 
         elapsedTime = 0
         elapsedSeconds = 0
@@ -224,8 +266,7 @@ extension GameplayManager {
         endReason = nil
         lastLandedPlatformIndex = 0
 
-        timeSinceLastInput = 0
-        lastJumpTime = 0
+        initializeRuntimeByPlayer()
     }
 
     public func updateLandedPlatformIndex(_ index: Int) {
@@ -253,5 +294,4 @@ extension GameplayManager {
             }
         }
     }
-
 }
