@@ -48,25 +48,18 @@ public final class GameplayManager {
     private var jumpRequestedPlayerIDs: Set<UUID> = []
     private var runtimeByPlayer: [UUID: PlayerRuntime] = [:]
     
-    //
+    // 조절값
     private let maxJumpCount = 2
     private let jumpCooldown: TimeInterval = 0.4
     private let landingCooldown: TimeInterval = 0.3
     private let inputTimeout: TimeInterval = 0.2
 
-    //
+    // TODO: id마다 관리되도록 구현
     private var inputProvider: (any GameInputProviding)?
     private var inputTask: Task<Void, Never>?
     
     // MARK: Game End
-    public private(set) var endReason: GameEndReason? = nil
-    public private(set) var elapsedSeconds: Int = 0
-    public private(set) var remainingSeconds: Int? = nil
-    public private(set) var lastLandedPlatformIndex: Int = 0
-
-    private var elapsedTime: TimeInterval = 0
-    private var timeLimit: TimeInterval? = nil
-    private var endCondition: any GameEndCondition
+    public let gameEnd: GameEndTracker
 
     public init(
         localPlayerID: UUID,
@@ -77,11 +70,7 @@ public final class GameplayManager {
         self.opponentPlayerIDs = opponentPlayerIDs
         self.state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
                 
-        self.endCondition = endCondition
-        self.timeLimit = (endCondition as? TimeoutOrFinishEndCondition)?.limit
-        if let limit = timeLimit {
-            self.remainingSeconds = Int(limit)
-        }
+        self.gameEnd = GameEndTracker(condition: endCondition)
         
         self.initializeRuntimeByPlayer()
     }
@@ -130,11 +119,9 @@ public final class GameplayManager {
 
     // Game Loop Update
     public func update(deltaTime: TimeInterval) {
-        guard endReason == nil else { return }
-        // 타이머 진행
-        elapsedTime += deltaTime
-        publishTimeIfNeeded()
-        evaluateEndConditionIfNeeded()
+        guard gameEnd.endReason == nil else { return }
+        // 타이머/종료 조건 진행
+        gameEnd.tick(deltaTime: deltaTime)
 
         // 입력 처리(플레이어별)
         for playerID in state.characters.keys {
@@ -245,53 +232,19 @@ extension GameplayManager {
 // MARK: 게임 종료 처리
 extension GameplayManager {
     public func setEndCondition(_ condition: any GameEndCondition) {
-        endCondition = condition
-        timeLimit = (condition as? TimeoutOrFinishEndCondition)?.limit
-        // UI 표시값 초기화
-        elapsedTime = 0
-        elapsedSeconds = 0
-        remainingSeconds = timeLimit.map { Int($0) }
-        endReason = nil
-        lastLandedPlatformIndex = 0
+        gameEnd.setCondition(condition)
     }
 
     public func startNewGame() {
         state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
-
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
 
-        elapsedTime = 0
-        elapsedSeconds = 0
-        remainingSeconds = timeLimit.map { Int($0) }
-        endReason = nil
-        lastLandedPlatformIndex = 0
-
+        gameEnd.startNewGame()
         initializeRuntimeByPlayer()
     }
 
     public func updateLandedPlatformIndex(_ index: Int) {
-        guard endReason == nil else { return }
-        if index > lastLandedPlatformIndex {
-            lastLandedPlatformIndex = index
-        }
-        evaluateEndConditionIfNeeded()
-    }
-
-    private func evaluateEndConditionIfNeeded() {
-        guard endReason == nil else { return }
-        if let reason = endCondition.check(elapsedTime: elapsedTime, lastLandedPlatformIndex: lastLandedPlatformIndex) {
-            endReason = reason
-        }
-    }
-
-    private func publishTimeIfNeeded() {
-        let sec = Int(elapsedTime)
-        if sec != elapsedSeconds {
-            elapsedSeconds = sec
-            if let limit = timeLimit {
-                let remain = max(0, Int(limit) - sec)
-                remainingSeconds = remain
-            }
-        }
+        guard gameEnd.endReason == nil else { return }
+        gameEnd.updateLandedPlatformIndex(index)
     }
 }
