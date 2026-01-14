@@ -11,7 +11,7 @@ import Network
 import os
 
 @Observable
-public final class NetworkSessionManager: ConnectionSessionProvider {
+public final class NetworkSessionManager: NetworkSessionManaging {
 
     // MARK: - Properties
 
@@ -59,7 +59,7 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
 
      // MARK: - Public Methods
 
-     public func activate(nickname: String) {
+    public func activate(channelId: String?, nickname: String) {
          logger.info("호스팅, 탐색 시작")
 
          myNickname = nickname
@@ -68,7 +68,7 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
          client.startBrowsing()
      }
 
-     public func deactive() {
+     public func deactivate() { 
          logger.info("호스팅, 탐색 중단")
 
          host.stopHosting()
@@ -100,12 +100,12 @@ public final class NetworkSessionManager: ConnectionSessionProvider {
         sendResponse(to: targetName, packet: packet)
     }
 
-    public func cancelInvite(from targetName: String) {
+    public func cancelInvite(to targetName: String) {
         let packet = NetworkPacket(type: .inviteCancel, senderIdentifier: myNickname ?? "Unknown")
         sendResponse(to: targetName, packet: packet)
     }
 
-    public func sendInput<T: Codable>(_ data: T) {
+    public func sendInput<T: Codable>(_ data: T, to targetId: String?) {
         guard let payload = try? encoder.encode(data) else { return }
         let packet = NetworkPacket(
             type: .input,

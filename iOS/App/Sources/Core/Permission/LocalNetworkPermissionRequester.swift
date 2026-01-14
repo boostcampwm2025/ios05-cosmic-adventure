@@ -9,16 +9,16 @@ import NetworkKit
 
 final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
 
-    private var sessionProvider: ConnectionSessionProvider
-    
-    init(sessionProvider: ConnectionSessionProvider) {
-        self.sessionProvider = sessionProvider
+    private var networkSessionManager: NetworkSessionManaging
+
+    init(networkSessionManager: NetworkSessionManaging) {
+        self.networkSessionManager = networkSessionManager
     }
 
     /// 초기 권한 요청을 위한 임시 세션을 실행하고 결과를 반환합니다.
     func requestPermission(hostName: String) async -> Bool {
         await AsyncStream { continuation in
-            sessionProvider.onPermissionResult = { result in
+            networkSessionManager.onPermissionResult = { result in
                 switch result {
                 case .success:
                     continuation.yield(true)
@@ -28,7 +28,7 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
                 continuation.finish()
             }
 
-            sessionProvider.activate(nickname: hostName)
+            networkSessionManager.activate(nickname: hostName)
 
             // 초기 요청 시 응답이 없을 경우를 대비한 타임아웃
             Task {

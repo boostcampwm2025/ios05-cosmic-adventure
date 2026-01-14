@@ -39,7 +39,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onInviteAccepted: ((String) -> Void)?
     public var onInviteDeclined: ((String) -> Void)?
     public var onInviteCancelled: ((String) -> Void)?
-    public var onInputReceived: ((String, String) -> Void)?
+    public var onInputReceived: ((String, Data) -> Void)?
     public var onConnectionStateChanged: ((Bool) -> Void)?
     
     // MARK: - Initialization
@@ -53,7 +53,8 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     // MARK: - Public Methods
     
-    public func activate(channelId: String, nickname: String) {
+    public func activate(channelId: String?, nickname: String) {
+        guard let channelId = channelId else { return }
         service.connect(to: serverURL, channelId: channelId, nickname: nickname)
     }
     
@@ -80,9 +81,13 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         service.cancelInvite(to: playerId)
     }
     
-    public func sendInput<T: Codable>(_ data: T, to playerId: String) {
-        guard let jsonData = try? JSONEncoder().encode(data) else { return }
-        guard let jsonString = String(data: jsonData, encoding: .utf8) else { return }
+    public func sendInput<T: Codable>(_ data: T, to playerId: String?) {
+        guard let playerId = playerId else { return }
+
+        guard let jsonData = try? JSONEncoder().encode(data),
+              let jsonString = String(data: jsonData, encoding: .utf8) else {
+            return
+        }
 
         service.sendInput(jsonString, to: playerId)
     }
@@ -142,10 +147,12 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
             onInviteCancelled?(message.senderId)
             
         case .input:
-            if let payload = message.payload {
-                onInputReceived?(message.senderId, payload)
+            if let payloadString = message.payload,
+               let payloadData = payloadString.data(using: .utf8) {
+
+                onInputReceived?(message.senderId, payloadData)
             }
-            
+
         default:
             break
         }
