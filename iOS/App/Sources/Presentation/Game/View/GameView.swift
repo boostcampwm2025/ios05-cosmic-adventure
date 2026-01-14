@@ -47,7 +47,7 @@ public struct GameView: View {
             
             gameHUD
 
-            if let reason = gameplayManager.endReason {
+            if let reason = gameplayManager.gameEnd.endReason {
                 gameEndOverlay(reason: reason)
             }
             
@@ -63,7 +63,7 @@ public struct GameView: View {
             gameplayManager.unbind()
             UIApplication.shared.isIdleTimerDisabled = false
         }
-        .onChange(of: gameplayManager.endReason) { _, newValue in
+        .onChange(of: gameplayManager.gameEnd.endReason) { _, newValue in
             if newValue != nil {
                 gameplayManager.unbind()
             }
@@ -94,12 +94,12 @@ public struct GameView: View {
     
     private var gameHUD: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let remain = gameplayManager.remainingSeconds {
+            if let remain = gameplayManager.gameEnd.remainingSeconds {
                 Text("남은 시간: \(remain)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             } else {
-                Text("경과 시간: \(gameplayManager.elapsedSeconds)s")
+                Text("경과 시간: \(gameplayManager.gameEnd.elapsedSeconds)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             }
@@ -130,7 +130,7 @@ public struct GameView: View {
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 32))
                     .foregroundStyle(.white)
 
-                Text("경과 시간: \(gameplayManager.elapsedSeconds)s")
+                Text("경과 시간: \(gameplayManager.gameEnd.elapsedSeconds)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(.white)
             }

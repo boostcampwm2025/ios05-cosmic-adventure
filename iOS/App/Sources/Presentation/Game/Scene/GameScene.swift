@@ -105,7 +105,7 @@ final class GameScene: SKScene {
         
         gameplayManager.update(deltaTime: deltaTime)
         
-        if gameplayManager.endReason != nil {
+        if gameplayManager.gameEnd.endReason != nil {
             // 종료 시 모든 캐릭터 물리 정지
             for (_, controller) in characterControllers {
                 controller.freezePhysics()

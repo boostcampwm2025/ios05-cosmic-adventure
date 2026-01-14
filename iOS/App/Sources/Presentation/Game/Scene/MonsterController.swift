@@ -16,7 +16,7 @@ final class MonsterController {
     private var sceneSize: CGSize { scene?.size ?? .zero }
 
     private let riseSpeed: CGFloat = 90
-    private let bottomInset: CGFloat = 20   // 화면 안으로 얼마나 보일지
+    private let bottomInset: CGFloat = 30   // 화면 안으로 얼마나 보일지
     private let startBelowOffset: CGFloat = 80
 
     init(scene: SKScene, cameraSystem: CameraSystem) {
