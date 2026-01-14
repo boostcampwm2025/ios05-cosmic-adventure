@@ -45,21 +45,18 @@ final class GameScene: SKScene {
         platformController?.setupInitialPlatforms()
         setupWalls()
 
-        // 몬스터 설정
-        monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
-        monsterController?.setupInitialMonster()
-
         // 캐릭터 설정
         characterController = CharacterController(scene: self, cameraSystem: cameraSystem)
         characterController?.setupPlayer()
         
-        if let player = characterController?.playerNode{
+        if let player = characterController?.playerNode {
             // 카메라가 플레이어를 따라가도록 설정
             cameraSystem.follow(player)
-            
-            // follow 이후 카메라 기준으로 몬스터 위치 보정
-            monsterController?.resetBelowCamera()
         }
+        
+        // 몬스터 설정
+        monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
+        monsterController?.setupInitialMonster()
     }
 
     // Game Loop
