@@ -19,7 +19,7 @@ protocol ViewModelFactory {
 final class AppContainer: ViewModelFactory {
     private let permissionService: PermissionServicing
     private let connectivityMonitor: ConnectivityMonitoring
-    private let networkSessionManager: ConnectionSessionProvider
+    private let networkSessionManager: NetworkSessionManaging
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
     private let channelService: ChannelServiceProtocol
@@ -27,7 +27,7 @@ final class AppContainer: ViewModelFactory {
     init(
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
-        networkSessionManager: ConnectionSessionProvider = NetworkSessionManager(),
+        networkSessionManager: NetworkSessionManaging = NetworkSessionManager(),
         webSocketService: WebSocketService = WebSocketService(),
         webSocketSessionManager: WebSocketSessionManaging? = nil
     ) {
@@ -43,7 +43,7 @@ final class AppContainer: ViewModelFactory {
         self.permissionService = permissionService
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
-                    sessionProvider: networkSessionManager
+                    networkSessionManager: networkSessionManager
                 )
             )
     }
@@ -59,7 +59,7 @@ final class AppContainer: ViewModelFactory {
     func makeLobbyViewModel() -> LobbyViewModel {
         LobbyViewModel(
             connectivityMonitor: connectivityMonitor,
-            sessionManager: networkSessionManager,
+            networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,
             nickname: "건방진 탐험가 123"
         )

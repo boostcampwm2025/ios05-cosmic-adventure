@@ -14,7 +14,7 @@ extension LobbyViewModel {
 
     func setupSessionManager() {
         activeAlert = .none
-        sessionManager.onPermissionResult = { [weak self] result in
+        networkSessionManager.onPermissionResult = { [weak self] result in
             guard case .failure(let error) = result else { return }
             
             Task { @MainActor in 
@@ -24,25 +24,25 @@ extension LobbyViewModel {
     }
 
     func setupP2PCallbacks() {
-        sessionManager.onInviteReceived = { [weak self] senderName in
+        networkSessionManager.onInviteReceived = { [weak self] senderName in
             Task { @MainActor in
                 self?.handleInviteReceived(from: senderName)
             }
         }
 
-        sessionManager.onInviteAccepted = { [weak self] senderName in
+        networkSessionManager.onInviteAccepted = { [weak self] senderName in
             Task { @MainActor in
                 self?.handleInviteAccepted(from: senderName)
             }
         }
 
-        sessionManager.onInviteDeclined = { [weak self] senderName in
+        networkSessionManager.onInviteDeclined = { [weak self] senderName in
             Task { @MainActor in
                 self?.handleInviteDeclined(from: senderName)
             }
         }
 
-        sessionManager.onInviteCancelled = { [weak self] senderName in
+        networkSessionManager.onInviteCancelled = { [weak self] senderName in
             Task { @MainActor in
                 self?.handleInviteCancelled(from: senderName)
             }

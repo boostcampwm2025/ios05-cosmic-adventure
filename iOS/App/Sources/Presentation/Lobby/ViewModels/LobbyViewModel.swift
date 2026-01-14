@@ -44,7 +44,7 @@ final class LobbyViewModel {
     var connectivityMonitor: ConnectivityMonitoring
     
     @ObservationIgnored
-    var sessionManager: ConnectionSessionProvider
+    var networkSessionManager: NetworkSessionManaging
     
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
@@ -76,12 +76,12 @@ final class LobbyViewModel {
     
     init(
         connectivityMonitor: ConnectivityMonitoring,
-        sessionManager: ConnectionSessionProvider,
+        networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
         nickname: String
     ) {
         self.connectivityMonitor = connectivityMonitor
-        self.sessionManager = sessionManager
+        self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
         self.userName = nickname
         
@@ -169,7 +169,7 @@ final class LobbyViewModel {
         switch networkMode {
         case .local:
             setupSessionManager()
-            sessionManager.activate(nickname: userName)
+            networkSessionManager.activate(nickname: userName)
         case .remote:
             guard let channelId = selectedChannelId else { return }
             webSocketSessionManager?.activate(channelId: channelId, nickname: userName)
@@ -181,7 +181,7 @@ final class LobbyViewModel {
         
         switch networkMode {
         case .local:
-            sessionManager.deactive()
+            networkSessionManager.deactivate()
         case .remote:
             webSocketSessionManager?.deactivate()
         }
@@ -239,7 +239,7 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            sessionManager.sendInvite(to: peer.displayName)
+            networkSessionManager.sendInvite(to: peer.displayName)
 
         case .remote:
             if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
@@ -252,7 +252,7 @@ extension LobbyViewModel {
         if case .sendingRequest(let peer) = matchStatus {
             switch networkMode {
             case .local:
-                sessionManager.cancelInvite(from: peer.displayName)
+                networkSessionManager.cancelInvite(to: peer.displayName)
 
             case .remote:
                 if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
@@ -269,7 +269,7 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            sessionManager.acceptInvite(from: peer.displayName)
+            networkSessionManager.acceptInvite(from: peer.displayName)
 
         case .remote:
             if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
@@ -285,7 +285,7 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            sessionManager.declineInvite(from: peer.displayName)
+            networkSessionManager.declineInvite(from: peer.displayName)
 
         case .remote:
             if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
