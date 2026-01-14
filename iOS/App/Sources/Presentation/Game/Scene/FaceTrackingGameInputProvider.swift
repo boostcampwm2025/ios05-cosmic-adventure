@@ -33,8 +33,8 @@ public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked
                     switch event {
                     case .horizontal(let x):
                         continuation.yield(.horizontal(x))
-                    case .action(.jump, let value):
-                        continuation.yield(.jump(isActive: value > 0.5))
+                    case .action(.jump, _):
+                        continuation.yield(.jump)
                     case .action:
                         break
                     }

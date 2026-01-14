@@ -75,10 +75,8 @@ public final class GameplayManager {
         switch event {
         case .horizontal(let x):
             updateMoveX(x)
-        case .jump(let isActive):
-            if isActive {
-                tryJump()
-            }
+        case .jump:
+            tryJump()
         }
     }
 
