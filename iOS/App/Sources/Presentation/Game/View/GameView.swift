@@ -12,13 +12,25 @@ import SwiftUI
 
 public struct GameView: View {
     // TODO: 네트워크계층이랑 연결할 수 있게 주입식으로 변경
+    @State private var localPlayerID: UUID
+    @State private var opponentPlayerIDs: [UUID]
 
-    @State private var gameplayManager = GameplayManager()
+    @State private var gameplayManager: GameplayManager
     @State private var gameScene: GameScene?
     @State private var inputProvider = FaceTrackingGameInputProvider()
     
-    public init(endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 30, targetPlatformIndex: 4)) {
-        _gameplayManager = State(initialValue: GameplayManager(endCondition: endCondition))
+    public init(
+        endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 30, targetPlatformIndex: 4),
+        localPlayerID: UUID = UUID(),
+        opponentPlayerIDs: [UUID] = [UUID()]
+    ) {
+        _localPlayerID = State(initialValue: localPlayerID)
+        _opponentPlayerIDs = State(initialValue: opponentPlayerIDs)
+        _gameplayManager = State(initialValue: GameplayManager(
+            localPlayerID: localPlayerID,
+            opponentPlayerIDs: opponentPlayerIDs,
+            endCondition: endCondition
+        ))
     }
     
     public var body: some View {
@@ -44,7 +56,7 @@ public struct GameView: View {
         .onAppear {
             setupGame()
             gameplayManager.startNewGame()
-            gameplayManager.bind(input: inputProvider)
+            gameplayManager.bind(input: inputProvider, for: localPlayerID)
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
@@ -56,18 +68,6 @@ public struct GameView: View {
                 gameplayManager.unbind()
             }
         }
-    }
-    
-    private var monsterOverlay: some View {
-        VStack {
-            Spacer()
-            AppAsset.Image.monsterOverlay.swiftUIImage
-                .resizable()
-                .scaledToFit()
-                .offset(y: 50)
-        }
-        .edgesIgnoringSafeArea(.all)
-        .allowsHitTesting(false)
     }
     
     private var facePreviewOverlay: some View {
@@ -83,7 +83,9 @@ public struct GameView: View {
     private func setupGame() {
         let scene = GameScene(
             size: UIScreen.main.bounds.size,
-            gameplayManager: gameplayManager
+            gameplayManager: gameplayManager,
+            localPlayerID: localPlayerID,
+            opponentPlayerIDs: opponentPlayerIDs
         )
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear

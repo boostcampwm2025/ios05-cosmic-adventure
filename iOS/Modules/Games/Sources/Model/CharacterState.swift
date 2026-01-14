@@ -11,7 +11,8 @@ public struct CharacterState: Equatable, Sendable {
     public var moveX: Double = 0 // 좌우 이동 속도 비율 (-1.0 ~ 1.0)
     public var jumpCount: Int = 0
     public var isGrounded: Bool = false
-    
+    public var respawn: RespawnState
+
     public init(
         moveX: Double = 0,
         jumpCount: Int = 0,
@@ -20,5 +21,6 @@ public struct CharacterState: Equatable, Sendable {
         self.moveX = moveX
         self.jumpCount = jumpCount
         self.isGrounded = isGrounded
+        self.respawn = RespawnState()
     }
 }
