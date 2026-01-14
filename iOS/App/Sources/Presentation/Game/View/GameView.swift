@@ -40,7 +40,6 @@ public struct GameView: View {
             }
             
             facePreviewOverlay
-                .padding( 20)
         }
         .onAppear {
             setupGame()
@@ -72,24 +71,13 @@ public struct GameView: View {
     }
     
     private var facePreviewOverlay: some View {
-        VStack {
-            Spacer()
-            HStack {
-                Spacer()
-
-                if let session = inputProvider.previewSession() {
+        Group {
+            if let session = inputProvider.previewSession() {
+                FacePreviewPIPView {
                     FacePreviewView(session: session)
-                        .frame(width: 140, height: 180)
-                        .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(.white.opacity(0.7), lineWidth: 1)
-                        )
-                        .shadow(radius: 6)
                 }
             }
         }
-        .allowsHitTesting(false)
     }
     
     private func setupGame() {
