@@ -14,7 +14,8 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
     private let rollThreshold = InputConstants.Face.rollThreshold
     private let maxRoll = InputConstants.Face.maxRoll
     private let puckerThreshold: Double
-    
+    private let jawOpenThreshold = InputConstants.Face.jawOpenThreshold
+
     // MARK: - Initialization
     
     init(puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold) {
@@ -34,8 +35,10 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
             out.append(.horizontal(normalized))
         }
 
-        if let pucker = anchor.blendShapes[.mouthPucker]?.doubleValue,
-           pucker > puckerThreshold {
+        let pucker = anchor.blendShapes[.mouthPucker]?.doubleValue ?? 0.0
+        let jawOpen = anchor.blendShapes[.jawOpen]?.doubleValue ?? 0.0
+
+        if pucker > puckerThreshold && jawOpen < jawOpenThreshold {
             out.append(.action(.jump, value: min(1.0, pucker)))
         }
 

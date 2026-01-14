@@ -10,5 +10,6 @@ public enum InputConstants {
         public static let rollThreshold = 0.15
         public static let maxRoll = 0.9
         public static let defaultPuckerThreshold = 0.5
+        public static let jawOpenThreshold = 0.2
     }
 }
