@@ -9,5 +9,5 @@ import Foundation
 
 public enum GameInputEvent: Sendable, Equatable {
     case horizontal(Double)
-    case jump(isActive: Bool)
+    case jump
 }
