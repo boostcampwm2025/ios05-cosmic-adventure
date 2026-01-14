@@ -11,6 +11,7 @@ struct ProfileSetupView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: ProfileSetupViewModel
+    @FocusState private var isNicknameFocused: Bool
 
     init(viewModel: ProfileSetupViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -49,6 +50,10 @@ struct ProfileSetupView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 70)
             }
+        }
+        .contentShape(Rectangle())
+        .onTapGesture {
+            isNicknameFocused = false
         }
     }
 }
@@ -100,6 +105,7 @@ private extension ProfileSetupView {
                 prompt: Text(Constants.ProfileSetup.nicknamePlaceholder)
                     .foregroundStyle(AppAsset.Color.subBlackLabel.swiftUIColor)
             )
+            .focused($isNicknameFocused)
             .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 16))
             .foregroundStyle(AppAsset.Color.blackLabel.swiftUIColor)
             .padding(.vertical, 16)
