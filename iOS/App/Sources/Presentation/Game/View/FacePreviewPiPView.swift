@@ -11,11 +11,11 @@ public struct FacePreviewPIPView<Content: View>: View {
     @State private var center: CGPoint? = nil
     @State private var dragStartCenter: CGPoint? = nil
     private let content: Content
-
+    
     public init(@ViewBuilder content: () -> Content) {
         self.content = content()
     }
-
+    
     public var body: some View {
         GeometryReader { proxy in
             let defaultPadding = 25.0
@@ -48,16 +48,50 @@ public struct FacePreviewPIPView<Content: View>: View {
                             dragStartCenter = center ?? defaultCenter
                         }
                         let start = dragStartCenter ?? defaultCenter
-                        center = CGPoint(
+                        let proposed = CGPoint(
                             x: start.x + value.translation.width,
                             y: start.y + value.translation.height
                         )
+                        center = clampCenter(
+                            proposed,
+                            containerSize: containerSize,
+                            safe: proxy.safeAreaInsets,
+                            pipSize: pipSize
+                        )
                     }
                     .onEnded { _ in
-                        dragStartCenter = nil
+                        defer { dragStartCenter = nil }
+
+                        let clamped = clampCenter(
+                            center ?? defaultCenter,
+                            containerSize: containerSize,
+                            safe: proxy.safeAreaInsets,
+                            pipSize: pipSize
+                        )
+
+                        withAnimation(.spring(response: 0.35, dampingFraction: 0.85)) {
+                            center = clamped
+                        }
                     }
             )
         }
         .ignoresSafeArea()
+    }
+    
+    private func clampCenter(
+        _ point: CGPoint,
+        containerSize: CGSize,
+        safe: EdgeInsets,
+        pipSize: CGSize
+    ) -> CGPoint {
+        let padding: CGFloat = 12
+        let minX = safe.leading + pipSize.width / 2 + padding
+        let maxX = containerSize.width - safe.trailing - pipSize.width / 2 - padding
+        let minY = safe.top + pipSize.height / 2 + padding
+        let maxY = containerSize.height - safe.bottom - pipSize.height / 2 - padding
+        return CGPoint(
+            x: min(max(point.x, minX), maxX),
+            y: min(max(point.y, minY), maxY)
+        )
     }
 }
