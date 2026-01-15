@@ -34,7 +34,8 @@ let project = Project(
                   "Fonts/Pretendard-Bold.otf",
                   "Fonts/Pretendard-ExtraBold.otf",
                   "Fonts/Pretendard-Black.otf",
-                ]
+                ],
+                "CFBundleDisplayName": "CosmicAdventure"
             ]),
             sources: [
                 "Sources/**"
