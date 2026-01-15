@@ -17,7 +17,6 @@ final class GameReadyViewModel {
     private(set) var isMeReady: Bool = false
     private(set) var isPeerReady: Bool = false
 
-    var showOnboarding: Bool = false
     private(set) var message: String = ""
     private(set) var progress: Double = 0.0
 
@@ -50,6 +49,19 @@ final class GameReadyViewModel {
         setupWebSocketCallbacks()
     }
 
+    func setMyReady() {
+        guard !isMeReady else { return }
+
+        isMeReady = true
+        updateProgressUI()
+
+        sendReadySignal()
+    }
+
+    func checkAllReady() -> Bool {
+        return isMeReady && isPeerReady
+    }
+
     private func setupConnectivityMonitor() {
         connectivityMonitor.onStatusChanged = { [weak self] isConnected in
             Task { @MainActor in
@@ -70,7 +82,7 @@ final class GameReadyViewModel {
 
     private func setupP2PCallbacks() {
         networkSessionManager.onReadyStatusReceived = { [weak self] senderName in
-            guard let self = self else { return }
+            guard let self else { return }
 
             guard senderName == self.peer.displayName else { return }
 
@@ -82,7 +94,7 @@ final class GameReadyViewModel {
 
     private func setupWebSocketCallbacks() {
         webSocketSessionManager?.onReadyStatusReceived = { [weak self] senderName in
-            guard let self = self else { return }
+            guard let self else { return }
 
             guard senderName == self.peer.displayName else { return }
 
@@ -92,35 +104,6 @@ final class GameReadyViewModel {
         }
     }
 
-    func checkInitialStatus() {
-        let hasSeenOnboarding = UserDefaultsList.Game.hasSeenGameOnboarding
-
-        if hasSeenOnboarding {
-            setMyReady()
-        } else {
-            showOnboarding = true
-        }
-    }
-
-    // 온보딩에서 '다시보지 않기' 또는 '닫기' 눌렀을 때 호출
-    func completeOnboarding() {
-        showOnboarding = false
-
-        // 온보딩 봤음을 저장
-        UserDefaultsList.Game.hasSeenGameOnboarding = true
-
-        setMyReady()
-    }
-
-    private func setMyReady() {
-        guard !isMeReady else { return }
-
-        isMeReady = true
-        updateProgressUI()
-
-        sendReadySignal()
-    }
-
     private func sendReadySignal() {
         switch networkMode {
         case .local:
@@ -128,7 +111,6 @@ final class GameReadyViewModel {
 
         case .remote:
             webSocketSessionManager?.sendReadyStatus(to: peer.displayName)
-
         }
     }
 
@@ -157,9 +139,5 @@ final class GameReadyViewModel {
             progress = 0.0
             message = L10N.GameReady.connectingMessage
         }
-    }
-
-    func checkAllReady() -> Bool {
-        return isMeReady && isPeerReady
     }
 }

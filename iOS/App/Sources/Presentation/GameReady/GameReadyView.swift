@@ -53,7 +53,7 @@ struct GameReadyView: View {
         }
         .onAppear {
             isAnimating = true
-            viewModel.checkInitialStatus()
+            viewModel.setMyReady()
         }
         .onChange(of: viewModel.isMeReady) { _, _ in attemptStart() }
         .onChange(of: viewModel.isPeerReady) { _, _ in attemptStart() }

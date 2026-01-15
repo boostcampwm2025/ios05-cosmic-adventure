@@ -10,7 +10,10 @@ import SwiftUI
 struct VictoryGuideView: View {
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
-    
+
+    let me: LobbyExplorer
+    let peer: LobbyExplorer?
+
     var body: some View {
         BackgroundContainerView {
             Color.black.opacity(0.4)
@@ -76,6 +79,7 @@ struct VictoryGuideView: View {
 }
 
 #Preview {
-    VictoryGuideView()
+    VictoryGuideView(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
+                     peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2))
         .environment(AppRouter())
 }
