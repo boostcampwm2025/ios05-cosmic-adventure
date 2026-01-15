@@ -39,6 +39,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onInviteDeclined: ((String) -> Void)?
     public var onInviteCancelled: ((String) -> Void)?
     public var onInputReceived: ((String, Data) -> Void)?
+    public var onReadyStatusReceived: ((String) -> Void)?
 
     // MARK: - Initialization
 
@@ -87,22 +88,24 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
         let packet = NetworkPacket(type: .invite, senderIdentifier: myNickname ?? "Unknown")
 
-        requestInvite(to: targetPeer, packet: packet)
+        sendToPeer(to: targetPeer, packet: packet)
     }
 
-    public func acceptInvite(from targetName: String) {
-        let packet = NetworkPacket(type: .inviteAccept, senderIdentifier: myNickname ?? "Unknown")
-        sendResponse(to: targetName, packet: packet)
-    }
-
-    public func declineInvite(from targetName: String) {
-        let packet = NetworkPacket(type: .inviteDecline, senderIdentifier: myNickname ?? "Unknown")
-        sendResponse(to: targetName, packet: packet)
-    }
-
-    public func cancelInvite(to targetName: String) {
+    public func cancelInvite(to peerName: String) {
+        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
         let packet = NetworkPacket(type: .inviteCancel, senderIdentifier: myNickname ?? "Unknown")
-        sendResponse(to: targetName, packet: packet)
+
+        sendToPeer(to: targetPeer, packet: packet)
+    }
+
+    public func acceptInvite(from peerName: String) {
+        let packet = NetworkPacket(type: .inviteAccept, senderIdentifier: myNickname ?? "Unknown")
+        replyToPeer(to: peerName, packet: packet)
+    }
+
+    public func declineInvite(from peerName: String) {
+        let packet = NetworkPacket(type: .inviteDecline, senderIdentifier: myNickname ?? "Unknown")
+        replyToPeer(to: peerName, packet: packet)
     }
 
     public func sendInput<T: Codable>(_ data: T, to targetId: String?) {
@@ -121,6 +124,13 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 }
             })
         }
+    }
+
+    public func sendReadyStatus(to peerName: String) {
+        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
+        let packet = NetworkPacket(type: .gameReady, senderIdentifier: myNickname ?? "Unknown")
+
+        sendToPeer(to: targetPeer, packet: packet)
     }
 
     // MARK: - Private Methods
@@ -226,11 +236,13 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 if let payload = packet.payload {
                     self?.onInputReceived?(packet.senderIdentifier, payload)
                 }
+            case .gameReady:
+                self?.onReadyStatusReceived?(packet.senderIdentifier)
             }
         }
     }
 
-    private func requestInvite(to peer: Peer, packet: NetworkPacket) {
+    private func sendToPeer(to peer: Peer, packet: NetworkPacket) {
         guard let data = try? encoder.encode(packet) else { return }
 
         Task {
@@ -243,7 +255,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
-    private func sendResponse(to targetName: String, packet: NetworkPacket) {
+    private func replyToPeer(to targetName: String, packet: NetworkPacket) {
         guard let connection = self.pendingInviteConnections[targetName] else { return }
 
         guard let data = try? encoder.encode(packet) else { return }
