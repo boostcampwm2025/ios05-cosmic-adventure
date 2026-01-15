@@ -143,19 +143,19 @@ final class GameReadyViewModel {
         // 한 명 준비되면 50%, 둘 다 되면 100%
         if isMeReady && isPeerReady {
             progress = 1.0
-            message = Constants.GameReady.allReadyMessage
+            message = L10N.GameReady.allReadyMessage
 
         } else if isMeReady {
             progress = 0.5
-            message = Constants.GameReady.waitingForPeerMessage
+            message = L10N.GameReady.waitingForPeerMessage
 
         } else if isPeerReady {
             progress = 0.5
-            message = Constants.GameReady.peerWaitingMessage
+            message = L10N.GameReady.peerWaitingMessage
 
         } else {
             progress = 0.0
-            message = Constants.GameReady.connectingMessage
+            message = L10N.GameReady.connectingMessage
         }
     }
 
