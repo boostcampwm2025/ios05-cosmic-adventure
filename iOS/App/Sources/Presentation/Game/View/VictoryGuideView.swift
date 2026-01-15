@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct VictoryGuideView: View {
-    @State private var isChecked: Bool = false
+    @Environment(AppRouter.self) private var router: AppRouter
+    @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
     
     var body: some View {
         ZStack {
@@ -49,18 +50,24 @@ struct VictoryGuideView: View {
                     title: Constants.Game.Guide.gameReady,
                     verticalPadding: 16
                 ) {
-                    // TODO: 게임 뷰로 이동 (구현 예정)
+                    router.push(.game)
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 .padding(.top, 44)
 
                 CheckButton(
-                    isChecked: $isChecked,
+                    isChecked: Binding(
+                        get: { isChecked },
+                        set: { newValue in
+                            isChecked = newValue
+                            UserDefaultsList.Game.isGuideChecked = newValue
+                        }
+                    ),
                     title: Constants.Game.Guide.neverShowAgain
                 )
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 40)
+                .padding(.bottom, 59)
             }
         }
     }
@@ -68,4 +75,5 @@ struct VictoryGuideView: View {
 
 #Preview {
     VictoryGuideView()
+        .environment(AppRouter())
 }

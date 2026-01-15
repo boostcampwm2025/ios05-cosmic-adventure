@@ -8,7 +8,8 @@
 import SwiftUI
 
 struct OperationGuideView: View {
-    @State private var isChecked: Bool = false
+    @Environment(AppRouter.self) private var router: AppRouter
+    @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
     
     var body: some View {
         ZStack {
@@ -46,21 +47,31 @@ struct OperationGuideView: View {
                 Spacer()
 
                 PrimaryGradientButton(
-                    title: Constants.Game.Guide.gotoVictoryCondition,
+                    title: isChecked ? Constants.Game.Guide.gameReady : Constants.Game.Guide.gotoVictoryCondition,
                     verticalPadding: 16
                 ) {
-                    // TODO: 두번째 가이드 뷰로 이동 (구현 예정)
+                    if isChecked {
+                        router.push(.game)
+                    } else {
+                        router.push(.victoryGuide)
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 .padding(.top, 44)
 
                 CheckButton(
-                    isChecked: $isChecked,
+                    isChecked: Binding(
+                        get: { isChecked },
+                        set: { newValue in
+                            isChecked = newValue
+                            UserDefaultsList.Game.isGuideChecked = newValue
+                        }
+                    ),
                     title: Constants.Game.Guide.neverShowAgain
                 )
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 40)
+                .padding(.bottom, 59)
             }
         }
     }
@@ -99,4 +110,5 @@ private extension OperationGuideView {
 
 #Preview {
     OperationGuideView()
+        .environment(AppRouter())
 }
