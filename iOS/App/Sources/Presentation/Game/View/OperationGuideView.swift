@@ -32,11 +32,11 @@ struct OperationGuideView: View {
                 )
                 .padding(.top, 21)
 
-                // TODO: - Image GIF로 변환 필요
                 GuideImageView(image: AppAsset.Image.jumpGuide.swiftUIImage)
                     .padding(.top, 21)
                     .padding(.horizontal, 58)
 
+                // TODO: - Image GIF로 변환 필요
                 guideManualRow(
                     characterImage: AppAsset.Image.character1.swiftUIImage,
                     manualText: Constants.Game.Guide.jumpManual,

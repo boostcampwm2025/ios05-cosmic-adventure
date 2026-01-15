@@ -6,7 +6,7 @@
 //
 
 import Foundation
-import SwiftData
+@_exported import SwiftData
 
 @Model
 public class Player {
