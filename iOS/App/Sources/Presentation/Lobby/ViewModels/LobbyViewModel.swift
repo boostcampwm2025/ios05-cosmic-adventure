@@ -21,38 +21,41 @@ final class LobbyViewModel {
 
     // MARK: - Properties
 
+    // Explorer
     private(set) var myExplorer: LobbyExplorer
     var peers: [LobbyExplorer] = []
     var selectedPeerID: String?
 
+    // UI State
     var activeAlert: LobbyAlert = .none
     var showPermissionAlert: Bool {
         get { activeAlert != .none }
         set { if !newValue { activeAlert = .none } }
     }
-    
+
+    // Network State
     var isConnected = false
-    
     private(set) var networkMode: NetworkMode = .local
-    
     var selectedChannelId: String?
 
+    // Match State
     var matchStatus: GameMatchStatus = .idle
 
     @ObservationIgnored
     var connectivityMonitor: ConnectivityMonitoring
-    
+
     @ObservationIgnored
     var networkSessionManager: NetworkSessionManaging
-    
+
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
-    
+
+    // Internal State
     @ObservationIgnored
     var playerIdMapping: [String: String] = [:]
 
     // MARK: - Computed Properties
-    
+
     var isNetworkAvailable: Bool {
         connectivityMonitor.isConnected
     }
@@ -67,9 +70,9 @@ final class LobbyViewModel {
             }
         }
     }
-    
+
     // MARK: - Initialization
-    
+
     init(
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
@@ -88,13 +91,17 @@ final class LobbyViewModel {
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
 
-        // 모든 저장 프로퍼티 초기화 완료 (Phase 1 종료)
-        // 이후 self를 사용하는 메서드 호출 가능 (Phase 2 시작)
+        self.selectedPeerID = nil
+
         setupConnectivityMonitor()
         setupP2PCallbacks()
         setupWebSocketCallbacks()
     }
-    
+}
+
+// MARK: - Connectivity Management
+
+extension LobbyViewModel {
     private func setupConnectivityMonitor() {
         connectivityMonitor.onStatusChanged = { [weak self] isConnected in
             Task { @MainActor in
@@ -104,27 +111,84 @@ final class LobbyViewModel {
         connectivityMonitor.start()
         networkMode = connectivityMonitor.isConnected ? .remote : .local
     }
-    
+
     private func handleConnectivityChange(isConnected: Bool) {
         if isConnected {
+            print("🔄 [LobbyViewModel] 네트워크 연결됨 → Remote 모드 전환")
+            stopNetworkExploration()
             networkMode = .remote
         } else {
+            print("🔄 [LobbyViewModel] 네트워크 끊김 → Local 모드 전환")
             networkMode = .local
             selectedChannelId = nil
         }
     }
-    
-    // MARK: - Common Actions
-    
-    // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요)
-    // TODO: proximity 변경에 따른 재정렬 애니메이션 정책 (너무 자주 움직이면 UX 저하)
+}
+
+// MARK: - Network Mode & Exploration
+
+extension LobbyViewModel {
+    func switchToLocalMode() {
+        stopNetworkExploration()
+        networkMode = .local
+    }
+
+    func switchToRemoteMode() {
+        selectedChannelId = nil
+    }
+
+    func startNetworkExploration() {
+        switch networkMode {
+        case .local:
+            print("📡 [LobbyViewModel] Local 모드 - P2P 탐색 시작")
+            setupSessionManager()
+            networkSessionManager.activate(nickname: myExplorer.displayName)
+        case .remote:
+            guard let channelId = selectedChannelId else {
+                print("❌ [LobbyViewModel] Remote 모드지만 selectedChannelId가 nil")
+                return
+            }
+            print("🌐 [LobbyViewModel] Remote 모드 - WebSocket 탐색 시작, channelId: \(channelId), nickname: \(myExplorer.displayName)")
+            webSocketSessionManager?.activate(channelId: channelId, nickname: myExplorer.displayName)
+        }
+    }
+
+    func stopNetworkExploration() {
+        networkSessionManager.deactivate()
+        webSocketSessionManager?.deactivate()
+    }
+}
+
+// MARK: - Channel Management
+
+extension LobbyViewModel {
+    func selectChannel(_ channelId: String) {
+        stopNetworkExploration()
+        networkMode = .remote
+        selectedChannelId = channelId
+        print("🌐 [LobbyViewModel] networkMode = .remote, selectedChannelId = \(channelId)")
+    }
+
+    func leaveChannel() {
+        stopNetworkExploration()
+        selectedChannelId = nil
+        peers = []
+    }
+}
+
+// MARK: - Peer Management
+
+extension LobbyViewModel {
+    func selectPeer(_ peer: LobbyExplorer) {
+        self.selectedPeerID = peer.id
+        self.matchStatus.select(peer)
+    }
+
     func updateProximity(for explorerID: String, value: Double) {
         guard let index = peers.firstIndex(where: { $0.id == explorerID }) else { return }
         peers[index].proximity = max(0, min(1, value))
     }
-    
-    // MARK: - Proximity Calculation
-    
+
     func calculateProximity(latency: Double?) -> Double {
         guard let latency else {
             return 0.5
@@ -134,57 +198,30 @@ final class LobbyViewModel {
 
         let minLat: Double = isLocal ? 1.0 : 20.0
         let maxLat: Double = isLocal ? 50.0 : 300.0
-        
+
         let clamped = max(minLat, min(maxLat, latency))
 
         return 1.0 - ((clamped - minLat) / (maxLat - minLat))
     }
-    
-    func startSoloAdventure() {
-        // TODO: GameView로 네비게이션 연결
-    }
-    
-    func switchToLocalMode() {
-        networkMode = .local
-    }
+}
 
-    func switchToRemoteMode() {
-        networkMode = .remote
-        selectedChannelId = nil
-    }
-    
-    func selectPeer(_ peer: LobbyExplorer) {
-        self.selectedPeerID = peer.id
-        self.matchStatus.select(peer)
-    }
+// MARK: - Game Actions
 
-    func openAppSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
-    }
-
-    func startNetworkExploration() {
-        switch networkMode {
-        case .local:
-            setupSessionManager()
-            networkSessionManager.activate(nickname: myExplorer.displayName)
-        case .remote:
-            guard let channelId = selectedChannelId else { return }
-            webSocketSessionManager?.activate(channelId: channelId, nickname: myExplorer.displayName)
-        }
-    }
-
-    func stopNetworkExploration() {
-        networkSessionManager.deactivate()
-        webSocketSessionManager?.deactivate()
-    }
-
+extension LobbyViewModel {
     func resetToIdle() {
         matchStatus.reset()
         selectedPeerID = nil
     }
 }
 
+// MARK: - System
+
+extension LobbyViewModel {
+    func openAppSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+}
 
 // MARK: - Invite Event Handlers
 // TODO: - UUID 추가 후 id와 name 모두 확인하는 로직으로 수정

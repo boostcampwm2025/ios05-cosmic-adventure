@@ -89,12 +89,13 @@ extension LobbyViewModel {
         playerIdMapping.removeAll()
         peers = players.map { player in
             playerIdMapping[player.id] = player.id
+            let proximity = calculateProximity(latency: player.latency)
             return LobbyExplorer(
                 id: player.id,
                 role: .peer,
                 displayName: player.nickname,
                 avatar: randomAvatar(),
-                proximity: Double.random(in: 0.1...0.9)
+                proximity: proximity
             )
         }
     }
@@ -104,12 +105,17 @@ extension LobbyViewModel {
 
         playerIdMapping[player.id] = player.id
 
+        let proximity = calculateProximity(latency: player.latency)
+        
+        // Proximity 확인을 위한 print문으로 정상 동작이 확인되면 제거
+        print("🌐 [LobbyViewModel+WebSocket] 플레이어 추가: \(player.nickname), latency: \(player.latency?.description ?? "nil")ms, proximity: \(proximity)")
+
         let explorer = LobbyExplorer(
             id: player.id,
             role: .peer,
             displayName: player.nickname,
             avatar: randomAvatar(),
-            proximity: Double.random(in: 0.1...0.9)
+            proximity: proximity
         )
         peers.append(explorer)
     }
@@ -127,19 +133,5 @@ extension LobbyViewModel {
     func randomAvatar() -> CharacterAvatar {
         let avatars: [CharacterAvatar] = [.character1, .character2, .character3, .character4, .character5, .character6]
         return avatars.randomElement() ?? .character1
-    }
-}
-
-// MARK: - Channel Actions
-
-extension LobbyViewModel {
-    func selectChannel(_ channelId: String) {
-        selectedChannelId = channelId
-    }
-
-    func leaveChannel() {
-        stopNetworkExploration()
-        selectedChannelId = nil
-        peers = []
     }
 }
