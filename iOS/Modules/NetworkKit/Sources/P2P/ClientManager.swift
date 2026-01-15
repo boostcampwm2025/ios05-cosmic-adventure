@@ -168,7 +168,8 @@ final class ClientManager: ClientManaging {
             return Peer(
                 name: name,
                 status: status,
-                endpoint: result.endpoint
+                endpoint: result.endpoint,
+                latency: nil                    // 탐색 직후부터 latency를 계산할 수 없으므로 초기값 nil
             )
         }
 

@@ -29,6 +29,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
     private var pendingInviteConnections: [String: NWConnection] = [:]
     private var activeGameConnection: NWConnection?
+    private var lastPingTimestamps: [String: Date] = [:]
+    private var pingTimer: Timer?
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "NetworkSessionManager")
 
@@ -40,6 +42,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onInviteDeclined: ((String) -> Void)?
     public var onInviteCancelled: ((String) -> Void)?
     public var onInputReceived: ((String, Data) -> Void)?
+    public var onPeersUpdated: (([Peer]) -> Void)?
     public var onReadyStatusReceived: ((String) -> Void)?
 
     // MARK: - Initialization
@@ -71,6 +74,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
          host.startHosting(nickName: nickname, status: .available)
          client.startBrowsing()
+         startPingTimer()
      }
 
      public func deactivate() {
@@ -81,6 +85,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
          host.stopHosting()
          client.stopBrowsing()
+         stopPingTimer()
 
          nearbyPlayer.removeAll()
          myNickname = nil
@@ -171,6 +176,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
         client.onPeersUpdated = { [weak self] peers in
             guard let self else { return }
+            print("📡 [NetworkSessionManager] 원본 피어 발견: \(peers.count)명")
             let filteredPeers = peers.filter { $0.name != self.myNickname }
 
             // UI에 표시될 순서대로 정렬(연결 가능한 순서대로 처리)
@@ -184,6 +190,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                     return peer1.name < peer2.name
                 }
             }
+            self.onPeersUpdated?(self.nearbyPlayer)
+            print("📡 [NetworkSessionManager] 필터링 후 피어: \(self.nearbyPlayer.count)명")
         }
 
         client.onDataReceived = { [weak self] data in
@@ -214,6 +222,32 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
+    /// 5초마다 탐색된 디바이스에 ping 전송
+    private func startPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.sendPingsToAll()
+        }
+    }
+
+    private func stopPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+    }
+
+    private func sendPingsToAll() {
+        for player in nearbyPlayer {
+            let packet = NetworkPacket(type: .ping, senderIdentifier: myNickname ?? "Unknown")
+            guard let data = try? encoder.encode(packet) else { continue }
+            
+            lastPingTimestamps[player.name] = Date()
+
+            for connection in pendingInviteConnections.values {
+                host.sendData(data, to: connection)
+            }
+        }
+    }
+
     private func handleReceivedData(_ data: Data, from connection: NWConnection? = nil) {
         guard let packet = try? decoder.decode(NetworkPacket.self, from: data) else { return }
 
@@ -222,30 +256,55 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
 
         DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+            
             switch packet.type {
+            case .ping:
+                let pongPacket = NetworkPacket(type: .pong, senderIdentifier: self.myNickname ?? "Unknown")
+                guard let encodedPong = try? self.encoder.encode(pongPacket) else { return }
+                
+                if let connection = connection {
+                    self.host.sendData(encodedPong, to: connection)
+                }
+
+            case .pong:
+                if let sendDate = self.lastPingTimestamps[packet.senderIdentifier] {
+                    let latency = Date().timeIntervalSince(sendDate) * 1000.0
+                    self.updatePeerLatency(name: packet.senderIdentifier, latency: latency)
+                    self.lastPingTimestamps.removeValue(forKey: packet.senderIdentifier)
+                }
+
             case .invite:
-                self?.onInviteReceived?(packet.senderIdentifier)
+                self.onInviteReceived?(packet.senderIdentifier)
 
             case .inviteAccept:
                 if let connection = connection {
-                    self?.activeGameConnection = connection
-                     self?.pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
+                    self.activeGameConnection = connection
+                    self.pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
                 }
-                self?.onInviteAccepted?(packet.senderIdentifier)
+                self.onInviteAccepted?(packet.senderIdentifier)
 
             case .inviteDecline:
-                self?.onInviteDeclined?(packet.senderIdentifier)
+                self.onInviteDeclined?(packet.senderIdentifier)
 
             case .inviteCancel:
-                self?.onInviteCancelled?(packet.senderIdentifier)
+                self.onInviteCancelled?(packet.senderIdentifier)
 
             case .input:
                 if let payload = packet.payload {
-                    self?.onInputReceived?(packet.senderIdentifier, payload)
+                    self.onInputReceived?(packet.senderIdentifier, payload)
                 }
             case .gameReady:
                 self?.onReadyStatusReceived?(packet.senderIdentifier)
             }
+        }
+    }
+
+    /// ping/pong 결과에 따라 latency 상태 업데이트
+    private func updatePeerLatency(name: String, latency: Double) {
+        if let index = nearbyPlayer.firstIndex(where: { $0.name == name }) {
+            nearbyPlayer[index].latency = latency
+            onPeersUpdated?(nearbyPlayer)
         }
     }
 
