@@ -130,6 +130,12 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     private func handleMessage(_ message: WebSocketMessage) {
         switch message.messageType {
+        case .ping:
+            service.sendPong()
+            
+        case .pong:
+            break
+            
         case .channelPlayerList:
             handlePlayerList(message.payload)
             
@@ -170,37 +176,41 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     private func handlePlayerList(_ payload: String?) {
         guard let payload else { return }
-        
+
         mySessionId = service.sessionId
         var newPlayers: [WebSocketPlayer] = []
-        
+
         let playerStrings = payload.split(separator: "|")
         for playerString in playerStrings {
             let parts = playerString.split(separator: ":")
-            guard parts.count == 2 else { continue }
-            
+            guard parts.count >= 2 else { continue }
+
             let sessionId = String(parts[0])
             let nickname = String(parts[1])
-            
+            let latency = parts.count > 2 ? Double(parts[2]) : nil
+
             if sessionId == mySessionId { continue }
-            
-            newPlayers.append(WebSocketPlayer(id: sessionId, nickname: nickname))
+
+            newPlayers.append(WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency))
         }
-        
+
         players = newPlayers
         onPlayersUpdated?(players)
     }
     
     private func handlePlayerJoined(_ payload: String) {
         let parts = payload.split(separator: ":")
-        guard parts.count == 2 else { return }
-        
+        guard parts.count >= 2 else { return }
+
         let sessionId = String(parts[0])
         let nickname = String(parts[1])
-        
-        guard !players.contains(where: { $0.id == sessionId }) else { return }
-        
-        let player = WebSocketPlayer(id: sessionId, nickname: nickname)
+        let latency = parts.count > 2 ? Double(parts[2]) : nil
+
+        guard !players.contains(where: { $0.id == sessionId }) else {
+            return
+        }
+
+        let player = WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency)
         players.append(player)
         onPlayerJoined?(player)
     }

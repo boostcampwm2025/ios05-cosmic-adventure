@@ -90,6 +90,16 @@ public final class WebSocketService: NSObject {
         send(message)
     }
 
+    public func sendPing() {
+        let message = WebSocketMessage(type: .ping, senderId: sessionId ?? "")
+        send(message)
+    }
+
+    public func sendPong() {
+        let message = WebSocketMessage(type: .pong, senderId: sessionId ?? "")
+        send(message)
+    }
+
     public func acceptInvite(from senderId: String) {
         let message = WebSocketMessage(type: .inviteAccept, senderId: sessionId ?? "", payload: senderId)
         send(message)
@@ -158,7 +168,7 @@ public final class WebSocketService: NSObject {
         let players = payload.split(separator: "|")
         for player in players {
             let parts = player.split(separator: ":")
-            if parts.count == 2, String(parts[1]) == nickname {
+            if parts.count >= 2, String(parts[1]) == nickname {
                 sessionId = String(parts[0])
                 break
             }
