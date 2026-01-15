@@ -82,5 +82,20 @@ enum L10N {
             static let rightWall = "rightWall"
             static let monster = "monster"
         }
+        
+        enum Guide {
+            static let moveManual: LocalizedStringKey = "동작 방법"
+            static let horizontalMove: LocalizedStringKey = "고개를 좌우로 갸웃거리면\n앞으로 움직여요."
+            static let jumpManual: LocalizedStringKey = "입을 오므리면 점프할 수 있어요."
+            static let doubleJumpManual: LocalizedStringKey = "최대 2단 점프 가능해요."
+            static let gotoVictoryCondition: LocalizedStringKey = "승리 조건 보기"
+
+            static let victoryManual: LocalizedStringKey = "승리 방법"
+            static let timeCondition: LocalizedStringKey = "제한 시간 1분 안에 결승점에 도착하세요."
+            static let monsterCondition: LocalizedStringKey = "아래에서 모험을 방해하는 몬스터가\n올라오고 있으니 조심하세요."
+
+            static let gameReady: LocalizedStringKey = "모험 준비 완료"
+            static let neverShowAgain: LocalizedStringKey = "다시 보지 않기"
+        }
     }
 }
