@@ -22,7 +22,7 @@ final class LobbyViewModel {
     // MARK: - Properties
 
     private(set) var myExplorer: LobbyExplorer
-    var peers: [LobbyExplorer]
+    var peers: [LobbyExplorer] = []
     var selectedPeerID: String?
 
     var activeAlert: LobbyAlert = .none
@@ -87,14 +87,6 @@ final class LobbyViewModel {
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
 
-        // TODO: 네트워크 탐색 결과 보여주면서 제거 예정
-        self.peers = [
-            LobbyExplorer(role: .peer, displayName: "건방진 탐험가 1", avatar: .character1, proximity: 0.72),
-            LobbyExplorer(role: .peer, displayName: "호기심천국", avatar: .character2, proximity: 0.95),
-            LobbyExplorer(role: .peer, displayName: "자고있는 사람1", avatar: .character4, proximity: 0.28),
-            LobbyExplorer(role: .peer, displayName: "행복한 탐험가1", avatar: .character5, proximity: 0.55),
-            LobbyExplorer(role: .peer, displayName: "우주방랑자", avatar: .character6, proximity: 0.10)
-        ]
         self.selectedPeerID = nil
         
         setupConnectivityMonitor()
@@ -124,11 +116,28 @@ final class LobbyViewModel {
     
     // MARK: - Common Actions
     
-    // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요?)
+    // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요)
     // TODO: proximity 변경에 따른 재정렬 애니메이션 정책 (너무 자주 움직이면 UX 저하)
     func updateProximity(for explorerID: String, value: Double) {
         guard let index = peers.firstIndex(where: { $0.id == explorerID }) else { return }
         peers[index].proximity = max(0, min(1, value))
+    }
+    
+    // MARK: - Proximity Calculation
+    
+    func calculateProximity(latency: Double?) -> Double {
+        guard let latency else {
+            return 0.5
+        }
+
+        let isLocal = networkMode == .local
+
+        let minLat: Double = isLocal ? 1.0 : 20.0
+        let maxLat: Double = isLocal ? 50.0 : 300.0
+        
+        let clamped = max(minLat, min(maxLat, latency))
+
+        return 1.0 - ((clamped - minLat) / (maxLat - minLat))
     }
     
     func startSoloAdventure() {
@@ -178,9 +187,13 @@ final class LobbyViewModel {
 
 
 // MARK: - Invite Event Handlers
+
 extension LobbyViewModel {
     func handleInviteReceived(from senderName: String) {
-        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+        guard let peer = peers.first(where: { $0.displayName == senderName }) else {
+            print("❌ [LobbyViewModel] 초대한 피어를 찾을 수 없음: \(senderName). 현재 피어들: \(peers.map { $0.displayName })")
+            return
+        }
 
         switch matchStatus {
         case .idle:
