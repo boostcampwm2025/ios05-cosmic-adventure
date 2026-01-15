@@ -5,8 +5,56 @@ actor WSSessionManager {
 
     private var sessions: [String: WSSession] = [:]
     private var handlers: [any WSMessageHandler] = []
+    private var pingTimestamps: [String: Date] = [:]
+    private var latencies: [String: Double] = [:]
+    private var pingTask: Task<Void, Never>?
 
-    private init() {}
+    private init() {
+        Task {
+            await startPingTimer()
+        }
+    }
+
+    func getLatency(for sessionId: String) -> Double? {
+        latencies[sessionId]
+    }
+
+    private func startPingTimer() {
+        pingTask = Task {
+            while !Task.isCancelled {
+                await sendPings()
+                try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+            }
+        }
+    }
+
+    private func sendPings() async {
+        let currentSessions = Array(sessions.values)
+        let pingMessage = WSMessage(type: "ping", senderId: "server")
+        
+        await withTaskGroup(of: Void.self) { group in
+            for session in currentSessions {
+                if session.isClosed { continue }
+                
+                group.addTask {
+                    await self.recordPingTime(for: session.id)
+                    await self.send(to: session.id, message: pingMessage)
+                }
+            }
+        }
+    }
+
+    private func recordPingTime(for sessionId: String) {
+        pingTimestamps[sessionId] = Date()
+    }
+
+    func handlePong(from sessionId: String) {
+        guard let pingDate = pingTimestamps[sessionId] else { return }
+        
+        let latency = Date().timeIntervalSince(pingDate) * 1000.0
+        latencies[sessionId] = latency
+        pingTimestamps.removeValue(forKey: sessionId)
+    }
 
     func register(_ handler: any WSMessageHandler) {
         handlers.append(handler)
@@ -18,6 +66,7 @@ actor WSSessionManager {
 
     func removeSession(_ sessionId: String) {
         sessions.removeValue(forKey: sessionId)
+        latencies.removeValue(forKey: sessionId)
     }
 
     func getSession(_ sessionId: String) -> WSSession? {

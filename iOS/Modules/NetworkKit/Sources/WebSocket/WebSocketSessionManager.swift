@@ -17,6 +17,9 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "WebSocketSessionManager")
     private let service: WebSocketService
     private let serverURL: String
+    private var pingTimer: Timer?
+    private var lastPingTimestamp: Date?
+    
     private var isActive = false
 
     public private(set) var players: [WebSocketPlayer] = []
@@ -117,18 +120,43 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     private func handleConnect() {
         isConnected = true
         service.joinChannel()
+        startPingTimer()
         onConnectionStateChanged?(true)
     }
     
     private func handleDisconnect() {
         isConnected = false
+        stopPingTimer()
         players = []
         mySessionId = nil
         onConnectionStateChanged?(false)
     }
+
+    private func startPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = Timer.scheduledTimer(withTimeInterval: 5.0, repeats: true) { [weak self] _ in
+            self?.sendPing()
+        }
+    }
+
+    private func stopPingTimer() {
+        pingTimer?.invalidate()
+        pingTimer = nil
+    }
+
+    private func sendPing() {
+        lastPingTimestamp = Date()
+        service.sendPing()
+    }
     
     private func handleMessage(_ message: WebSocketMessage) {
         switch message.messageType {
+        case .ping:
+            service.sendPong()
+            
+        case .pong:
+            handlePong()
+            
         case .channelPlayerList:
             handlePlayerList(message.payload)
             
@@ -169,37 +197,41 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     private func handlePlayerList(_ payload: String?) {
         guard let payload else { return }
-        
+
         mySessionId = service.sessionId
         var newPlayers: [WebSocketPlayer] = []
-        
+
         let playerStrings = payload.split(separator: "|")
         for playerString in playerStrings {
             let parts = playerString.split(separator: ":")
-            guard parts.count == 2 else { continue }
-            
+            guard parts.count >= 2 else { continue }
+
             let sessionId = String(parts[0])
             let nickname = String(parts[1])
-            
+            let latency = parts.count > 2 ? Double(parts[2]) : nil
+
             if sessionId == mySessionId { continue }
-            
-            newPlayers.append(WebSocketPlayer(id: sessionId, nickname: nickname))
+
+            newPlayers.append(WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency))
         }
-        
+
         players = newPlayers
         onPlayersUpdated?(players)
     }
     
     private func handlePlayerJoined(_ payload: String) {
         let parts = payload.split(separator: ":")
-        guard parts.count == 2 else { return }
-        
+        guard parts.count >= 2 else { return }
+
         let sessionId = String(parts[0])
         let nickname = String(parts[1])
-        
-        guard !players.contains(where: { $0.id == sessionId }) else { return }
-        
-        let player = WebSocketPlayer(id: sessionId, nickname: nickname)
+        let latency = parts.count > 2 ? Double(parts[2]) : nil
+
+        guard !players.contains(where: { $0.id == sessionId }) else {
+            return
+        }
+
+        let player = WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency)
         players.append(player)
         onPlayerJoined?(player)
     }
@@ -207,5 +239,14 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     private func handlePlayerLeft(_ sessionId: String) {
         players.removeAll { $0.id == sessionId }
         onPlayerLeft?(sessionId)
+    }
+
+    private func handlePong() {
+        guard let lastPing = lastPingTimestamp else {
+            return
+        }
+        let latency = Date().timeIntervalSince(lastPing) * 1000.0 // ms
+
+        lastPingTimestamp = nil
     }
 }

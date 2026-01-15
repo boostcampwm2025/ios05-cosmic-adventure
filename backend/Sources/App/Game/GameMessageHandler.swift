@@ -1,6 +1,6 @@
 import Vapor
 
-final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
+final class GameMessageHandler: WSMessageHandler, Sendable {
     func handle(_ message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
         guard let type = GameMessageType(rawValue: message.type) else { return }
 
@@ -24,7 +24,10 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
             let pong = WSMessage(type: GameMessageType.pong.rawValue, senderId: "server")
             await manager.send(to: session.id, message: pong)
 
-        case .playerJoined, .playerLeft, .pong:
+        case .pong:
+            await manager.handlePong(from: session.id)
+
+        case .playerJoined, .playerLeft:
             break
         }
     }
@@ -34,7 +37,8 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
 
         _ = await ChannelManager.shared.join(channelId, session: session)
 
-        let playerInfo = buildPlayerInfo(from: session)
+        let latency = await manager.getLatency(for: session.id)
+        let playerInfo = buildPlayerInfo(from: session, latency: latency)
         let joinedMessage = WSMessage(
             type: GameMessageType.playerJoined.rawValue,
             senderId: session.id,
@@ -61,7 +65,18 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
         guard let channelId = session.metadata["channelId"] else { return }
 
         let players = await ChannelManager.shared.getSessionsInChannel(channelId)
-        let playerInfos = players.map { buildPlayerInfo(from: $0) }
+
+        let playerInfos = await withTaskGroup(of: String.self) { group in
+            for player in players {
+                group.addTask {
+                    let latency = await manager.getLatency(for: player.id)
+                    return self.buildPlayerInfo(from: player, latency: latency)
+                }
+            }
+            
+            return await group.reduce(into: [String]()) { $0.append($1) }
+        }
+
         let payload = playerInfos.joined(separator: "|")
 
         let listMessage = WSMessage(
@@ -69,6 +84,7 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
             senderId: "server",
             payload: payload
         )
+
         await manager.send(to: session.id, message: listMessage)
     }
 
@@ -77,8 +93,9 @@ final class GameMessageHandler: WSMessageHandler, @unchecked Sendable {
         await manager.send(to: targetId, message: message)
     }
 
-    private func buildPlayerInfo(from session: WSSession) -> String {
+    private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"
-        return "\(session.id):\(nickname)"
+        let lat = latency ?? 0.0
+        return "\(session.id):\(nickname):\(lat)"
     }
 }
