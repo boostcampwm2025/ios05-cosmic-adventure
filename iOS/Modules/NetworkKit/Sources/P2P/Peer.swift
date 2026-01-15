@@ -17,4 +17,5 @@ public struct Peer: Identifiable, Equatable {
     public let name: String
     public let status: PeerStatus
     public let endpoint: NWEndpoint
+    public var latency: Double?
 }
