@@ -14,6 +14,7 @@ public enum NetworkPacketType: String, Codable {
     case inviteCancel
 
     // MARK: - Connection
+
     case ping
     case pong
 
