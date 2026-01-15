@@ -128,9 +128,14 @@ private extension LobbyView {
         
         bottomButtons(
             secondaryTitle: L10N.Lobby.remoteGalaxyButtonTitle,
-            secondaryAction: { viewModel.switchToRemoteMode() },
-            showSecondary: viewModel.isNetworkAvailable
-        )
+            secondaryAction: {
+                if viewModel.networkMode == .local {
+                    viewModel.switchToRemoteMode()
+                } else {
+                    viewModel.switchToLocalMode()
+                }
+            },
+            showSecondary: viewModel.isNetworkAvailable)
     }
 
     // TODO: 채널 목록 로드 실패 시 분기 처리 (네트워크 끊김 등)
@@ -173,7 +178,6 @@ private extension LobbyView {
     ) -> some View {
         VStack(spacing: 12) {
             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
-                viewModel.startSoloAdventure()
                 if UserDefaultsList.Game.isGuideChecked {
                     router.push(.game)
                 } else {
