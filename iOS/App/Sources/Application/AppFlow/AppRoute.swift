@@ -17,7 +17,7 @@ enum AppRoute: Hashable {
 
     // Game
     case gameReady(me: LobbyExplorer, peer: LobbyExplorer)
-    case game
+    case game(String?) // TODO: 나중에 ID나 nickname 둘 중 하나로 통일
     case operationGuide(me: LobbyExplorer, peer: LobbyExplorer?)
     case victoryGuide(me: LobbyExplorer, peer: LobbyExplorer?)
     case result

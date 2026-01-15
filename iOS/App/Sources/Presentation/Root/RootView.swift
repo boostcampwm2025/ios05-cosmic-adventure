@@ -55,8 +55,15 @@ struct RootView: View {
             EmptyView()
         case .gameReady(let me, let peer):
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
-        case .game:
-            GameView()
+        case .game(let matchNickname):
+                if let myExplorer = players.first {
+                    GameView(
+                        viewModel: viewModelFactory.makeGameViewModel(
+                            myNickname: myExplorer.nickname,
+                            characterType: myExplorer.character
+                            ,matchNickname: matchNickname)
+                    )
+                }
         case .operationGuide(let me, let peer):
             OperationGuideView(me: me, peer: peer)
         case .victoryGuide(let me, let peer):

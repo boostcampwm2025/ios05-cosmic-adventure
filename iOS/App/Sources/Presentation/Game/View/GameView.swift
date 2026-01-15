@@ -10,27 +10,20 @@ import InputSystem
 import SpriteKit
 import SwiftUI
 
-public struct GameView: View {
-    // TODO: 네트워크계층이랑 연결할 수 있게 주입식으로 변경
-    @State private var localPlayerID: UUID
-    @State private var otherPlayerIDs: [UUID]
-
-    @State private var gameplayManager: GameplayManager
+struct GameView: View {
+    @State private var viewModel: GameViewModel
     @State private var gameScene: GameScene?
-    @State private var inputProvider = FaceTrackingGameInputProvider()
     
-    public init(
-        endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
-        localPlayerID: UUID = UUID(),
-        otherPlayerIDs: [UUID] = []
-    ) {
-        _localPlayerID = State(initialValue: localPlayerID)
-        _otherPlayerIDs = State(initialValue: otherPlayerIDs)
-        _gameplayManager = State(initialValue: GameplayManager(
-            localPlayerID: localPlayerID,
-            otherPlayerIDs: otherPlayerIDs,
-            endCondition: endCondition
-        ))
+    private var gameplayManager: GameplayManager {
+        viewModel.gameplayManager
+    }
+    
+    private var inputProvider: FaceTrackingGameInputProvider {
+        viewModel.inputProvider
+    }
+    
+    init(viewModel: GameViewModel) {
+        _viewModel = State(initialValue: viewModel)
     }
     
     public var body: some View {
@@ -47,7 +40,7 @@ public struct GameView: View {
             
             gameHUD
 
-            if let reason = gameplayManager.gameEnd.endReason {
+            if let reason = viewModel.endReason {
                 gameEndOverlay(reason: reason)
             }
             
@@ -55,17 +48,16 @@ public struct GameView: View {
         }
         .onAppear {
             setupGame()
-            gameplayManager.startNewGame()
-            gameplayManager.bind(input: inputProvider, for: localPlayerID)
+            viewModel.start()
             UIApplication.shared.isIdleTimerDisabled = true
         }
         .onDisappear {
-            gameplayManager.unbind()
+            viewModel.stop()
             UIApplication.shared.isIdleTimerDisabled = false
         }
-        .onChange(of: gameplayManager.gameEnd.endReason) { _, newValue in
+        .onChange(of: viewModel.endReason) { _, newValue in
             if newValue != nil {
-                gameplayManager.unbind()
+                viewModel.stop()
             }
         }
     }
@@ -84,8 +76,8 @@ public struct GameView: View {
         let scene = GameScene(
             size: UIScreen.main.bounds.size,
             gameplayManager: gameplayManager,
-            localPlayerID: localPlayerID,
-            otherPlayerIDs: otherPlayerIDs
+            localPlayerID: viewModel.localPlayerID,
+            otherPlayerIDs: viewModel.otherPlayerIDs
         )
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear
@@ -94,12 +86,12 @@ public struct GameView: View {
     
     private var gameHUD: some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let remain = gameplayManager.gameEnd.remainingSeconds {
+            if let remain = viewModel.remainingSeconds {
                 Text("남은 시간: \(remain)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             } else {
-                Text("경과 시간: \(gameplayManager.gameEnd.elapsedSeconds)s")
+                Text("경과 시간: \(viewModel.elapsedSeconds)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             }
@@ -130,7 +122,7 @@ public struct GameView: View {
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 32))
                     .foregroundStyle(.white)
 
-                Text("경과 시간: \(gameplayManager.gameEnd.elapsedSeconds)s")
+                Text("경과 시간: \(viewModel.elapsedSeconds)s")
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
                     .foregroundStyle(.white)
             }

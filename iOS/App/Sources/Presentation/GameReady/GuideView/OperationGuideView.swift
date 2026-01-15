@@ -57,7 +57,7 @@ struct OperationGuideView: View {
                         if let peer = peer {
                             router.push(.gameReady(me: me, peer: peer))
                         } else { // 1인 모드
-                            router.push(.game)
+                            router.push(.game(nil))
                         }
                     } else {
                         router.push(.victoryGuide(me: me, peer: peer))
