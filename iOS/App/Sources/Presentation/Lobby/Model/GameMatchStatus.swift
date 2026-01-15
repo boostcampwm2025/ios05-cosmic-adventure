@@ -14,7 +14,6 @@ enum GameMatchStatus: Equatable {
     case receivedInvite(peer: LobbyExplorer)
     case requestDeclined(peer: LobbyExplorer)
     case gameReady(peer: LobbyExplorer)
-    case gameStart
 
     mutating func reset() {
         self = .idle
