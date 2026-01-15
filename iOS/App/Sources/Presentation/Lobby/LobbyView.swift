@@ -50,10 +50,13 @@ struct LobbyView: View {
         }
         .onChange(of: viewModel.matchStatus) { _, newValue in
             if case .gameReady(let peer) = newValue {
-                router.push(.gameReady(
-                    me: viewModel.myExplorer,
-                    peer: peer
-                ))
+                if UserDefaultsList.Game.isGuideChecked {
+                    router.push(.gameReady(me: viewModel.myExplorer,
+                                           peer: peer))
+                } else {
+                    router.push(.operationGuide(me: viewModel.myExplorer,
+                                                peer: peer))
+                }
             }
         }
         .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
@@ -171,7 +174,7 @@ private extension LobbyView {
                 if UserDefaultsList.Game.isGuideChecked {
                     router.push(.game)
                 } else {
-                    router.push(.operationGuide)
+                    router.push(.operationGuide(me: viewModel.myExplorer, peer: nil)) 
                 }
             }
             

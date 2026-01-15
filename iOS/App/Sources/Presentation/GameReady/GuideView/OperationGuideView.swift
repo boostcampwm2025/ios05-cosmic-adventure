@@ -10,7 +10,10 @@ import SwiftUI
 struct OperationGuideView: View {
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
-    
+
+    let me: LobbyExplorer
+    let peer: LobbyExplorer?
+
     var body: some View {
         BackgroundContainerView {
             Color.black.opacity(0.4)
@@ -51,9 +54,13 @@ struct OperationGuideView: View {
                     verticalPadding: 16
                 ) {
                     if isChecked {
-                        router.push(.game)
+                        if let peer = peer {
+                            router.push(.gameReady(me: me, peer: peer))
+                        } else { // 1인 모드
+                            router.push(.game)
+                        }
                     } else {
-                        router.push(.victoryGuide)
+                        router.push(.victoryGuide(me: me, peer: peer))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -110,6 +117,7 @@ private extension OperationGuideView {
 }
 
 #Preview {
-    OperationGuideView()
+    OperationGuideView(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
+                       peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2))
         .environment(AppRouter())
 }

@@ -57,10 +57,10 @@ struct RootView: View {
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
         case .game:
             GameView()
-        case .operationGuide:
-            OperationGuideView()
-        case .victoryGuide:
-            VictoryGuideView()
+        case .operationGuide(let me, let peer):
+            OperationGuideView(me: me, peer: peer)
+        case .victoryGuide(let me, let peer):
+            VictoryGuideView(me: me, peer: peer)
         case .result:
             // TODO: ResultView 연결
             EmptyView()
