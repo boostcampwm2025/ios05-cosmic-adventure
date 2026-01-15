@@ -43,7 +43,7 @@ public final class GameplayManager {
     public var state: GameState
     
     public let localPlayerID: UUID
-    public let opponentPlayerIDs: [UUID]
+    public let otherPlayerIDs: [UUID]
     
     private var jumpRequestedPlayerIDs: Set<UUID> = []
     private var runtimeByPlayer: [UUID: PlayerRuntime] = [:]
@@ -63,12 +63,12 @@ public final class GameplayManager {
 
     public init(
         localPlayerID: UUID,
-        opponentPlayerIDs: [UUID] = [],
+        otherPlayerIDs: [UUID] = [],
         endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 30)
     ) {
         self.localPlayerID = localPlayerID
-        self.opponentPlayerIDs = opponentPlayerIDs
-        self.state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
+        self.otherPlayerIDs = otherPlayerIDs
+        self.state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
                 
         self.gameEnd = GameEndTracker(condition: endCondition)
         
@@ -80,7 +80,7 @@ public final class GameplayManager {
 
         runtimeByPlayer[localPlayerID] = PlayerRuntime()
 
-        for id in opponentPlayerIDs where id != localPlayerID {
+        for id in otherPlayerIDs where id != localPlayerID {
             runtimeByPlayer[id] = PlayerRuntime()
         }
     }
@@ -198,7 +198,7 @@ extension GameplayManager {
 // MARK: 리스폰 처리
 
 extension GameplayManager {
-    public func isRespawning(for playerID: UUID) -> Bool {
+    public func isPlayerRespawning(for playerID: UUID) -> Bool {
         state.isRespawning(playerID)
     }
     
@@ -236,7 +236,7 @@ extension GameplayManager {
     }
 
     public func startNewGame() {
-        state = GameState(localPlayerID: localPlayerID, opponentPlayerIDs: opponentPlayerIDs)
+        state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
 
         gameEnd.startNewGame()
