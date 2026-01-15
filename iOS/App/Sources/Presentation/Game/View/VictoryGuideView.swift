@@ -1,0 +1,71 @@
+//
+//  VictoryGuideView.swift
+//  App
+//
+//  Created by 강윤서 on 1/15/26.
+//
+
+import SwiftUI
+
+struct VictoryGuideView: View {
+    @State private var isChecked: Bool = false
+    
+    var body: some View {
+        ZStack {
+            BackgroundContainerView {
+                Color.black.opacity(0.4)
+                    .ignoresSafeArea()
+            }
+            
+            VStack(alignment: .leading, spacing: 0) {
+                GuideTitleView(title: Constants.Game.Guide.victoryManual)
+                
+                GuideImageView(image: AppAsset.Image.victoryConditionTime.swiftUIImage)
+                    .padding(.top, 48)
+                    .padding(.horizontal, 58)
+
+                Text(Constants.Game.Guide.timeCondition)
+                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 21)
+                
+                GuideImageView(image: AppAsset.Image.victoryConditionMonster.swiftUIImage)
+                    .padding(.top, 60)
+                    .padding(.horizontal, 58)
+
+                Text(Constants.Game.Guide.monsterCondition)
+                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
+                    .foregroundColor(.white)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, 22)
+
+                Spacer()
+
+                PrimaryGradientButton(
+                    title: Constants.Game.Guide.gameReady,
+                    verticalPadding: 16
+                ) {
+                    // TODO: 게임 뷰로 이동 (구현 예정)
+                }
+                .padding(.horizontal, 20)
+                .padding(.bottom, 24)
+                .padding(.top, 44)
+
+                CheckButton(
+                    isChecked: $isChecked,
+                    title: Constants.Game.Guide.neverShowAgain
+                )
+                .frame(maxWidth: .infinity)
+                .padding(.bottom, 40)
+            }
+        }
+    }
+}
+
+#Preview {
+    VictoryGuideView()
+}
