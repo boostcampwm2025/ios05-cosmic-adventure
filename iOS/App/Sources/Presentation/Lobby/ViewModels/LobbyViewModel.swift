@@ -22,7 +22,7 @@ final class LobbyViewModel {
     // MARK: - Properties
 
     private(set) var myExplorer: LobbyExplorer
-    var peers: [LobbyExplorer] = []
+    var peers: [LobbyExplorer]
     var selectedPeerID: String?
 
     var activeAlert: LobbyAlert = .none
