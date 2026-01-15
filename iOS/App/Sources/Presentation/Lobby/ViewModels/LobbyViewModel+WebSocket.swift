@@ -115,11 +115,11 @@ extension LobbyViewModel {
     }
 
     func removePeer(playerId: String) {
-        guard let uuid = playerIdMapping[playerId] else { return }
-        peers.removeAll { $0.id == uuid }
+        guard let id = playerIdMapping[playerId] else { return }
+        peers.removeAll { $0.id == id }
         playerIdMapping.removeValue(forKey: playerId)
 
-        if selectedPeerID == uuid {
+        if selectedPeerID == id {
             selectedPeerID = nil
         }
     }
