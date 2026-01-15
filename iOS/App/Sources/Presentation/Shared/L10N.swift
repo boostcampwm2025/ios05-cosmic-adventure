@@ -1,5 +1,5 @@
 //
-//  Constants.swift
+//  L10N.swift
 //  App
 //
 //  Created by sungkug_apple_developer_ac on 1/6/26.
@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-enum Constants {
+enum L10N {
     enum Common {
         static let permissionAlertTitle: LocalizedStringKey = "권한이 필요해요"
         static let goToSettings: LocalizedStringKey = "설정으로 이동"

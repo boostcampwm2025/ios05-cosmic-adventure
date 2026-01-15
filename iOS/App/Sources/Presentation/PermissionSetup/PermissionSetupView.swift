@@ -34,7 +34,7 @@ struct PermissionSetupView: View {
                 
                 privacyNoticeText
                 
-                PrimaryGradientButton(title: Constants.PermissionSetup.requestButtonTitle) {
+                PrimaryGradientButton(title: L10N.PermissionSetup.requestButtonTitle) {
                     Task {
                         await viewModel.onNextTapped()
                     }
@@ -44,9 +44,9 @@ struct PermissionSetupView: View {
             }
             .padding(.horizontal, 20)
         }
-        .alert(Constants.Common.permissionAlertTitle, isPresented: $viewModel.showSettingsAlert) {
-            Button(Constants.Common.goToSettings) { viewModel.openAppSettings() }
-            Button(Constants.Common.cancel, role: .cancel) { }
+        .alert(L10N.Common.permissionAlertTitle, isPresented: $viewModel.showSettingsAlert) {
+            Button(L10N.Common.goToSettings) { viewModel.openAppSettings() }
+            Button(L10N.Common.cancel, role: .cancel) { }
         } message: {
             Text(viewModel.settingsAlertMessage)
         }
@@ -82,11 +82,11 @@ struct PermissionSetupView: View {
     
     private var profileSection: some View {
         Group {
-            Text(Constants.PermissionSetup.title)
+            Text(L10N.PermissionSetup.title)
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 25))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             
-            Text(Constants.PermissionSetup.subtitle)
+            Text(L10N.PermissionSetup.subtitle)
                 .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 15))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
                 .padding(.top, 5)
@@ -97,20 +97,20 @@ struct PermissionSetupView: View {
         VStack(spacing: 20) {
             PermissionCard(
                 iconImage: AppAsset.Image.permissionCameraIcon.swiftUIImage,
-                title: Constants.PermissionSetup.Card.cameraTitle,
-                subtitle: Constants.PermissionSetup.Card.cameraSubtitle
+                title: L10N.PermissionSetup.Card.cameraTitle,
+                subtitle: L10N.PermissionSetup.Card.cameraSubtitle
             )
             
             PermissionCard(
                 iconImage: AppAsset.Image.permissionNetworkIcon.swiftUIImage,
-                title: Constants.PermissionSetup.Card.networkTitle,
-                subtitle: Constants.PermissionSetup.Card.networkSubtitle
+                title: L10N.PermissionSetup.Card.networkTitle,
+                subtitle: L10N.PermissionSetup.Card.networkSubtitle
             )
         }
     }
     
     private var privacyNoticeText: some View {
-        Text(Constants.PermissionSetup.privacyNotice)
+        Text(L10N.PermissionSetup.privacyNotice)
             .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 13))
             .foregroundStyle(
                 AppAsset.Color.blackLabel.swiftUIColor

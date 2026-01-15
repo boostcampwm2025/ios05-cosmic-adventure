@@ -117,7 +117,7 @@ final class GameScene: SKScene {
 
         // 왼쪽 벽
         let leftWall = SKSpriteNode(color: .clear, size: CGSize(width: wallThickness, height: wallHeight))
-        leftWall.name = Constants.Game.NodeName.leftWall
+        leftWall.name = L10N.Game.NodeName.leftWall
         leftWall.position = CGPoint(x: -xPos, y: 0)
 
         leftWall.physicsBody = SKPhysicsBody(rectangleOf: leftWall.size)
@@ -129,7 +129,7 @@ final class GameScene: SKScene {
 
         // 오른쪽 벽
         let rightWall = SKSpriteNode(color: .clear, size: CGSize(width: wallThickness, height: wallHeight))
-        rightWall.name = Constants.Game.NodeName.rightWall
+        rightWall.name = L10N.Game.NodeName.rightWall
         rightWall.position = CGPoint(x: xPos, y: 0)
 
         rightWall.physicsBody = SKPhysicsBody(rectangleOf: rightWall.size)
@@ -144,8 +144,8 @@ final class GameScene: SKScene {
         guard let cameraSystem = cameraSystem else { return }
         let currentCameraY = cameraSystem.cameraNode.position.y
 
-        if let leftWall = childNode(withName: Constants.Game.NodeName.leftWall),
-           let rightWall = childNode(withName: Constants.Game.NodeName.rightWall) {
+        if let leftWall = childNode(withName: L10N.Game.NodeName.leftWall),
+           let rightWall = childNode(withName: L10N.Game.NodeName.rightWall) {
             leftWall.position.y = currentCameraY
             rightWall.position.y = currentCameraY
         }

@@ -43,7 +43,7 @@ struct ProfileSetupView: View {
                 
                 Spacer()
                 
-                PrimaryGradientButton(title: Constants.ProfileSetup.startButtonTitle) {
+                PrimaryGradientButton(title: L10N.ProfileSetup.startButtonTitle) {
                     viewModel.proceedToLobby(modelContext: modelContext)
                     router.setRoot(.lobby)
                 }
@@ -84,7 +84,7 @@ private extension ProfileSetupView {
     }
     
     var titleSection: some View {
-        Text(Constants.ProfileSetup.title)
+        Text(L10N.ProfileSetup.title)
             .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 25))
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
     }
@@ -95,14 +95,14 @@ private extension ProfileSetupView {
 private extension ProfileSetupView {
     var nicknameSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text(Constants.ProfileSetup.nicknameLabel)
+            Text(L10N.ProfileSetup.nicknameLabel)
                 .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 16))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             
             TextField(
                 "",
                 text: $viewModel.nickname,
-                prompt: Text(Constants.ProfileSetup.nicknamePlaceholder)
+                prompt: Text(L10N.ProfileSetup.nicknamePlaceholder)
                     .foregroundStyle(AppAsset.Color.subBlackLabel.swiftUIColor)
             )
             .focused($isNicknameFocused)
@@ -121,7 +121,7 @@ private extension ProfileSetupView {
 private extension ProfileSetupView {
     var characterSection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text(Constants.ProfileSetup.characterLabel)
+            Text(L10N.ProfileSetup.characterLabel)
                 .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 16))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             
