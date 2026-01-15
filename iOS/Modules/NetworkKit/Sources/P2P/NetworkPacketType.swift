@@ -13,6 +13,10 @@ public enum NetworkPacketType: String, Codable {
     case inviteDecline
     case inviteCancel
 
+    // // MARK: - Status
+    
+    case gameReady
+
     // MARK: - Data
 
     case input

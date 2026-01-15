@@ -110,6 +110,11 @@ public final class WebSocketService: NSObject {
         send(message)
     }
 
+    public func sendReadyStatus(to targetId: String) {
+        let message = WebSocketMessage(type: .gameReady, senderId: sessionId ?? "", payload: targetId)
+        send(message)
+    }
+
     private func receiveMessage() {
         webSocketTask?.receive { [weak self] result in
             switch result {

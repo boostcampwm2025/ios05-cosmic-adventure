@@ -21,7 +21,11 @@ public enum WebSocketMessageType: String, Codable {
     case inviteAccept
     case inviteDecline
     case inviteCancel
-    
+
+    // MARK: - Status
+
+    case gameReady
+
     // MARK: - Data
     
     case input

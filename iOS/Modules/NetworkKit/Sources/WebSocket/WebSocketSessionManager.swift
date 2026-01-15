@@ -41,7 +41,8 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onInviteCancelled: ((String) -> Void)?
     public var onInputReceived: ((String, Data) -> Void)?
     public var onConnectionStateChanged: ((Bool) -> Void)?
-    
+    public var onReadyStatusReceived: ((String) -> Void)?
+
     // MARK: - Initialization
     
     public init(service: WebSocketService, serverURL: String, channelId: String) {
@@ -90,6 +91,10 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         }
 
         service.sendInput(jsonString, to: playerId)
+    }
+
+    public func sendReadyStatus(to playerId: String) {
+        service.sendReadyStatus(to: playerId)
     }
 
     // MARK: - Private Methods
@@ -152,6 +157,9 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
                 onInputReceived?(message.senderId, payloadData)
             }
+
+        case .gameReady:
+            onReadyStatusReceived?(message.senderId)
 
         default:
             break
