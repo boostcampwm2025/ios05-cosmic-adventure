@@ -53,6 +53,8 @@ struct RootView: View {
         case .settings:
             // TODO: SettingsView 연결
             EmptyView()
+        case .gameReady(let me, let peer):
+             GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
         case .game:
             GameView()
         case .operationGuide:

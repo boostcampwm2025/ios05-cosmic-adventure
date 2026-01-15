@@ -14,6 +14,7 @@ protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
     func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel
+    func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager
 }
@@ -67,7 +68,17 @@ final class AppContainer: ViewModelFactory {
             characterRawValue: characterType
         )
     }
-    
+
+    func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel {
+        GameReadyViewModel(
+            me: me,
+            peer: peer,
+            connectivityMonitor: connectivityMonitor,
+            networkSessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager
+        )
+    }
+
     func makeChannelListViewModel() -> ChannelListViewModel {
         ChannelListViewModel(channelService: channelService)
     }

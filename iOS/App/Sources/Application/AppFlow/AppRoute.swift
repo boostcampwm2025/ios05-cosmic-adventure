@@ -16,6 +16,7 @@ enum AppRoute: Hashable {
     case dashboard
 
     // Game
+    case gameReady(me: LobbyExplorer, peer: LobbyExplorer)
     case game
     case operationGuide
     case victoryGuide

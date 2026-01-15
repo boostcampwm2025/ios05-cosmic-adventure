@@ -48,6 +48,14 @@ struct LobbyView: View {
         .onChange(of: viewModel.networkMode) { _, newMode in
             handleNetworkModeChange()
         }
+        .onChange(of: viewModel.matchStatus) { _, newValue in
+            if case .gameReady(let peer) = newValue {
+                router.push(.gameReady(
+                    me: viewModel.myExplorer,
+                    peer: peer
+                ))
+            }
+        }
         .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
             Button(viewModel.activeAlert.primaryButtonTitle) {
                 if viewModel.activeAlert == .permissionDenied {
@@ -64,34 +72,8 @@ struct LobbyView: View {
         .overlay {
             if isModalPresented {
                 ZStack {
-                    Color.black.opacity(0.7)
-                        .ignoresSafeArea()
-
-                    switch viewModel.matchStatus {
-                    case .readyToSend(let peer), .sendingRequest(let peer):
-                        requestModal(peer: peer)
-                            .transition(.opacity.combined(with: .scale))
-                            .padding(.horizontal, 24)
-
-                    case .receivedInvite(let peer):
-                        VStack {
-                            Spacer()
-                            inviteReceivedSheet(peer: peer)
-                        }
-                        .transition(.move(edge: .bottom))
-                        .zIndex(1)
-                        .ignoresSafeArea(edges: .bottom)
-
-                    case .requestDeclined(let peer):
-                        declineModal(peer: peer)
-                            .transition(.opacity.combined(with: .scale))
-                            .padding(.horizontal, 24)
-
-//                    case .gameReady(let peer):
-//                        // TODO: GameReadyView 로 전환
-                    default:
-                        EmptyView()
-                    }
+                    dimmedBackground
+                    modalContent
                 }
                 .zIndex(1)
             }
@@ -404,6 +386,49 @@ private extension LobbyView {
                 Capsule()
                     .fill(.white.opacity(0.85))
             )
+    }
+}
+
+// MARK: - Modal Content Views
+
+private extension LobbyView {
+    @ViewBuilder
+    var dimmedBackground: some View {
+        if case .gameReady = viewModel.matchStatus {
+            EmptyView()
+        } else {
+            Color.black.opacity(0.7).ignoresSafeArea()
+        }
+    }
+
+    @ViewBuilder
+    var modalContent: some View {
+        switch viewModel.matchStatus {
+        case .readyToSend(let peer), .sendingRequest(let peer):
+            requestModal(peer: peer)
+                .transition(.opacity.combined(with: .scale))
+                .padding(.horizontal, 24)
+
+        case .receivedInvite(let peer):
+            VStack {
+                Spacer()
+                inviteReceivedSheet(peer: peer)
+            }
+            .transition(.move(edge: .bottom))
+            .zIndex(1)
+            .ignoresSafeArea(edges: .bottom)
+
+        case .requestDeclined(let peer):
+            declineModal(peer: peer)
+                .transition(.opacity.combined(with: .scale))
+                .padding(.horizontal, 24)
+
+        case .gameReady:
+            EmptyView()
+
+        default:
+            EmptyView()
+        }
     }
 }
 

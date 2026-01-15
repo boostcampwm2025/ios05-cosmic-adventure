@@ -6,7 +6,6 @@
 //
 
 import Observation
-import SwiftUI
 import UIKit
 
 import NetworkKit
