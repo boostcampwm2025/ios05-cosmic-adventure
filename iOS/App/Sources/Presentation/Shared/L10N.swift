@@ -73,7 +73,14 @@ enum L10N {
         static let localNetworkSubTitle: LocalizedStringKey = "근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요. 설정에서 권한을 허용해주세요."
         static let unknownSubTitle: LocalizedStringKey = "알 수 없는 네트워크 오류가 발생했습니다."
     }
-    
+
+    enum GameReady {
+        static let connectingMessage = "다른 탐험가와 연결중.."
+        static let peerWaitingMessage = "상대방이 기다리고 있습니다!"
+        static let waitingForPeerMessage = "상대방의 준비를 기다리는 중..."
+        static let allReadyMessage = "모든 탐험가 준비 완료! 곧 시작합니다."
+    }
+
     enum Game {
         enum NodeName {
             static let platform = "platform"
