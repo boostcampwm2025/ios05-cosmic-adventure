@@ -18,19 +18,21 @@ struct OperationGuideView: View {
             }
             
             VStack(alignment: .leading, spacing: 0) {
-                titleView
+                GuideTitleView(title: Constants.Game.Guide.moveManual)
                 
-                guideImageView(image: AppAsset.Image.horizontalGuide.swiftUIImage)
+                GuideImageView(image: AppAsset.Image.horizontalGuide.swiftUIImage)
                     .padding(.top, 48)
                     .padding(.horizontal, 58)
 
+                // TODO: - Image GIF로 변환 필요
                 guideManualRow(
                     characterImage: AppAsset.Image.character1.swiftUIImage,
                     manualText: Constants.Game.Guide.horizontalMove
                 )
                 .padding(.top, 21)
-                
-                guideImageView(image: AppAsset.Image.jumpGuide.swiftUIImage)
+
+                // TODO: - Image GIF로 변환 필요
+                GuideImageView(image: AppAsset.Image.jumpGuide.swiftUIImage)
                     .padding(.top, 21)
                     .padding(.horizontal, 58)
 
@@ -53,7 +55,7 @@ struct OperationGuideView: View {
                 .padding(.bottom, 24)
                 .padding(.top, 44)
 
-                checkButtonView(
+                CheckButton(
                     isChecked: $isChecked,
                     title: Constants.Game.Guide.neverShowAgain
                 )
@@ -67,51 +69,6 @@ struct OperationGuideView: View {
 // MARK: - Components
 
 private extension OperationGuideView {
-    var titleView: some View {
-        Text(Constants.Game.Guide.moveManual)
-            .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 32))
-            .foregroundColor(.white)
-            .padding(.top, 41)
-            .padding(.leading, 39)
-    }
-    
-    var victoryConditionButton: some View {
-        Button(action: {
-            // TODO: 두번째 가이드 뷰로 이동 (구현 예정)
-        }) {
-            Text(Constants.Game.Guide.gotoVictoryCondition)
-                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(
-                    LinearGradient(
-                        colors: [
-                            AppAsset.Color.buttonGradientStart.swiftUIColor,
-                            AppAsset.Color.buttonGradientEnd.swiftUIColor
-                        ],
-                        startPoint: .leading,
-                        endPoint: .trailing
-                    )
-                )
-                .cornerRadius(18)
-        }
-    }
-    
-    func guideImageView(image: Image?) -> some View {
-        Group {
-            if let image = image {
-                image
-                    .resizable()
-                    .scaledToFit()
-                    .frame(height: 160)
-            } else {
-                Color.clear
-                    .frame(height: 160)
-            }
-        }
-    }
-    
     func guideManualRow(
         characterImage: Image,
         manualText: LocalizedStringKey,
@@ -136,29 +93,6 @@ private extension OperationGuideView {
                         .foregroundColor(.white)
                 }
             }
-        }
-    }
-    
-    func checkButtonView(isChecked: Binding<Bool>,
-                         title: LocalizedStringKey) -> some View {
-        HStack(spacing: 9) {
-            Button(action: { isChecked.wrappedValue.toggle() }) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: 4)
-                        .stroke(Color.white, lineWidth: 2)
-                        .frame(width: 20, height: 20)
-                    
-                    if isChecked.wrappedValue {
-                        Image(systemName: "checkmark")
-                            .font(.system(size: 12, weight: .bold))
-                            .foregroundColor(.white)
-                    }
-                }
-            }
-            
-            Text(title)
-                .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 15))
-                .foregroundColor(.white)
         }
     }
 }
