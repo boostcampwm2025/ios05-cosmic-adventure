@@ -15,16 +15,16 @@ struct BackgroundContainerView<Content: View>: View {
     }
     
     var body: some View {
-        GeometryReader { geometry in
-            ZStack {
+        ZStack(alignment: .topLeading) {
+            GeometryReader { geometry in
                 AppAsset.Image.background.swiftUIImage
                     .resizable()
                     .scaledToFill()
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
-                
-                content
             }
+            
+            content
         }
         .ignoresSafeArea()
     }

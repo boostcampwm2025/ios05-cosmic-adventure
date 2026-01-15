@@ -12,20 +12,20 @@ struct VictoryGuideView: View {
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
     
     var body: some View {
-        ZStack {
-            BackgroundContainerView {
-                Color.black.opacity(0.4)
-                    .ignoresSafeArea()
-            }
+        BackgroundContainerView {
+            Color.black.opacity(0.4)
+                .ignoresSafeArea()
             
             VStack(alignment: .leading, spacing: 0) {
-                GuideTitleView(title: Constants.Game.Guide.victoryManual)
+                GuideTitleView(title: L10N.Game.Guide.victoryManual)
+                    .padding(.top, 24)
+                    .padding(.leading, 52)
                 
                 GuideImageView(image: AppAsset.Image.victoryConditionTime.swiftUIImage)
                     .padding(.top, 48)
                     .padding(.horizontal, 58)
-
-                Text(Constants.Game.Guide.timeCondition)
+                
+                Text(L10N.Game.Guide.timeCondition)
                     .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
@@ -35,19 +35,19 @@ struct VictoryGuideView: View {
                 GuideImageView(image: AppAsset.Image.victoryConditionMonster.swiftUIImage)
                     .padding(.top, 60)
                     .padding(.horizontal, 58)
-
-                Text(Constants.Game.Guide.monsterCondition)
+                
+                Text(L10N.Game.Guide.monsterCondition)
                     .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
                     .foregroundColor(.white)
                     .multilineTextAlignment(.center)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity)
                     .padding(.top, 22)
-
+                
                 Spacer()
-
+                
                 PrimaryGradientButton(
-                    title: Constants.Game.Guide.gameReady,
+                    title: L10N.Game.Guide.gameReady,
                     verticalPadding: 16
                 ) {
                     router.push(.game)
@@ -55,7 +55,7 @@ struct VictoryGuideView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
                 .padding(.top, 44)
-
+                
                 CheckButton(
                     isChecked: Binding(
                         get: { isChecked },
@@ -64,11 +64,13 @@ struct VictoryGuideView: View {
                             UserDefaultsList.Game.isGuideChecked = newValue
                         }
                     ),
-                    title: Constants.Game.Guide.neverShowAgain
+                    title: L10N.Game.Guide.neverShowAgain
                 )
                 .frame(maxWidth: .infinity)
-                .padding(.bottom, 59)
+                
+                Spacer()
             }
+            .padding(.bottom, 59)
         }
     }
 }
