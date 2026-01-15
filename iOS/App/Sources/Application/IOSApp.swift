@@ -1,5 +1,4 @@
 import SwiftUI
-@_exported import SwiftData
 
 import StorageKit
 
