@@ -56,6 +56,10 @@ struct RootView: View {
             EmptyView()
         case .game:
             GameView()
+        case .operationGuide:
+            OperationGuideView()
+        case .victoryGuide:
+            VictoryGuideView()
         case .result:
             // TODO: ResultView 연결
             EmptyView()

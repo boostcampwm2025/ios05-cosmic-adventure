@@ -17,5 +17,7 @@ enum AppRoute: Hashable {
 
     // Game
     case game
+    case operationGuide
+    case victoryGuide
     case result
 }
