@@ -38,7 +38,7 @@ final class MonsterController {
         sprite.size = CGSize(width: w, height: h)
 
         sprite.zPosition = 1
-        sprite.name = Constants.Game.NodeName.monster
+        sprite.name = L10N.Game.NodeName.monster
 
         let body = SKPhysicsBody(rectangleOf: sprite.size)
         body.isDynamic = false

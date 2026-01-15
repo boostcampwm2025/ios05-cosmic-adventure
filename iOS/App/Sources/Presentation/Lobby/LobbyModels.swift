@@ -81,8 +81,8 @@ enum LobbyAlert {
 
     var title: LocalizedStringKey {
         switch self {
-        case .permissionDenied: return Constants.Common.permissionAlertTitle
-        case .unknownNetworkError: return Constants.Alert.defaultTitle
+        case .permissionDenied: return L10N.Common.permissionAlertTitle
+        case .unknownNetworkError: return L10N.Alert.defaultTitle
         case .none: return ""
         }
     }
@@ -90,9 +90,9 @@ enum LobbyAlert {
     var message: LocalizedStringKey {
         switch self {
         case .permissionDenied:
-            return Constants.Alert.localNetworkSubTitle
+            return L10N.Alert.localNetworkSubTitle
         case .unknownNetworkError:
-            return Constants.Alert.unknownSubTitle
+            return L10N.Alert.unknownSubTitle
         case .none:
             return ""
         }
@@ -100,8 +100,8 @@ enum LobbyAlert {
 
     var primaryButtonTitle: LocalizedStringKey {
         switch self {
-        case .permissionDenied: return Constants.Common.goToSettings
-        case .unknownNetworkError: return Constants.Common.confirm
+        case .permissionDenied: return L10N.Common.goToSettings
+        case .unknownNetworkError: return L10N.Common.confirm
         case .none: return ""
         }
     }

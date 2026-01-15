@@ -58,7 +58,7 @@ final class PlatformController {
         let defaultCullLineY = cameraY - (sceneHeight * 2)
         let cullLineY = cullBelowY ?? defaultCullLineY - 100
 
-        scene.enumerateChildNodes(withName: Constants.Game.NodeName.platform) { [weak self] node, _ in
+        scene.enumerateChildNodes(withName: L10N.Game.NodeName.platform) { [weak self] node, _ in
             guard let self else { return }
 
             // "위험 구간" 아래에 있는 플랫폼을 제거
@@ -115,7 +115,7 @@ final class PlatformController {
     
     private func createPlatform(index: Int, position: CGPoint, size: CGSize = CGSize(width: 110, height: 35)) -> SKSpriteNode {
         let platform = SKSpriteNode(imageNamed: AppAsset.Image.platform.name)
-        platform.name = Constants.Game.NodeName.platform
+        platform.name = L10N.Game.NodeName.platform
         platform.size = size
         platform.position = position
 

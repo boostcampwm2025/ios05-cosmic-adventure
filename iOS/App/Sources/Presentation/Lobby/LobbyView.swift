@@ -56,7 +56,7 @@ struct LobbyView: View {
             }
 
             if viewModel.activeAlert.hasCancelButton {
-                Button(Constants.Common.cancel, role: .cancel) { }
+                Button(L10N.Common.cancel, role: .cancel) { }
             }
         } message: {
             Text(viewModel.activeAlert.message)
@@ -140,7 +140,7 @@ private extension LobbyView {
         Spacer()
         
         bottomButtons(
-            secondaryTitle: Constants.Lobby.remoteGalaxyButtonTitle,
+            secondaryTitle: L10N.Lobby.remoteGalaxyButtonTitle,
             secondaryAction: { viewModel.switchToRemoteMode() },
             showSecondary: viewModel.isNetworkAvailable
         )
@@ -172,7 +172,7 @@ private extension LobbyView {
         Spacer()
         
         bottomButtons(
-            secondaryTitle: Constants.Lobby.localGalaxyButtonTitle,
+            secondaryTitle: L10N.Lobby.localGalaxyButtonTitle,
             secondaryAction: { viewModel.switchToLocalMode() }
         )
     }
@@ -184,7 +184,7 @@ private extension LobbyView {
         showSecondary: Bool = true
     ) -> some View {
         VStack(spacing: 12) {
-            PrimaryGradientButton(title: Constants.Lobby.soloAdventureButtonTitle) {
+            PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
                 viewModel.startSoloAdventure()
                 router.push(.game)
             }
@@ -254,12 +254,12 @@ private extension LobbyView {
             HStack(spacing: 0) {
                 Text(viewModel.myExplorer.displayName)
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
-                Text(Constants.Lobby.greetingSuffix)
+                Text(L10N.Lobby.greetingSuffix)
                     .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
             }
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
 
-            Text(Constants.Lobby.greetingMessage)
+            Text(L10N.Lobby.greetingMessage)
                 .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
         }
@@ -412,7 +412,7 @@ private extension LobbyView {
         }()
 
         return VStack(spacing: 24) {
-            modalTitle(Constants.Lobby.RequestModal.title)
+            modalTitle(L10N.Lobby.RequestModal.title)
 
             modalAvatarView(for: peer, isGrayscale: false)
 
@@ -462,7 +462,7 @@ private extension LobbyView {
 
     func requestButton(isSending: Bool) -> some View {
         PrimaryGradientButton(
-            title: isSending ? Constants.Lobby.RequestModal.sendingButtonTitle : Constants.Lobby.RequestModal.requestButtonTitle,
+            title: isSending ? L10N.Lobby.RequestModal.sendingButtonTitle : L10N.Lobby.RequestModal.requestButtonTitle,
             cornerRadius: 16,
             verticalPadding: 14
         ) {
@@ -474,7 +474,7 @@ private extension LobbyView {
 
     var cancelButton: some View {
         Button(action: viewModel.cancelInvite) {
-            Text(Constants.Lobby.RequestModal.cancelButtonTitle)
+            Text(L10N.Lobby.RequestModal.cancelButtonTitle)
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)
@@ -485,7 +485,7 @@ private extension LobbyView {
     }
 
     func requestModalFooter(isSending: Bool) -> some View {
-        Text(isSending ? Constants.Lobby.RequestModal.waitingMessage : Constants.Lobby.RequestModal.guideMessage)
+        Text(isSending ? L10N.Lobby.RequestModal.waitingMessage : L10N.Lobby.RequestModal.guideMessage)
             .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 12))
             .foregroundStyle(AppAsset.Color.subButton.swiftUIColor)
             .multilineTextAlignment(.center)
@@ -499,7 +499,7 @@ private extension LobbyView {
 private extension LobbyView {
     func declineModal(peer: LobbyExplorer) -> some View {
         VStack(spacing: 24) {
-            modalTitle(Constants.Lobby.DeclineModal.invitationDeclinedTitle)
+            modalTitle(L10N.Lobby.DeclineModal.invitationDeclinedTitle)
 
             modalAvatarView(for: peer, isGrayscale: true)
 
@@ -518,7 +518,7 @@ private extension LobbyView {
 
     func declineModalMessage(for peer: LobbyExplorer) -> some View {
         (Text("'\(peer.displayName)'") +
-         Text(Constants.Lobby.DeclineModal.invitationDeclinedMessage))
+         Text(L10N.Lobby.DeclineModal.invitationDeclinedMessage))
         .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
         .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
         .multilineTextAlignment(.center)
@@ -528,7 +528,7 @@ private extension LobbyView {
 
     var declineModalConfirmButton: some View {
         PrimaryGradientButton(
-            title: Constants.Common.confirm,
+            title: L10N.Common.confirm,
             cornerRadius: 16,
             verticalPadding: 14
         ) {
@@ -537,7 +537,7 @@ private extension LobbyView {
     }
 
     var declineModalFooter: some View {
-        Text(Constants.Lobby.DeclineModal.guideMessage)
+        Text(L10N.Lobby.DeclineModal.guideMessage)
             .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 12))
             .foregroundStyle(AppAsset.Color.subButton.swiftUIColor)
             .multilineTextAlignment(.center)
@@ -575,7 +575,7 @@ private extension LobbyView {
     }
 
     var inviteSheetHeader: some View {
-        Text(Constants.Lobby.InviteReceivedSheet.title)
+        Text(L10N.Lobby.InviteReceivedSheet.title)
             .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -599,7 +599,7 @@ private extension LobbyView {
                 .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 22))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
              +
-             Text(Constants.Lobby.InviteReceivedSheet.messageSuffix)
+             Text(L10N.Lobby.InviteReceivedSheet.messageSuffix)
                 .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 20))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             )
@@ -611,7 +611,7 @@ private extension LobbyView {
 
     var inviteAcceptButton: some View {
         PrimaryGradientButton(
-            title: Constants.Lobby.InviteReceivedSheet.acceptButton,
+            title: L10N.Lobby.InviteReceivedSheet.acceptButton,
             cornerRadius: 16,
             verticalPadding: 14
         ) {
@@ -621,7 +621,7 @@ private extension LobbyView {
 
     var inviteDeclineButton: some View {
         Button(action: viewModel.declineInvite) {
-            Text(Constants.Lobby.InviteReceivedSheet.declineButton)
+            Text(L10N.Lobby.InviteReceivedSheet.declineButton)
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 14)

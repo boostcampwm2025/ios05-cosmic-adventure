@@ -43,7 +43,7 @@ final class CharacterController {
         guard let scene else { return }
         
         let player = SKSpriteNode(imageNamed: AppAsset.Image.character1.name)
-        player.name = Constants.Game.NodeName.player
+        player.name = L10N.Game.NodeName.player
         player.size = size
         player.position = initialPosition
         
