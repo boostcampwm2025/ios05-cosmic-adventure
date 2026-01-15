@@ -273,14 +273,16 @@ private extension LobbyView {
 
 private extension LobbyView {
     var explorerOrbitSelector: some View {
-        GeometryReader { geometry in
+        let displayPeers = viewModel.orderedPeers.prefix(OrbitSlot.orderedSlots.count)
+        
+        return GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
 
             ZStack {
                 radarRings(size: size, center: center)
 
-                ForEach(Array(viewModel.orderedPeers.enumerated()), id: \.element.id) { index, explorer in
+                ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, explorer in
                     let slot = OrbitSlot.orderedSlots[index]
                     let position = calculatePosition(slot: slot, size: size, center: center)
 
@@ -293,6 +295,7 @@ private extension LobbyView {
                     .position(center)
             }
         }
+        .frame(height: 400)
         .padding(.horizontal, 20)
     }
 
