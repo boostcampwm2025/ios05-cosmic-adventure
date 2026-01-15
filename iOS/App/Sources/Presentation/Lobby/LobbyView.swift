@@ -180,8 +180,9 @@ private extension LobbyView {
     ) -> some View {
         VStack(spacing: 12) {
             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
+                
                 if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.game)
+                    router.push(.game(nil))
                 } else {
                     router.push(.operationGuide(me: viewModel.myExplorer, peer: nil)) 
                 }

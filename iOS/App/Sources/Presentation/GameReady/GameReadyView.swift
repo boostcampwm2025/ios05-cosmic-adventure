@@ -62,7 +62,7 @@ struct GameReadyView: View {
     private func attemptStart() {
         if viewModel.checkAllReady() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                router.push(.game)
+                router.push(.game(viewModel.peer.displayName))
             }
         }
     }
