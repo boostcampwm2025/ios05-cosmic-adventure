@@ -50,7 +50,7 @@ final class CharacterController {
         player.size = size
         player.position = initialPosition
         
-        if playerRole == .opponent {
+        if playerRole == .others {
             player.alpha = 0.4
         }
         

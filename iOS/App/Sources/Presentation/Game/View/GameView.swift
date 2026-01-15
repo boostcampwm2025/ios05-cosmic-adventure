@@ -13,22 +13,22 @@ import SwiftUI
 public struct GameView: View {
     // TODO: 네트워크계층이랑 연결할 수 있게 주입식으로 변경
     @State private var localPlayerID: UUID
-    @State private var opponentPlayerIDs: [UUID]
+    @State private var otherPlayerIDs: [UUID]
 
     @State private var gameplayManager: GameplayManager
     @State private var gameScene: GameScene?
     @State private var inputProvider = FaceTrackingGameInputProvider()
     
     public init(
-        endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 30, targetPlatformIndex: 4),
+        endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
         localPlayerID: UUID = UUID(),
-        opponentPlayerIDs: [UUID] = [UUID()]
+        otherPlayerIDs: [UUID] = []
     ) {
         _localPlayerID = State(initialValue: localPlayerID)
-        _opponentPlayerIDs = State(initialValue: opponentPlayerIDs)
+        _otherPlayerIDs = State(initialValue: otherPlayerIDs)
         _gameplayManager = State(initialValue: GameplayManager(
             localPlayerID: localPlayerID,
-            opponentPlayerIDs: opponentPlayerIDs,
+            otherPlayerIDs: otherPlayerIDs,
             endCondition: endCondition
         ))
     }
@@ -85,7 +85,7 @@ public struct GameView: View {
             size: UIScreen.main.bounds.size,
             gameplayManager: gameplayManager,
             localPlayerID: localPlayerID,
-            opponentPlayerIDs: opponentPlayerIDs
+            otherPlayerIDs: otherPlayerIDs
         )
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear

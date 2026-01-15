@@ -15,11 +15,11 @@ public struct GameState: Equatable, Sendable {
 
     public init(
         localPlayerID: UUID,
-        opponentPlayerIDs: [UUID] = [],
+        otherPlayerIDs: [UUID] = [],
     ) {
         self.localPlayerID = localPlayerID
         var dict: [UUID: CharacterState] = [localPlayerID: CharacterState()]
-        for id in opponentPlayerIDs where id != localPlayerID {
+        for id in otherPlayerIDs where id != localPlayerID {
             dict[id] = CharacterState()
         }
         self.characters = dict
@@ -55,16 +55,16 @@ public struct GameState: Equatable, Sendable {
         for id: UUID
     ) {
         ensurePlayer(id)
-        guard var cs = characters[id] else { return }
+        guard var character = characters[id] else { return }
 
-        cs.respawn.isRespawning = isRespawning
+        character.respawn.isRespawning = isRespawning
         if isRespawning {
-            cs.respawn.pendingReason = reason
+            character.respawn.pendingReason = reason
         } else {
-            cs.respawn.pendingReason = nil
+            character.respawn.pendingReason = nil
         }
 
-        characters[id] = cs
+        characters[id] = character
     }
     
     public mutating func consumePendingRespawnReason(for id: UUID) -> RespawnReason? {

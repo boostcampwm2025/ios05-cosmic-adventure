@@ -17,7 +17,7 @@ final class GameScene: SKScene {
 
     // PlayerID 기반으로 캐릭터 컨트롤러를 관리
     private let localPlayerID: UUID
-    private let opponentPlayerIDs: [UUID]
+    private let otherPlayerIDs: [UUID]
     private var characterControllers: [UUID: CharacterController] = [:]
     
     private let outOfBoundsMargin: CGFloat = 100
@@ -27,11 +27,11 @@ final class GameScene: SKScene {
         size: CGSize,
         gameplayManager: GameplayManager,
         localPlayerID: UUID,
-        opponentPlayerIDs: [UUID] = []
+        otherPlayerIDs: [UUID] = []
     ) {
         self.gameplayManager = gameplayManager
         self.localPlayerID = localPlayerID
-        self.opponentPlayerIDs = opponentPlayerIDs
+        self.otherPlayerIDs = otherPlayerIDs
         super.init(size: size)
         self.physicsWorld.gravity = CGVector(dx: 0, dy: PhysicsConstants.gravityDY)
         self.physicsWorld.contactDelegate = self
@@ -39,7 +39,7 @@ final class GameScene: SKScene {
 
     required init?(coder: NSCoder) {
         self.localPlayerID = UUID()
-        self.opponentPlayerIDs = []
+        self.otherPlayerIDs = []
         super.init(coder: coder)
     }
 
@@ -70,8 +70,8 @@ final class GameScene: SKScene {
         characterControllers[localPlayerID] = localController
         
         // 상대 플레이어들 생성
-        for id in opponentPlayerIDs where id != localPlayerID {
-            let opponentController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .opponent)
+        for id in otherPlayerIDs where id != localPlayerID {
+            let opponentController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .others)
             
             opponentController.setupPlayer()
             if let node = opponentController.playerNode {
@@ -232,7 +232,7 @@ extension GameScene: SKPhysicsContactDelegate {
         switch contactType {
         case .ground:
             // 땅 로직: 리스폰 중 X
-            if gameplayManager?.isRespawning(for: playerID) == false,
+            if gameplayManager?.isPlayerRespawning(for: playerID) == false,
                let platformNode = otherBody.node {
                 
                 // 현재/이전/다음 플랫폼만 접지 판정 대상으로 (충돌 창과 동일)

@@ -7,5 +7,5 @@
 
 enum PlayerRole: String {
     case me
-    case opponent
+    case others // 경쟁, 협력모드 고려
 }
