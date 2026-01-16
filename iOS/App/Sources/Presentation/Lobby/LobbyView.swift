@@ -179,7 +179,7 @@ private extension LobbyView {
             }
             
             if showSecondary {
-                PrimaryGradientButton(title: secondaryTitle) {
+                PrimaryGradientButton(title: secondaryTitle, isSubtle: true) {
                     withAnimation(.easeInOut(duration: 0.1)) {
                         secondaryAction()
                     }
@@ -459,7 +459,7 @@ private extension LobbyView {
         }
         .padding(24)
         .frame(height: 400)
-        .background(AppAsset.Color.subSelect.swiftUIColor)
+        .background(AppAsset.Color.sheetBackground.swiftUIColor)
         .cornerRadius(30)
         .shadow(radius: 10)
     }
@@ -543,7 +543,7 @@ private extension LobbyView {
         }
         .padding(24)
         .frame(height: 400)
-        .background(AppAsset.Color.subSelect.swiftUIColor)
+        .background(AppAsset.Color.sheetBackground.swiftUIColor)
         .cornerRadius(30)
         .shadow(radius: 10)
     }
@@ -594,7 +594,7 @@ private extension LobbyView {
         .padding(.horizontal, 24)
         .padding(.top, 24)
         .padding(.bottom, 40)
-        .background(AppAsset.Color.subSelect.swiftUIColor)
+        .background(AppAsset.Color.sheetBackground.swiftUIColor)
         .clipShape(
             .rect(
                 topLeadingRadius: 30,
@@ -607,10 +607,15 @@ private extension LobbyView {
     }
 
     var inviteSheetHeader: some View {
-        Text(L10N.Lobby.InviteReceivedSheet.title)
-            .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
-            .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
-            .frame(maxWidth: .infinity, alignment: .leading)
+        HStack {
+            AppAsset.Image.inviteIcon.swiftUIImage
+                .resizable()
+                .frame(width: 24, height: 24)
+            Text(L10N.Lobby.InviteReceivedSheet.title)
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
     }
 
     func inviteSheetContent(for peer: LobbyExplorer) -> some View {
