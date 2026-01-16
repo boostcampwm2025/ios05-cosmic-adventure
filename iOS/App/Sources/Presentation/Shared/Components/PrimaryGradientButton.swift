@@ -9,11 +9,30 @@ import SwiftUI
 
 struct PrimaryGradientButton: View {
     let title: LocalizedStringKey
-    let startColor: Color = AppAsset.Color.buttonGradientStart.swiftUIColor
-    let endColor: Color = AppAsset.Color.buttonGradientEnd.swiftUIColor
+    let startColor: Color
+    let endColor: Color
     var cornerRadius: CGFloat = 18
     var verticalPadding: CGFloat = 20
     let action: () -> Void
+
+    init(
+        title: LocalizedStringKey,
+        isSubtle: Bool = false,
+        cornerRadius: CGFloat = 18,
+        verticalPadding: CGFloat = 20,
+        action: @escaping () -> Void
+    ) {
+        self.title = title
+        self.startColor = isSubtle
+        ? AppAsset.Color.subButtonGradientStart.swiftUIColor
+        : AppAsset.Color.buttonGradientStart.swiftUIColor
+        self.endColor = isSubtle
+        ? AppAsset.Color.subButtonGradientEnd.swiftUIColor
+        : AppAsset.Color.buttonGradientEnd.swiftUIColor
+        self.cornerRadius = cornerRadius
+        self.verticalPadding = verticalPadding
+        self.action = action
+    }
 
     var body: some View {
         Button(action: action) {

@@ -61,7 +61,7 @@ enum L10N {
         }
 
         enum InviteReceivedSheet {
-            static let title: LocalizedStringKey = "✉️ 새로운 모험 요청"
+            static let title: LocalizedStringKey = "새로운 모험 요청"
             static let messageSuffix: LocalizedStringKey = " 님과 \n함께 모험을 떠나볼까요?"
             static let acceptButton: LocalizedStringKey = "수락하기"
             static let declineButton: LocalizedStringKey = "거절하기"
