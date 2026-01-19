@@ -21,6 +21,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     var onInviteCancelled: ((String) -> Void)? { get set }
     var onInputReceived: ((String, Data) -> Void)? { get set }
     var onReadyStatusReceived: ((String) -> Void)? { get set }
+    var onVideoReceived: ((String, Data) -> Void)? { get set }
 
     // MARK: - action
 
@@ -30,6 +31,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     func cancelInvite(to targetId: String)
     func sendInput<T: Codable>(_ data: T, to targetId: String?)
     func sendReadyStatus(to targetId: String)
+    func sendVideo(data: Data)
 }
 
 extension ConnectionSessionManaging {
