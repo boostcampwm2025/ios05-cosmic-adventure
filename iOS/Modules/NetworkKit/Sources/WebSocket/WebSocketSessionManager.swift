@@ -36,6 +36,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onInputReceived: ((String, Data) -> Void)?
     public var onConnectionStateChanged: ((Bool) -> Void)?
     public var onReadyStatusReceived: ((String) -> Void)?
+    public var onVideoReceived: ((String, Data) -> Void)?
 
     // MARK: - Initialization
     
@@ -97,6 +98,10 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
     public func sendReadyStatus(to playerId: String) {
         service.sendReadyStatus(to: playerId)
+    }
+
+    public func sendVideo(data: Data) {
+        // TODO: 데이터 String 변환, service sendVideo 추가 후 호출
     }
 
     // MARK: - Private Methods

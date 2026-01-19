@@ -25,4 +25,5 @@ public enum NetworkPacketType: String, Codable {
     // MARK: - Data
 
     case input
+    case videoFrame
 }

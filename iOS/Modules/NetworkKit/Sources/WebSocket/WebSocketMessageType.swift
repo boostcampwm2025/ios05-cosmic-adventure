@@ -29,6 +29,7 @@ public enum WebSocketMessageType: String, Codable {
     // MARK: - Data
     
     case input
+    case videoFrame
     
     // MARK: - Connection
     

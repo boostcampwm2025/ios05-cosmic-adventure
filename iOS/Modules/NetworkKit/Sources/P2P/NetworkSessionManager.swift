@@ -44,6 +44,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onInputReceived: ((String, Data) -> Void)?
     public var onPeersUpdated: (([Peer]) -> Void)?
     public var onReadyStatusReceived: ((String) -> Void)?
+    public var onVideoReceived: ((String, Data) -> Void)?
 
     // MARK: - Initialization
 
@@ -143,6 +144,26 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         let packet = NetworkPacket(type: .gameReady, senderIdentifier: myNickname ?? "Unknown")
 
         sendToPeer(to: targetPeer, packet: packet)
+    }
+
+    public func sendVideo(data: Data) {
+        guard let connection = activeGameConnection else { return }
+
+        let packet = NetworkPacket(
+            type: .videoFrame,
+            senderIdentifier: myNickname ?? "Unknown",
+            payload: data
+        )
+
+        guard let encodedPacket = try? encoder.encode(packet) else { return }
+
+        if let connection = self.activeGameConnection {
+            connection.send(content: encodedPacket, completion: .contentProcessed { error in
+                if let error = error {
+                    self.logger.error("전송 실패: \(error.localizedDescription)")
+                }
+            })
+        }
     }
 
     // MARK: - Private Methods
@@ -252,45 +273,51 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
-            
+
             switch packet.type {
             case .ping:
-                let pongPacket = NetworkPacket(type: .pong, senderIdentifier: self.myNickname ?? "Unknown")
+                let pongPacket = NetworkPacket(type: .pong, senderIdentifier: myNickname ?? "Unknown")
                 guard let encodedPong = try? self.encoder.encode(pongPacket) else { return }
                 
                 if let connection = connection {
-                    self.host.sendData(encodedPong, to: connection)
+                    host.sendData(encodedPong, to: connection)
                 }
 
             case .pong:
-                if let sendDate = self.lastPingTimestamps[packet.senderIdentifier] {
+                if let sendDate = lastPingTimestamps[packet.senderIdentifier] {
                     let latency = Date().timeIntervalSince(sendDate) * 1000.0
-                    self.updatePeerLatency(name: packet.senderIdentifier, latency: latency)
-                    self.lastPingTimestamps.removeValue(forKey: packet.senderIdentifier)
+                    updatePeerLatency(name: packet.senderIdentifier, latency: latency)
+                    lastPingTimestamps.removeValue(forKey: packet.senderIdentifier)
                 }
 
             case .invite:
-                self.onInviteReceived?(packet.senderIdentifier)
+                onInviteReceived?(packet.senderIdentifier)
 
             case .inviteAccept:
                 if let connection = connection {
-                    self.activeGameConnection = connection
-                    self.pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
+                    activeGameConnection = connection
+                    pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
                 }
-                self.onInviteAccepted?(packet.senderIdentifier)
+                onInviteAccepted?(packet.senderIdentifier)
 
             case .inviteDecline:
-                self.onInviteDeclined?(packet.senderIdentifier)
+                onInviteDeclined?(packet.senderIdentifier)
 
             case .inviteCancel:
-                self.onInviteCancelled?(packet.senderIdentifier)
+                onInviteCancelled?(packet.senderIdentifier)
 
             case .input:
                 if let payload = packet.payload {
-                    self.onInputReceived?(packet.senderIdentifier, payload)
+                    onInputReceived?(packet.senderIdentifier, payload)
                 }
+
             case .gameReady:
-                self.onReadyStatusReceived?(packet.senderIdentifier)
+                onReadyStatusReceived?(packet.senderIdentifier)
+
+            case .videoFrame:
+                if let payload = packet.payload {
+                    onVideoReceived?(packet.senderIdentifier, payload)
+                }
             }
         }
     }
