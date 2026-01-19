@@ -54,9 +54,9 @@ public final class GameplayManager {
     private let landingCooldown: TimeInterval = 0.3
     private let inputTimeout: TimeInterval = 0.2
 
-    // TODO: id마다 관리되도록 구현
-    private var inputProvider: (any GameInputProviding)?
-    private var inputTask: Task<Void, Never>?
+    // 플레이어별 입력 바인딩
+    private var inputProvidersByPlayerID: [UUID: any GameInputProviding] = [:]
+    private var inputTasksByPlayerID: [UUID: Task<Void, Never>] = [:]
     
     // MARK: Game End
     public let gameEnd: GameEndTracker
@@ -87,10 +87,14 @@ public final class GameplayManager {
     
     // TODO: GameInputProviding 네트워크에서 받은 인풋 연결하기
     public func bind(input: any GameInputProviding, for playerID: UUID) {
-        unbind()
-        inputProvider = input
-
-        inputTask = Task { [weak self] in
+        // 기존 바인딩이 있다면 playerID 단위로만 교체
+        inputTasksByPlayerID[playerID]?.cancel()
+        inputTasksByPlayerID[playerID] = nil
+        
+        inputProvidersByPlayerID[playerID]?.stop()
+        inputProvidersByPlayerID[playerID] = input
+        
+        inputTasksByPlayerID[playerID] = Task { [weak self] in
             guard let self else { return }
             let stream = await input.events()
             for await event in stream {
@@ -101,10 +105,16 @@ public final class GameplayManager {
     }
 
     public func unbind() {
-        inputTask?.cancel()
-        inputTask = nil
-        inputProvider?.stop() // 안전상 로컬에서 한번 더 확인
-        inputProvider = nil
+        // 모든 플레이어 입력 바인딩 해제
+        for (_, task) in inputTasksByPlayerID {
+            task.cancel()
+        }
+        inputTasksByPlayerID.removeAll(keepingCapacity: true)
+
+        for (_, provider) in inputProvidersByPlayerID {
+            provider.stop() // 안전상 로컬에서 한번 더 확인
+        }
+        inputProvidersByPlayerID.removeAll(keepingCapacity: true)
     }
 
     private func handleInput(_ event: GameInputEvent, for playerID: UUID) {
