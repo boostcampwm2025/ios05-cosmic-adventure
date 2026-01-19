@@ -12,6 +12,11 @@ import InputSystem
 public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked Sendable {
     private let inputManager: InputManager
 
+    public var onFrameUpdate: ((CVPixelBuffer) -> Void)? {
+        get { inputManager.onFrameUpdate }
+        set { inputManager.onFrameUpdate = newValue }
+    }
+
     public init() {
         self.inputManager = InputManager(source: .faceTracking())
     }

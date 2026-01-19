@@ -13,7 +13,8 @@ import SwiftUI
 struct GameView: View {
     @State private var viewModel: GameViewModel
     @State private var gameScene: GameScene?
-    
+    private var videoManager: VideoManager
+
     private var gameplayManager: GameplayManager {
         viewModel.gameplayManager
     }
@@ -24,6 +25,7 @@ struct GameView: View {
     
     init(viewModel: GameViewModel) {
         _viewModel = State(initialValue: viewModel)
+        self.videoManager = videoManager
     }
     
     public var body: some View {
@@ -50,6 +52,11 @@ struct GameView: View {
             setupGame()
             viewModel.start()
             UIApplication.shared.isIdleTimerDisabled = true
+
+            inputProvider.onFrameUpdate = { pixelBuffer in
+                // TODO: 2인모드 체크
+                videoManager.processFrame(pixelBuffer: pixelBuffer)
+            }
         }
         .onDisappear {
             viewModel.stop()

@@ -6,6 +6,11 @@ public final class InputManager {
     private let hub: InputEventHub
     private let source: InputSource
 
+    public var onFrameUpdate: ((CVPixelBuffer) -> Void)? {
+        get { (source as? ARFaceTrackingInputSource)?.onFrameUpdate }
+        set { (source as? ARFaceTrackingInputSource)?.onFrameUpdate = newValue }
+    }
+
     public init(makeSource: (InputEventHub) -> InputSource) {
         let hub = InputEventHub()
         self.hub = hub
