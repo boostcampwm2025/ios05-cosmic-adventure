@@ -13,9 +13,13 @@ import NetworkKit
 @MainActor
 @Observable
 final class GameViewModel {
+    public let me: LobbyExplorer
+    public let matchPeer: LobbyExplorer?
+    
     // TODO: 닉네임이나 id 둘중 하나로 관리되게 통일하기
-    public let myNickname: String
-    public let matchNickname: String?
+    var myNickname: String { me.displayName }
+    var matchNickname: String? { matchPeer?.displayName }
+
     public let localPlayerID: UUID
     public let otherPlayerIDs: [UUID]
     
@@ -50,22 +54,22 @@ final class GameViewModel {
     }
     
     init(
-        myNickname: String,
-        matchNickname: String?, // 추후 배열로 받아 다수를 추가할 수 있음
+        me: LobbyExplorer,
+        matchPeer: LobbyExplorer?,
         endCondition: any GameEndCondition,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging? = nil,
         inputProvider: FaceTrackingGameInputProvider = FaceTrackingGameInputProvider()
     ) {
-        self.myNickname = myNickname
-        self.matchNickname = matchNickname
+        self.me = me
+        self.matchPeer = matchPeer
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
         self.inputProvider = inputProvider
         
         self.localPlayerID = UUID()
         
-        if matchNickname != nil {
+        if matchPeer != nil {
             self.otherPlayerIDs = [UUID()]
         } else {
             self.otherPlayerIDs = []

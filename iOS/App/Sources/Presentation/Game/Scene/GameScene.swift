@@ -15,6 +15,10 @@ final class GameScene: SKScene {
     private var platformController: PlatformController?
     private var monsterController: MonsterController?
 
+    // 플레이어 메타(아바타) - 전달이 없으면 기본값 사용
+    private let localExplorer: LobbyExplorer?
+    private let otherExplorersByID: [UUID: LobbyExplorer]
+    
     // PlayerID 기반으로 캐릭터 컨트롤러를 관리
     private let localPlayerID: UUID
     private let otherPlayerIDs: [UUID]
@@ -26,12 +30,14 @@ final class GameScene: SKScene {
     init(
         size: CGSize,
         gameplayManager: GameplayManager,
-        localPlayerID: UUID,
-        otherPlayerIDs: [UUID] = []
+        localExplorer: LobbyExplorer? = nil,
+        otherExplorersByID: [UUID: LobbyExplorer] = [:]
     ) {
         self.gameplayManager = gameplayManager
-        self.localPlayerID = localPlayerID
-        self.otherPlayerIDs = otherPlayerIDs
+        self.localPlayerID = gameplayManager.localPlayerID
+        self.otherPlayerIDs = gameplayManager.otherPlayerIDs
+        self.localExplorer = localExplorer
+        self.otherExplorersByID = otherExplorersByID
         super.init(size: size)
         self.physicsWorld.gravity = CGVector(dx: 0, dy: PhysicsConstants.gravityDY)
         self.physicsWorld.contactDelegate = self
@@ -40,6 +46,8 @@ final class GameScene: SKScene {
     required init?(coder: NSCoder) {
         self.localPlayerID = UUID()
         self.otherPlayerIDs = []
+        self.localExplorer = nil
+        self.otherExplorersByID = [:]
         super.init(coder: coder)
     }
 
@@ -63,7 +71,8 @@ final class GameScene: SKScene {
 
         // 캐릭터 설정 (항상 로컬 플레이어는 생성)
         let localController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .me)
-        localController.setupPlayer()
+        let localAvatar = localExplorer?.avatar ?? .character1
+        localController.setupPlayer(characterType: localAvatar)
         if let node = localController.playerNode {
             node.name = "\(L10N.Game.NodeName.player):\(localPlayerID.uuidString)"
         }
@@ -72,8 +81,8 @@ final class GameScene: SKScene {
         // 상대 플레이어들 생성
         for id in otherPlayerIDs where id != localPlayerID {
             let opponentController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .others)
-            
-            opponentController.setupPlayer()
+            let opponentAvatar = otherExplorersByID[id]?.avatar ?? .character1
+            opponentController.setupPlayer(characterType: opponentAvatar)
             if let node = opponentController.playerNode {
                 node.name = "\(L10N.Game.NodeName.player):\(id.uuidString)"
             }
