@@ -1,6 +1,6 @@
 //
 //  VideoEncoder.swift
-//  App
+//  VideoKit
 //
 //  Created by soyoung on 1/19/26.
 //
@@ -8,11 +8,11 @@
 import VideoToolbox
 import QuartzCore
 
-final class VideoEncoder {
+final public class VideoEncoder {
     
     private let configuration: VideoConfiguration
     private var session: VTCompressionSession?
-    var output: ((Data) -> Void)?
+    public  var output: ((Data) -> Void)?
 
     private static var encodingCallback: VTCompressionOutputCallback = { (
         refCon: UnsafeMutableRawPointer?,
@@ -91,13 +91,13 @@ final class VideoEncoder {
         changeBitrate(to: initialBitrate)
     }
 
-    func changeBitrate(to bps: Int) {
+    public func changeBitrate(to bps: Int) {
         guard let session = session else { return }
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AverageBitRate, value: bps as CFNumber)
     }
 
     // 압축은 비동기 진행, 완료시 OS가 encodingCallback 호출
-    func encode(pixelBuffer: CVPixelBuffer) {
+    public func encode(pixelBuffer: CVPixelBuffer) {
         guard let session = session else { return }
         let now = CMTime(seconds: CACurrentMediaTime(), preferredTimescale: 1000)
 
