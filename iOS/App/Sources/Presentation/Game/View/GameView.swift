@@ -23,7 +23,7 @@ struct GameView: View {
         viewModel.inputProvider
     }
     
-    init(viewModel: GameViewModel) {
+    init(viewModel: GameViewModel, videoManager: VideoManager) {
         _viewModel = State(initialValue: viewModel)
         self.videoManager = videoManager
     }
@@ -70,10 +70,16 @@ struct GameView: View {
     }
     
     private var facePreviewOverlay: some View {
-        Group {
+        VStack(spacing: 16) {
             if let session = inputProvider.previewSession() {
                 FacePreviewPIPView {
                     FacePreviewView(session: session)
+                }
+            }
+            
+            if otherPlayerIDs.isEmpty {
+                FacePreviewPIPView {
+                    RemoteVideoView(layer: videoManager.remoteDisplayLayer)
                 }
             }
         }
