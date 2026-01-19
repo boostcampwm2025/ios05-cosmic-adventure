@@ -54,7 +54,7 @@ struct VictoryGuideView: View {
                     verticalPadding: 16
                 ) {
                     if let peer = peer {
-                        router.push(.game(peer.displayName))
+                        router.push(.game(peer))
                     } else { // 1인 모드
                         router.push(.game(nil))
                     }

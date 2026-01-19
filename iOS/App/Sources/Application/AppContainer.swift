@@ -6,7 +6,6 @@
 //
 
 import Foundation
-
 import NetworkKit
 import Games
 
@@ -18,7 +17,7 @@ protocol ViewModelFactory {
     func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
-    func makeGameViewModel(myNickname: String, characterType: String, matchNickname: String?) -> GameViewModel
+    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?) -> GameViewModel
 }
 
 final class AppContainer: ViewModelFactory {
@@ -95,11 +94,11 @@ final class AppContainer: ViewModelFactory {
         WebSocketSessionManager(service: webSocketService, serverURL: serverURL)
     }
 
-    func makeGameViewModel(myNickname: String, characterType: String, matchNickname: String?) -> GameViewModel {
+    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?) -> GameViewModel {
         
-        return GameViewModel(
-            myNickname: myNickname,
-            matchNickname: matchNickname,
+        GameViewModel(
+            me: me,
+            matchPeer: matchPeer,
             endCondition: TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager

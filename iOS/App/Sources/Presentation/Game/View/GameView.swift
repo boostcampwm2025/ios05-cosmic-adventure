@@ -73,11 +73,19 @@ struct GameView: View {
     }
     
     private func setupGame() {
+        let otherExplorersByID: [UUID: LobbyExplorer] = {
+            guard let peer = viewModel.matchPeer,
+                  let remoteID = viewModel.otherPlayerIDs.first else {
+                return [:]
+            }
+            return [remoteID: peer]
+        }()
+        
         let scene = GameScene(
             size: UIScreen.main.bounds.size,
             gameplayManager: gameplayManager,
-            localPlayerID: viewModel.localPlayerID,
-            otherPlayerIDs: viewModel.otherPlayerIDs
+            localExplorer: viewModel.me,
+            otherExplorersByID: otherExplorersByID
         )
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear
