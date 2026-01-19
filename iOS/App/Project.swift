@@ -59,6 +59,7 @@ let project = Project(
                 .project(target: "GameEngineCore", path: "../Modules/GameEngineCore"),
                 .project(target: "NetworkKit", path: "../Modules/NetworkKit"),
                 .project(target: "StorageKit", path: "../Modules/StorageKit"),
+                .project(target: "VideoKit", path: "../Modules/VideoKit"),
             ],
             settings: .settings(
                 base: [

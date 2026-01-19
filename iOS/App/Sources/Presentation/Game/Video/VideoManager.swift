@@ -6,6 +6,7 @@
 //
 
 import AVFoundation
+import VideoKit
 import NetworkKit
 
 @Observable
@@ -15,9 +16,10 @@ public final class VideoManager {
     private var videoEncoder: VideoEncoder?
     private var videoDecoder: VideoDecoder?
 
-    public let remoteDisplayLayer = AVSampleBufferDisplayLayer()
     private var latencyTimer: Timer?
     private var lastFrameTime: TimeInterval = 0
+
+    let remoteDisplayLayer = AVSampleBufferDisplayLayer()
 
     private(set) var networkMode: NetworkMode = .local
 
@@ -30,8 +32,7 @@ public final class VideoManager {
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
 
-    // MARK: - Init
-    public init(connectivityMonitor: ConnectivityMonitoring,
+    init(connectivityMonitor: ConnectivityMonitoring,
                 networkSessionManager: NetworkSessionManaging,
                 webSocketSessionManager: WebSocketSessionManaging?,
                 configuration: VideoConfiguration = VideoConfiguration()
@@ -127,7 +128,7 @@ public final class VideoManager {
     }
 
     // 60fps로 들어오는 데이터는 PIP 용도로 너무 큼
-    public func processFrame(pixelBuffer: CVPixelBuffer) {
+    func processFrame(pixelBuffer: CVPixelBuffer) {
         let currentTime = CACurrentMediaTime()
 
         // 목표 프레임 간격 계산 (1초 / 30fps = 0.0333초)

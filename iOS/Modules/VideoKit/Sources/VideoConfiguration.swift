@@ -1,6 +1,6 @@
 //
 //  VideoConfig.swift
-//  App
+//  VideoKit
 //
 //  Created by soyoung on 1/19/26.
 //

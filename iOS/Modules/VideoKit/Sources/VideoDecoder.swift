@@ -1,6 +1,6 @@
 //
 //  VideoDecoder.swift
-//  App
+//  VideoKit
 //
 //  Created by soyoung on 1/19/26.
 //
@@ -8,19 +8,19 @@
 import AVFoundation
 import VideoToolbox
 
-final class VideoDecoder {
+final public class VideoDecoder {
 
     private let configuration: VideoConfiguration
     private var session: VTDecompressionSession?
     private var formatDescription: CMVideoFormatDescription?
-    weak var displayLayer: AVSampleBufferDisplayLayer?
+    public weak var displayLayer: AVSampleBufferDisplayLayer?
 
     public init(configuration: VideoConfiguration = VideoConfiguration()) {
         self.configuration = configuration
     }
 
     // 외부에서 받은 H.264 데이터를 디코딩하여 화면에 그림
-    func decode(data: Data) {
+    public func decode(data: Data) {
         guard let displayLayer = displayLayer else { return }
 
         // Data -> CMBlockBuffer 메모리 블록으로 변환
