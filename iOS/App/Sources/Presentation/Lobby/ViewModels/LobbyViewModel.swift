@@ -50,9 +50,6 @@ final class LobbyViewModel {
     
     @ObservationIgnored
     var playerIdMapping: [String: UUID] = [:]
-    
-    @ObservationIgnored
-    private var isExplorationStarted = false
 
     // MARK: - Computed Properties
     
@@ -140,14 +137,15 @@ final class LobbyViewModel {
     
     func switchToLocalMode() {
         networkMode = .local
-        stopNetworkExploration()
-        startNetworkExploration()
     }
-    
+
     func switchToRemoteMode() {
         networkMode = .remote
         selectedChannelId = nil
-        stopNetworkExploration()
+    }
+
+    func selectChannel(_ channelId: String) {
+        selectedChannelId = channelId
     }
     
     func selectPeer(_ peer: LobbyExplorer) {
@@ -161,9 +159,6 @@ final class LobbyViewModel {
     }
 
     func startNetworkExploration() {
-        guard !isExplorationStarted else { return }
-        isExplorationStarted = true
-        
         switch networkMode {
         case .local:
             setupSessionManager()
@@ -175,14 +170,8 @@ final class LobbyViewModel {
     }
 
     func stopNetworkExploration() {
-        isExplorationStarted = false
-        
-        switch networkMode {
-        case .local:
-            networkSessionManager.deactivate()
-        case .remote:
-            webSocketSessionManager?.deactivate()
-        }
+        networkSessionManager.deactivate()
+        webSocketSessionManager?.deactivate()
     }
 
     func resetToIdle() {

@@ -18,6 +18,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     private var host: HostManaging
     private var client: ClientManaging
 
+    private var isActive = false
     private var hostGranted: Bool? = nil
     private var clientGranted: Bool? = nil
     private var myNickname: String?
@@ -61,6 +62,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
      // MARK: - Public Methods
 
     public func activate(channelId: String?, nickname: String) {
+         guard !isActive else { return }
+         isActive = true
+
          logger.info("호스팅, 탐색 시작")
 
          myNickname = nickname
@@ -69,7 +73,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          client.startBrowsing()
      }
 
-     public func deactivate() { 
+     public func deactivate() {
+         guard isActive else { return }
+         isActive = false
+
          logger.info("호스팅, 탐색 중단")
 
          host.stopHosting()

@@ -37,15 +37,17 @@ struct LobbyView: View {
         .onAppear {
             handleNetworkModeChange()
         }
-        .onDisappear {
-            viewModel.stopNetworkExploration()
-        }
         .onChange(of: scenePhase) { _, newValue in
-            if newValue == .active {
-                handleNetworkModeChange()
+            switch newValue {
+            case .active:
+                viewModel.startNetworkExploration()
+            case .background:
+                viewModel.stopNetworkExploration()
+            default:
+                break
             }
         }
-        .onChange(of: viewModel.networkMode) { _, newMode in
+        .onChange(of: viewModel.networkMode) { _, _ in
             handleNetworkModeChange()
         }
         .onChange(of: viewModel.matchStatus) { _, newValue in
