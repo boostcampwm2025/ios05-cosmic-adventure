@@ -1,0 +1,26 @@
+# Production Docker Compose for Cosmic Adventure Backend
+# Place this file on your server at /srv/cosmic-adventure/docker-compose.yml
+
+services:
+  backend:
+    image: ghcr.io/boostcampwm2025/ios05-cosmic-adventure/backend:latest
+    restart: unless-stopped
+    volumes:
+      - ./data:/app/data
+    environment:
+      - LOG_LEVEL=info
+      - SQLITE_PATH=/app/data/db.sqlite
+    expose:
+      - "8080"
+
+  nginx:
+    image: nginx:alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - backend
+
+
