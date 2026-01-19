@@ -8,7 +8,7 @@
 import VideoToolbox
 import QuartzCore
 
-final public class VideoEncoder {
+final public class VideoEncoder: VideoEncoding {
     
     private let configuration: VideoConfiguration
     private var session: VTCompressionSession?
