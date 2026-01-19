@@ -147,6 +147,7 @@ private extension LobbyView {
                 ForEach(channelListViewModel.channels) { channel in
                     // TODO: 채널 입장 후 연결 실패 시 분기 처리
                     ChannelRowView(channel: channel) {
+                        viewModel.stopNetworkExploration()
                         viewModel.selectChannel(channel.id)
                         viewModel.startNetworkExploration()
                     }
