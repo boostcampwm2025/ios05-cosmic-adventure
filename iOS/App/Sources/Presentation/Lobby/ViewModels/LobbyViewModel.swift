@@ -89,10 +89,9 @@ final class LobbyViewModel {
 
         self.selectedPeerID = nil
         
-        setupConnectivityMonitor()
-
-        setupP2PCallbacks()
-        setupWebSocketCallbacks()
+        self.setupConnectivityMonitor()
+        self.setupP2PCallbacks()
+        self.setupWebSocketCallbacks()
     }
     
     private func setupConnectivityMonitor() {

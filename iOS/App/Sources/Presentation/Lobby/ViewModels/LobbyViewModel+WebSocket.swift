@@ -88,10 +88,9 @@ extension LobbyViewModel {
     func updatePeersFromPlayers(_ players: [WebSocketPlayer]) {
         playerIdMapping.removeAll()
         peers = players.map { player in
-            let uuid = UUID()
-            playerIdMapping[player.id] = uuid
+            playerIdMapping[player.id] = player.id
             return LobbyExplorer(
-                id: uuid,
+                id: player.id,
                 role: .peer,
                 displayName: player.nickname,
                 avatar: randomAvatar(),
@@ -103,11 +102,10 @@ extension LobbyViewModel {
     func addPeer(from player: WebSocketPlayer) {
         guard playerIdMapping[player.id] == nil else { return }
 
-        let uuid = UUID()
-        playerIdMapping[player.id] = uuid
+        playerIdMapping[player.id] = player.id
 
         let explorer = LobbyExplorer(
-            id: uuid,
+            id: player.id,
             role: .peer,
             displayName: player.nickname,
             avatar: randomAvatar(),
