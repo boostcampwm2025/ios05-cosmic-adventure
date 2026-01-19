@@ -97,7 +97,7 @@ struct LobbyView: View {
     
     private func handleNetworkModeChange() {
         viewModel.stopNetworkExploration()
-        
+
         switch viewModel.networkMode {
         case .local:
             viewModel.startNetworkExploration()

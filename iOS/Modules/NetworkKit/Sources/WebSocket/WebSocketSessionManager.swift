@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 public struct WebSocketPlayer: Identifiable, Equatable {
     public let id: String
@@ -20,9 +21,10 @@ public struct WebSocketPlayer: Identifiable, Equatable {
 
 @Observable
 public final class WebSocketSessionManager: WebSocketSessionManaging {
-    
+
     // MARK: - Properties
 
+    private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "WebSocketSessionManager")
     private let service: WebSocketService
     private let serverURL: String
     private var isActive = false
@@ -60,6 +62,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         guard let channelId = channelId else { return }
         isActive = true
 
+        logger.info("WebSocket 탐색 시작 - channelId: \(channelId)")
         service.connect(to: serverURL, channelId: channelId, nickname: nickname)
     }
 
@@ -67,6 +70,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         guard isActive else { return }
         isActive = false
 
+        logger.info("WebSocket 탐색 종료")
         service.leaveChannel()
         service.disconnect()
         players = []
