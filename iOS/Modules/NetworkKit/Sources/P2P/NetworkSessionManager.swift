@@ -194,8 +194,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             print("📡 [NetworkSessionManager] 필터링 후 피어: \(self.nearbyPlayer.count)명")
         }
 
-        client.onDataReceived = { [weak self] data in
-            self?.handleReceivedData(data)
+        client.onDataReceived = { [weak self] data, connection in
+            self?.handleReceivedData(data, from: connection)
         }
     }
 
@@ -321,6 +321,12 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
         guard let data = try? encoder.encode(packet) else { return }
         host.sendData(data, to: connection)
+        
+        // TODO: 발신 보장되었을 때 동작하도록 수정하기
+        // 초대받은 쪽(Invitee)도 즉시 게임 연결을 확정
+        if packet.type == .inviteAccept {
+            self.activeGameConnection = connection
+        }
 
         self.pendingInviteConnections.removeValue(forKey: targetName)
     }

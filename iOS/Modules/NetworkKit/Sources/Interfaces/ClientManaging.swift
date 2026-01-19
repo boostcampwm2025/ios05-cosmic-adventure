@@ -12,7 +12,7 @@ public protocol ClientManaging {
     var onPermissionGranted: (() -> Void)? { get set }
     var onPermissionDeniedOrFailed: ((Error) -> Void)? { get set }
     var onPeersUpdated: (([Peer]) -> Void)? { get set }
-    var onDataReceived: ((Data) -> Void)? { get set }
+    var onDataReceived: ((Data, NWConnection) -> Void)? { get set }
 
     func startBrowsing()
     func stopBrowsing()
