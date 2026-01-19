@@ -26,7 +26,7 @@ final class ClientManager: ClientManaging {
     var onPermissionGranted: (() -> Void)?
     var onPermissionDeniedOrFailed: ((Error) -> Void)?
     var onPeersUpdated: (([Peer]) -> Void)?
-    var onDataReceived: ((Data) -> Void)?
+    var onDataReceived: ((Data, NWConnection) -> Void)?
 
     // MARK: - Initialization
 
@@ -180,7 +180,9 @@ final class ClientManager: ClientManaging {
         connection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
-                self?.onDataReceived?(data)
+                if let connection = self?.connection {
+                    self?.onDataReceived?(data, connection)
+                }
             }
 
             if let error = error {
