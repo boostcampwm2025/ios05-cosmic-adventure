@@ -25,6 +25,9 @@ final class GameViewModel {
     let inputProvider: FaceTrackingGameInputProvider
     
     @ObservationIgnored
+    private var remoteInputProvider: NetworkGameInputProvider?
+    
+    @ObservationIgnored
     var networkSessionManager: NetworkSessionManaging
     
     // TODO: 멀티플레이 입력 송수신 연결 시점에 실제 어댑터로 교체
@@ -79,16 +82,17 @@ final class GameViewModel {
         gameplayManager.startNewGame()
         // 로컬 입력 바인드
         gameplayManager.bind(input: inputProvider, for: localPlayerID)
+        
         // 네트워크 송신/수신 바인딩
         bindMultiplayerNetworkIO()
 
         inputProvider.start()
-        // TODO: 네트워크 수신 → 상대 플레이어 입력 주입
     }
 
     public func stop() {
-        remoteSendTask?.cancel()
-        remoteSendTask = nil
+        clearMultiplayerNetworkBindings()
+        remoteInputProvider?.stop()
+        remoteInputProvider = nil
 
         gameplayManager.unbind()
         inputProvider.stop()
@@ -98,23 +102,37 @@ final class GameViewModel {
 // MARK: remote 연결
 
 extension GameViewModel {
-    /// 멀티플레이일 때 네트워크 I/O(송신/수신) 바인딩
-    /// inputProvider.events()가 hot stream(브로드캐스트)이라 구독 경쟁 없이
-    /// 게임플레이 바인딩 + 네트워크 송신을 동시에 수행할 수 있습니다.
     private func bindMultiplayerNetworkIO() {
         guard let matchNickname else {
             clearMultiplayerNetworkBindings()
             return
         }
 
+        // 원격(상대) 입력 바인딩 (네트워크 수신 이벤트를 GameInputProviding으로 변환)
+        bindRemotePlayerInputIfNeeded()
+        
+        // 네트워크 수신/송신 연결
         setRemoteInputReceiveHandler(for: matchNickname)
         startForwardingLocalInput(to: matchNickname)
+    }
+
+    // MARK: - Remote Player Input Binding
+
+    /// 멀티플레이일 때 상대 플레이어 입력 스트림을 GameplayManager에 바인딩
+    private func bindRemotePlayerInputIfNeeded() {
+        // 이미 바인딩 되어 있다면 재생성/재바인딩하지 않음
+        guard remoteInputProvider == nil else { return }
+        guard let remotePlayerID = otherPlayerIDs.first else { return }
+
+        let provider = NetworkGameInputProvider()
+        remoteInputProvider = provider
+        gameplayManager.bind(input: provider, for: remotePlayerID)
+        provider.start()
     }
 
     // MARK: - Receive
 
     private func setRemoteInputReceiveHandler(for peerName: String) {
-        // TODO: 수신 부 연결하기
         networkSessionManager.onInputReceived = { sender, payload in
             guard sender == peerName else { return }
 
@@ -122,12 +140,12 @@ extension GameViewModel {
                 print("[NET][RECV] decode failed from \(sender)")
                 return
             }
-
+            
             switch dto.kind {
             case .horizontal:
-                print("[NET][RECV] horizontal: \(dto.x ?? 0) from \(sender)")
+                self.remoteInputProvider?.yield(.horizontal(Double(dto.x ?? 0)))
             case .jump:
-                print("[NET][RECV] jump from \(sender)")
+                self.remoteInputProvider?.yield(.jump)
             }
         }
     }
@@ -158,7 +176,6 @@ extension GameViewModel {
     private func clearMultiplayerNetworkBindings() {
         remoteSendTask?.cancel()
         remoteSendTask = nil
-        // TODO: 수신부 초기화
         networkSessionManager.onInputReceived = nil
     }
 }
