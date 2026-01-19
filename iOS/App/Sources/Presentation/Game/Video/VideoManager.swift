@@ -13,8 +13,8 @@ import NetworkKit
 public final class VideoManager {
 
     private let configuration: VideoConfiguration
-    private var videoEncoder: VideoEncoder?
-    private var videoDecoder: VideoDecoder?
+    private var videoEncoder: (any VideoEncoding)?
+    private var videoDecoder: (any VideoDecoding)?
 
     private var latencyTimer: Timer?
     private var lastFrameTime: TimeInterval = 0

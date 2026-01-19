@@ -8,7 +8,7 @@
 import AVFoundation
 import VideoToolbox
 
-final public class VideoDecoder {
+final public class VideoDecoder: VideoDecoding {
 
     private let configuration: VideoConfiguration
     private var session: VTDecompressionSession?
