@@ -7,6 +7,7 @@ public func configure(_ app: Application) async throws {
     app.databases.use(.sqlite(.file(dbPath)), as: .sqlite)
 
     MigrationRegistry.registerAll(in: app)
+    try await app.autoMigrate()
 
     try await registerModules(app)
 }
