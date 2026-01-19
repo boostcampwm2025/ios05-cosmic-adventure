@@ -22,10 +22,11 @@ public struct WebSocketPlayer: Identifiable, Equatable {
 public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     // MARK: - Properties
-    
+
     private let service: WebSocketService
     private let serverURL: String
-    
+    private var isActive = false
+
     public private(set) var players: [WebSocketPlayer] = []
     public private(set) var isConnected = false
     public private(set) var mySessionId: String?
@@ -55,11 +56,17 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     // MARK: - Public Methods
     
     public func activate(channelId: String?, nickname: String) {
+        guard !isActive else { return }
         guard let channelId = channelId else { return }
+        isActive = true
+
         service.connect(to: serverURL, channelId: channelId, nickname: nickname)
     }
-    
+
     public func deactivate() {
+        guard isActive else { return }
+        isActive = false
+
         service.leaveChannel()
         service.disconnect()
         players = []
