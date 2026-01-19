@@ -65,7 +65,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          guard !isActive else { return }
          isActive = true
 
-         logger.info("호스팅, 탐색 시작")
+         logger.info("P2P 탐색 시작")
 
          myNickname = nickname
 
@@ -77,7 +77,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          guard isActive else { return }
          isActive = false
 
-         logger.info("호스팅, 탐색 중단")
+         logger.info("P2P 탐색 종료")
 
          host.stopHosting()
          client.stopBrowsing()
