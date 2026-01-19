@@ -25,4 +25,15 @@ enum CharacterAvatar: String, Codable, CaseIterable, Equatable {
         case .character6: AppAsset.Image.character6.swiftUIImage
         }
     }
+    
+    var name: String {
+        switch self {
+        case .character1: AppAsset.Image.character1.name
+        case .character2: AppAsset.Image.character2.name
+        case .character3: AppAsset.Image.character3.name
+        case .character4: AppAsset.Image.character4.name
+        case .character5: AppAsset.Image.character5.name
+        case .character6: AppAsset.Image.character6.name
+        }
+    }
 }

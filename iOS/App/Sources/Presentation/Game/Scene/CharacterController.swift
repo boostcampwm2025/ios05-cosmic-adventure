@@ -40,12 +40,13 @@ final class CharacterController {
     
     func setupPlayer(
         initialPosition: CGPoint = CGPoint(x: 0, y: -50),
-        size: CGSize = CGSize(width: 50, height: 60)
+        size: CGSize = CGSize(width: 50, height: 60),
+        characterType: CharacterAvatar = .character1
     ) {
         if playerNode != nil { return }
         guard let scene else { return }
         
-        let player = SKSpriteNode(imageNamed: AppAsset.Image.character1.name)
+        let player = SKSpriteNode(imageNamed: characterType.name)
         player.name = "\(L10N.Game.NodeName.player)_\(playerRole.rawValue)"
         player.size = size
         player.position = initialPosition

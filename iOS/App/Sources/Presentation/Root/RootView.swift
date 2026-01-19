@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-
 import StorageKit
 
 struct RootView: View {
@@ -55,15 +54,20 @@ struct RootView: View {
             EmptyView()
         case .gameReady(let me, let peer):
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
-        case .game(let matchNickname):
-                if let myExplorer = players.first {
-                    GameView(
-                        viewModel: viewModelFactory.makeGameViewModel(
-                            myNickname: myExplorer.nickname,
-                            characterType: myExplorer.character
-                            ,matchNickname: matchNickname)
-                    )
-                }
+        case .game(let matchPeer):
+            if let myExplorer = players.first {
+                let me = LobbyExplorer(
+                    role: .me,
+                    displayName: myExplorer.nickname,
+                    avatar: CharacterAvatar.init(rawValue: myExplorer.character)
+                    ?? .character1
+                )
+                
+                GameView(
+                    viewModel: viewModelFactory
+                        .makeGameViewModel(me: me, matchPeer: matchPeer)
+                )
+            }
         case .operationGuide(let me, let peer):
             OperationGuideView(me: me, peer: peer)
         case .victoryGuide(let me, let peer):
