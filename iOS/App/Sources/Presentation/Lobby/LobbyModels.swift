@@ -16,7 +16,7 @@ enum ExplorerRole: Equatable {
 
 // MARK: - Lobby Explorer
 
-struct LobbyExplorer: Identifiable, Equatable {
+struct LobbyExplorer: Identifiable, Equatable, Hashable {
     let id: String
     let role: ExplorerRole
     let displayName: String

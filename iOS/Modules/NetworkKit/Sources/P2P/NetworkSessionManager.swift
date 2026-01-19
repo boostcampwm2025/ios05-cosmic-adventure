@@ -295,7 +295,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                     self.onInputReceived?(packet.senderIdentifier, payload)
                 }
             case .gameReady:
-                self?.onReadyStatusReceived?(packet.senderIdentifier)
+                self.onReadyStatusReceived?(packet.senderIdentifier)
             }
         }
     }
