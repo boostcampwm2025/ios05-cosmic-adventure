@@ -3,7 +3,8 @@ import FluentSQLiteDriver
 import Vapor
 
 public func configure(_ app: Application) async throws {
-    app.databases.use(.sqlite(.file("db.sqlite")), as: .sqlite)
+    let dbPath = Environment.get("SQLITE_PATH") ?? "db.sqlite"
+    app.databases.use(.sqlite(.file(dbPath)), as: .sqlite)
 
     MigrationRegistry.registerAll(in: app)
 
