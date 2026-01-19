@@ -143,10 +143,6 @@ final class LobbyViewModel {
         networkMode = .remote
         selectedChannelId = nil
     }
-
-    func selectChannel(_ channelId: String) {
-        selectedChannelId = channelId
-    }
     
     func selectPeer(_ peer: LobbyExplorer) {
         self.selectedPeerID = peer.id

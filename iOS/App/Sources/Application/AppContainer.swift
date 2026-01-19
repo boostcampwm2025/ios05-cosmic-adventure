@@ -16,7 +16,7 @@ protocol ViewModelFactory {
     func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel
     func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
-    func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager
+    func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
 }
 
 final class AppContainer: ViewModelFactory {
@@ -31,14 +31,20 @@ final class AppContainer: ViewModelFactory {
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
         networkSessionManager: NetworkSessionManaging = NetworkSessionManager(),
-        webSocketService: WebSocketService = WebSocketService(),
-        webSocketSessionManager: WebSocketSessionManaging? = nil
+        webSocketService: WebSocketService = WebSocketService()
     ) {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketService = webSocketService
-        self.webSocketSessionManager = webSocketSessionManager
         let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? "http://localhost:8080"
+        let wsURL = baseURL
+                    .replacingOccurrences(of: "http", with: "ws")
+                    .replacingOccurrences(of: "https", with: "wss")
+        
+        self.webSocketSessionManager = WebSocketSessionManager(
+            service: webSocketService,
+            serverURL: wsURL
+        )
         self.channelService = ChannelService(
             httpClient: HTTPClient(),
             baseURL: baseURL
@@ -83,8 +89,8 @@ final class AppContainer: ViewModelFactory {
         ChannelListViewModel(channelService: channelService)
     }
 
-    func makeWebSocketSessionManager(serverURL: String, channelId: String) -> WebSocketSessionManager {
-        WebSocketSessionManager(service: webSocketService, serverURL: serverURL, channelId: channelId)
+    func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager {
+        WebSocketSessionManager(service: webSocketService, serverURL: serverURL)
     }
 
     // TODO: 게임 화면 서비스 객체 연결

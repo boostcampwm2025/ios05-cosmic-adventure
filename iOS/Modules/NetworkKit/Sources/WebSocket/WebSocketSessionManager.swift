@@ -46,10 +46,10 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
     // MARK: - Initialization
     
-    public init(service: WebSocketService, serverURL: String, channelId: String) {
+    public init(service: WebSocketService, serverURL: String) {
         self.service = service
         self.serverURL = serverURL
-        
+
         setupCallbacks()
     }
     
