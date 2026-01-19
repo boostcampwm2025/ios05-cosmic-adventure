@@ -89,7 +89,6 @@ public final class GameplayManager {
     public func bind(input: any GameInputProviding, for playerID: UUID) {
         unbind()
         inputProvider = input
-        input.start()
 
         inputTask = Task { [weak self] in
             guard let self else { return }
@@ -104,7 +103,7 @@ public final class GameplayManager {
     public func unbind() {
         inputTask?.cancel()
         inputTask = nil
-        inputProvider?.stop()
+        inputProvider?.stop() // 안전상 로컬에서 한번 더 확인
         inputProvider = nil
     }
 
