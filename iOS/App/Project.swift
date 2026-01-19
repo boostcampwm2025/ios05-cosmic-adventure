@@ -23,6 +23,10 @@ let project = Project(
                 "NSBonjourServices": .array([
                     .string("_cosmicadventure._tcp"),
                 ]),
+
+                "NSAppTransportSecurity": .dictionary([
+                    "NSAllowsArbitraryLoads": .boolean(true)
+                ]),
                 "API_BASE_URL": "$(API_BASE_URL)",
                 "UIAppFonts": [
                   "Fonts/Pretendard-Thin.otf",
