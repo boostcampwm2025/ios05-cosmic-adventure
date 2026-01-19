@@ -18,6 +18,7 @@ protocol ViewModelFactory {
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
     func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?) -> GameViewModel
+    func makeVideoManager() -> VideoManager
 }
 
 final class AppContainer: ViewModelFactory {
@@ -100,6 +101,14 @@ final class AppContainer: ViewModelFactory {
             me: me,
             matchPeer: matchPeer,
             endCondition: TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
+            networkSessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager
+        )
+    }
+
+    func makeVideoManager() -> VideoManager {
+        VideoManager(
+            connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager
         )
