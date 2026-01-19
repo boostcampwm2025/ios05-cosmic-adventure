@@ -8,7 +8,6 @@
 import Observation
 import os
 import UIKit
-
 import NetworkKit
 
 enum NetworkMode {

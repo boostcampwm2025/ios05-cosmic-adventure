@@ -12,6 +12,7 @@ final class ARFaceTrackingInputSource: NSObject, InputSource, ARSessionPreviewPr
     private let session: ARSession
     private let strategy: FaceInputStrategy
     private let hub: InputEventHub
+    var onFrameUpdate: ((CVPixelBuffer) -> Void)?
 
     init(
         strategy: FaceInputStrategy,
@@ -48,5 +49,9 @@ extension ARFaceTrackingInputSource: ARSessionDelegate {
                 Task { await hub.yield(event) }
             }
         }
+    }
+
+    func session(_ session: ARSession, didUpdate frame: ARFrame) {
+        onFrameUpdate?(frame.capturedImage)
     }
 }
