@@ -238,13 +238,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     private func sendPingsToAll() {
         for player in nearbyPlayer {
             let packet = NetworkPacket(type: .ping, senderIdentifier: myNickname ?? "Unknown")
-            guard let data = try? encoder.encode(packet) else { continue }
-            
             lastPingTimestamps[player.name] = Date()
-
-            for connection in pendingInviteConnections.values {
-                host.sendData(data, to: connection)
-            }
+            sendToPeer(to: player, packet: packet)
         }
     }
 

@@ -186,11 +186,11 @@ final class LobbyViewModel {
 
 
 // MARK: - Invite Event Handlers
-
+// TODO: - UUID 추가 후 id와 name 모두 확인하는 로직으로 수정
 extension LobbyViewModel {
-    func handleInviteReceived(from senderName: String) {
-        guard let peer = peers.first(where: { $0.displayName == senderName }) else {
-            print("❌ [LobbyViewModel] 초대한 피어를 찾을 수 없음: \(senderName). 현재 피어들: \(peers.map { $0.displayName })")
+    func handleInviteReceived(from senderIdentifier: String) {
+        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else {
+            print("❌ [LobbyViewModel] 초대한 피어를 찾을 수 없음: \(senderIdentifier). 현재 피어들: \(peers.map { "\($0.displayName)(\($0.id))" })")
             return
         }
 
@@ -202,16 +202,16 @@ extension LobbyViewModel {
         }
     }
 
-    func handleInviteAccepted(from senderName: String) {
-        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+    func handleInviteAccepted(from senderIdentifier: String) {
+        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.setGameReady(with: peer)
         }
     }
 
-    func handleInviteDeclined(from senderName: String) {
-        guard let peer = peers.first(where: { $0.displayName == senderName }) else { return }
+    func handleInviteDeclined(from senderIdentifier: String) {
+        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.requestDeclined(by: peer)
