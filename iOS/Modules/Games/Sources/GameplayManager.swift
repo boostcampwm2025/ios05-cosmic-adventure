@@ -132,14 +132,6 @@ public final class GameplayManager {
         // 타이머/종료 조건 진행
         gameEnd.tick(deltaTime: deltaTime)
 
-        // 입력 처리(플레이어별)
-        for playerID in state.characters.keys {
-            runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput += deltaTime
-
-            if runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput > inputTimeout {
-                state.setMoveX(0, for: playerID)
-            }
-        }
     }
     
     public func handleContact(_ type: GameContactType, for playerID: UUID) {
@@ -169,7 +161,6 @@ public final class GameplayManager {
 extension GameplayManager {
     private func updateMoveX(_ moveX: Double, for playerID: UUID) {
         state.setMoveX(moveX, for: playerID)
-        runtimeByPlayer[playerID, default: PlayerRuntime()].timeSinceLastInput = 0
     }
     
     private func tryJump(for playerID: UUID) {
@@ -192,7 +183,6 @@ extension GameplayManager {
         
         // 런타임 갱신
         runtimeByPlayer[playerID]?.lastJumpTime = currentTime
-        runtimeByPlayer[playerID]?.timeSinceLastInput = 0
     }
     
     public func isJumpRequested(for playerID: UUID) -> Bool {

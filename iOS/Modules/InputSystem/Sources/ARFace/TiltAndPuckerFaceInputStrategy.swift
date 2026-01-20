@@ -33,6 +33,8 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
         if abs(roll) > rollThreshold {
             let normalized = clamp(roll / maxRoll, -1.0, 1.0)
             out.append(.horizontal(normalized))
+        } else {
+            out.append(.horizontal(0))
         }
 
         let pucker = anchor.blendShapes[.mouthPucker]?.doubleValue ?? 0.0
