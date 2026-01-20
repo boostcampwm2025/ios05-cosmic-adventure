@@ -65,10 +65,6 @@ final class GameScene: SKScene {
         platformController?.setupInitialPlatforms()
         setupWalls()
 
-        // 몬스터 설정
-        monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
-        monsterController?.setupInitialMonster()
-
         // 캐릭터 설정 (항상 로컬 플레이어는 생성)
         let localController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .me)
         let localAvatar = localExplorer?.avatar ?? .character1

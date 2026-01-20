@@ -1,5 +1,5 @@
 //
-//  형태로만.swift
+//  NetworkGameInputDTO.swift
 //  NetworkKit
 //
 //  Created by sungkug_apple_developer_ac on 1/19/26.
