@@ -87,9 +87,9 @@ final class LobbyViewModel {
             displayName: nickname,
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
+    }
 
-        // 모든 저장 프로퍼티 초기화 완료 (Phase 1 종료)
-        // 이후 self를 사용하는 메서드 호출 가능 (Phase 2 시작)
+    func setup() {
         setupConnectivityMonitor()
         setupP2PCallbacks()
         setupWebSocketCallbacks()
