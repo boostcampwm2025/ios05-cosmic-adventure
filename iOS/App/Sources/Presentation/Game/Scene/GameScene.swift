@@ -257,18 +257,27 @@ extension GameScene: SKPhysicsContactDelegate {
                 guard isLandingFromAbove else { return }
                 
                 gameplayManager?.handleContact(.ground, for: playerID)
-                // TODO: 리스폰 구역 각 컨트롤러가 담당하도록 변경
-                // 로컬 플레이어의 진행도만 기록
+                
                 if playerID == localPlayerID {
                     platformController?.updateLastSafePlatform(platformNode)
-                    if let idx = platformController?.lastSafePlatformIndex {
+                    if let idx = platformController?.lastSafePlatformIndex,
+                       let safe = platformController?.lastSafePosition {
+                        // 로컬 플레이어의 진행도만 기록
                         gameplayManager?.updateLandedPlatformIndex(idx)
+                        // 로컬 플레이어의 마지막 리스폰 위치만 기록
+                        gameplayManager?.updateLastSafePosition(
+                            RespawnPosition(x: Double(safe.x), y: Double(safe.y)),
+                            for: localPlayerID
+                        )
                     }
                 }
             }
 
         case .monster:
-            gameplayManager?.handleContact(.monster, for: playerID)
+            // 로컬 플레이만 충돌 인식
+            if playerID == localPlayerID {
+                gameplayManager?.handleContact(.monster, for: playerID)
+            }
         }
     }
 
@@ -290,43 +299,60 @@ extension GameScene: SKPhysicsContactDelegate {
 // MARK: 리스폰 처리
 
 extension GameScene {
-    // 플레이 영역 밖일 때 리스폰
+    // 로컬 플레이어가 플레이 영역 밖일 때 리스폰
     private func handleOutOfBounds(cameraSystem: CameraSystem, gameplayManager: GameplayManager) {
         let cameraBottom = cameraSystem.cameraNode.position.y - size.height / 2
         
-        for (id, controller) in characterControllers {
-            if controller.isBelow(cameraBottom: cameraBottom, margin: outOfBoundsMargin) {
-                gameplayManager.onPlayerFellOutOfBounds(for: id)
-            }
+        if let controller = characterControllers[localPlayerID],
+           controller.isBelow(cameraBottom: cameraBottom, margin: outOfBoundsMargin) {
+            gameplayManager.onPlayerFellOutOfBounds(for: localPlayerID)
         }
     }
 
     private func handleRespawnRequest(gameplayManager: GameplayManager) {
         for id in characterControllers.keys {
-            guard let reason = gameplayManager.consumeRespawnRequestReason(for: id) else {
-                continue
+            guard let reason = gameplayManager.consumeRespawnRequestReason(for: id) else { continue }
+
+            let base: CGPoint
+
+            if id == localPlayerID {
+                base = platformController?.lastSafePosition ?? .zero
+            } else {
+                guard let rp = gameplayManager.consumeRespawnPosition(for: id) else { continue }
+                base = CGPoint(x: rp.x, y: rp.y)
             }
-            performRespawn(for: reason, playerID: id)
+            
+            performRespawn(for: reason, playerID: id, respawnBasePosition: base)
         }
     }
     
     // 플레이어 리스폰
-    private func performRespawn(for reason: RespawnReason, playerID: UUID) {
+    private func performRespawn(for reason: RespawnReason,
+                                playerID: UUID,
+                                respawnBasePosition: CGPoint
+    ) {
         guard let gameplayManager else { return }
         let startDelay = gameplayManager.respawnDelay(for: reason)
 
-        respawnPlayer(startDelay: startDelay, reason: reason, playerID: playerID)
+        respawnPlayer(
+            startDelay: startDelay,
+            reason: reason,
+            playerID: playerID,
+            respawnBasePosition: respawnBasePosition
+        )
     }
     
-    private func respawnPlayer(startDelay: TimeInterval, reason: RespawnReason, playerID: UUID) {
-        guard let characterController = characterControllers[playerID],
-              let platformController else { return }
+    private func respawnPlayer(startDelay: TimeInterval,
+                               reason: RespawnReason,
+                               playerID: UUID,
+                               respawnBasePosition: CGPoint
+    ) {
+        guard let characterController = characterControllers[playerID] else { return }
 
         characterController.freezePhysics()
         characterController.beginRespawn(reason: reason, duration: startDelay)
         
-        // TODO: 현재 로컬 기준으로 리스폰 하지만 나중에 각 리스폰 포인트를 관리하게 변경
-        characterController.moveToRespawn(lastSafePosition: platformController.lastSafePosition)
+        characterController.moveToRespawn(lastSafePosition: respawnBasePosition)
 
         let wait = SKAction.wait(forDuration: startDelay)
 

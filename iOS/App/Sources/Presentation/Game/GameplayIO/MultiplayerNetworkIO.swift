@@ -73,6 +73,7 @@ final class MultiplayerNetworkIO {
         installReceiveHandler()
         startForwardingLocalInput()
         installLocalJumpTriggeredSender()
+        installLocalRespawnConfirmedSender()
     }
 
     func unbind() {
@@ -117,9 +118,44 @@ final class MultiplayerNetworkIO {
                 case .jumpTriggered:
                     // 확정 이벤트: 검증 없이 즉시 적용
                     self.gameplayManager.applyJumpTriggered(for: remotePlayerID)
+                    
+                case .respawnRequested:
+                    guard let raw = dto.reason,
+                          let x = dto.respawnX,
+                          let y = dto.respawnY,
+                          let reason = self.decodeRespawnReason(raw) else {
+                        print("[NET][RECV] respawnRequested decode failed from \(sender)")
+                        return
+                    }
+
+                    let pos = RespawnPosition(x: x, y: y)
+                    self.gameplayManager.applyRespawnRequested(reason, position: pos, for: remotePlayerID)
                 }
             }
         }
+    }
+    
+    private func installLocalRespawnConfirmedSender() {
+        gameplayManager.onRespawnConfirmed = { [weak self] playerID, reason, position in
+            guard let self else { return }
+            guard playerID == self.localPlayerID else { return }
+            guard let peerName = self.peerName else { return }
+
+            let dto = NetworkGameInputDTO.respawnRequested(
+                reason: self.encodeRespawnReason(reason),
+                x: position.x,
+                y: position.y
+            )
+            self.sendDTO(dto, to: peerName)
+        }
+    }
+    
+    private func encodeRespawnReason(_ reason: RespawnReason) -> Int {
+        switch reason { case .fell: return 0; case .hitMonster: return 1 }
+    }
+    
+    private func decodeRespawnReason(_ raw: Int) -> RespawnReason? {
+        switch raw { case 0: return .fell; case 1: return .hitMonster; default: return nil }
     }
 
     // MARK: - Send (input -> cache)
