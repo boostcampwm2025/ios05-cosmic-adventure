@@ -46,17 +46,30 @@ public final class GameplayManager {
     public let otherPlayerIDs: [UUID]
     
     private var jumpRequestedPlayerIDs: Set<UUID> = []
-    private var runtimeByPlayer: [UUID: PlayerRuntime] = [:]
+
+    /// 로컬 플레이어 입력 검증(쿨다운/착지 시간 등)용 런타임 (원격은 확정 이벤트만 적용하므로 관리하지 않음)
+    private var localRuntime: PlayerRuntime = PlayerRuntime()
+    
+    /// 로컬 점프가 "검증 통과"하여 확정된 순간을 외부(네트워크 전송 등)로 알림
+    @ObservationIgnored
+    public var onJumpTriggered: ((UUID) -> Void)?
+
+    /// 매 프레임(게임 틱) 업데이트 이후 외부(네트워크/리플리케이션) 처리를 연결하기 위한 훅
+    @ObservationIgnored
+    public var onDidUpdate: ((TimeInterval) -> Void)?
     
     // 조절값
     private let maxJumpCount = 2
     private let jumpCooldown: TimeInterval = 0.4
     private let landingCooldown: TimeInterval = 0.3
     private let inputTimeout: TimeInterval = 0.2
+    
+    // 로컬 입력 바인딩(멀티플레이에서도 로컬만 입력 스트림을 구독)
+    @ObservationIgnored
+    private var localInputProvider: (any GameInputProviding)?
 
-    // 플레이어별 입력 바인딩
-    private var inputProvidersByPlayerID: [UUID: any GameInputProviding] = [:]
-    private var inputTasksByPlayerID: [UUID: Task<Void, Never>] = [:]
+    @ObservationIgnored
+    private var localInputTask: Task<Void, Never>?
     
     // MARK: Game End
     public let gameEnd: GameEndTracker
@@ -71,30 +84,21 @@ public final class GameplayManager {
         self.state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
                 
         self.gameEnd = GameEndTracker(condition: endCondition)
-        
-        self.initializeRuntimeByPlayer()
     }
     
-    private func initializeRuntimeByPlayer() {
-        runtimeByPlayer.removeAll(keepingCapacity: true)
-
-        runtimeByPlayer[localPlayerID] = PlayerRuntime()
-
-        for id in otherPlayerIDs where id != localPlayerID {
-            runtimeByPlayer[id] = PlayerRuntime()
-        }
-    }
-    
-    // TODO: GameInputProviding 네트워크에서 받은 인풋 연결하기
+    /// 로컬 플레이어 입력만 바인딩
     public func bind(input: any GameInputProviding, for playerID: UUID) {
-        // 기존 바인딩이 있다면 playerID 단위로만 교체
-        inputTasksByPlayerID[playerID]?.cancel()
-        inputTasksByPlayerID[playerID] = nil
-        
-        inputProvidersByPlayerID[playerID]?.stop()
-        inputProvidersByPlayerID[playerID] = input
-        
-        inputTasksByPlayerID[playerID] = Task { [weak self] in
+        // 멀티플레이에서도 로컬만 입력을 처리한다.
+        guard playerID == localPlayerID else { return }
+
+        // 기존 바인딩 교체
+        localInputTask?.cancel()
+        localInputTask = nil
+
+        localInputProvider?.stop()
+        localInputProvider = input
+
+        localInputTask = Task { [weak self] in
             guard let self else { return }
             let stream = await input.events()
             for await event in stream {
@@ -106,15 +110,11 @@ public final class GameplayManager {
 
     public func unbind() {
         // 모든 플레이어 입력 바인딩 해제
-        for (_, task) in inputTasksByPlayerID {
-            task.cancel()
-        }
-        inputTasksByPlayerID.removeAll(keepingCapacity: true)
-
-        for (_, provider) in inputProvidersByPlayerID {
-            provider.stop() // 안전상 로컬에서 한번 더 확인
-        }
-        inputProvidersByPlayerID.removeAll(keepingCapacity: true)
+        localInputTask?.cancel()
+        localInputTask = nil
+        
+        localInputProvider?.stop()
+        localInputProvider = nil
     }
 
     private func handleInput(_ event: GameInputEvent, for playerID: UUID) {
@@ -131,7 +131,9 @@ public final class GameplayManager {
         guard gameEnd.endReason == nil else { return }
         // 타이머/종료 조건 진행
         gameEnd.tick(deltaTime: deltaTime)
-
+        
+        // 외부(네트워크/리플리케이션) 틱 훅
+        onDidUpdate?(deltaTime)
     }
     
     public func handleContact(_ type: GameContactType, for playerID: UUID) {
@@ -142,7 +144,10 @@ public final class GameplayManager {
             if !character.isGrounded {
                 state.setGrounded(true, for: playerID)
                 state.setJumpCount(0, for: playerID)
-                runtimeByPlayer[playerID, default: PlayerRuntime()].lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
+                // 로컬 입력 검증용 런타임은 로컬 플레이어만 관리
+                if playerID == localPlayerID {
+                    localRuntime.lastLandingTime = Date().timeIntervalSince1970  // 착지 시간 기록
+                }
             }
         case .monster:
             requestRespawn(.hitMonster, for: playerID)
@@ -159,30 +164,34 @@ public final class GameplayManager {
 // MARK: 캐릭터 input 처리
 
 extension GameplayManager {
-    private func updateMoveX(_ moveX: Double, for playerID: UUID) {
+    public func updateMoveX(_ moveX: Double, for playerID: UUID) {
         state.setMoveX(moveX, for: playerID)
     }
     
     private func tryJump(for playerID: UUID) {
+        // 로컬 점프 검증은 로컬 플레이어만 수행
+        guard playerID == localPlayerID else { return }
+
         let currentTime = Date().timeIntervalSince1970
-        
-        guard let playRuntime = runtimeByPlayer[playerID],
-              let character = state.characters[playerID] else { return }
-        
-        // 착지 직후 / 연속 점프 쿨다운
-        guard currentTime - playRuntime.lastLandingTime > landingCooldown else { return }
-        guard currentTime - playRuntime.lastJumpTime > jumpCooldown else { return }
+        guard let character = state.characters[playerID] else { return }
+
+        // 착지 직후 / 연속 점프 쿨다운 (로컬 런타임 기준)
+        guard currentTime - localRuntime.lastLandingTime > landingCooldown else { return }
+        guard currentTime - localRuntime.lastJumpTime > jumpCooldown else { return }
         
         // 최대 점프 횟수 제한
         guard character.jumpCount < maxJumpCount else { return }
-        
+
         // 점프 확정
         state.setJumpCount(character.jumpCount + 1, for: playerID)
         state.setGrounded(false, for: playerID)
         jumpRequestedPlayerIDs.insert(playerID)
         
+        // 로컬에서 점프가 확정된 순간만 외부로 알림
+        onJumpTriggered?(playerID)
+        
         // 런타임 갱신
-        runtimeByPlayer[playerID]?.lastJumpTime = currentTime
+        localRuntime.lastJumpTime = currentTime
     }
     
     public func isJumpRequested(for playerID: UUID) -> Bool {
@@ -191,6 +200,25 @@ extension GameplayManager {
     
     public func resetJumpRequest(for playerID: UUID) {
         jumpRequestedPlayerIDs.remove(playerID)
+    }
+}
+
+// MARK: - Multiplayer 값 적용 (Remote)
+
+extension GameplayManager {
+    /// 원격 플레이어의 점프는 요청(input)이 아니라 "확정 이벤트"로 처리한다.
+    /// - 수신 시점의 grounded/cooldown 검증 때문에 점프가 씹히는 문제를 방지
+    public func applyJumpTriggered(for playerID: UUID) {
+        guard playerID != localPlayerID else { return }
+        guard let character = state.characters[playerID] else { return }
+
+        state.setGrounded(false, for: playerID)
+
+        if character.jumpCount < maxJumpCount {
+            state.setJumpCount(character.jumpCount + 1, for: playerID)
+        }
+
+        jumpRequestedPlayerIDs.insert(playerID)
     }
 }
 
@@ -239,7 +267,7 @@ extension GameplayManager {
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
 
         gameEnd.startNewGame()
-        initializeRuntimeByPlayer()
+        localRuntime = PlayerRuntime()
     }
 
     public func updateLandedPlatformIndex(_ index: Int) {
