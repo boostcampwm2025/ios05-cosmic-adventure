@@ -130,7 +130,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
         if let connection = self.activeGameConnection {
-            connection.send(content: encodedPacket, completion: .contentProcessed { error in
+            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
                 if let error = error {
                     self.logger.error("전송 실패: \(error.localizedDescription)")
                 }
@@ -309,7 +309,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         Task {
             do {
                 try await client.connectToHost(endpoint: peer.endpoint)
-                client.sendData(data)
+                client.sendData(data, to: peer.endpoint)
             } catch {
                 logger.error("연결 실패: \(error.localizedDescription)")
             }

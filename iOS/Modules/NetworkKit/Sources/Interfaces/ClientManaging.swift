@@ -17,5 +17,5 @@ public protocol ClientManaging {
     func startBrowsing()
     func stopBrowsing()
     func connectToHost(endpoint: NWEndpoint) async throws
-    func sendData(_ data: Data)
+    func sendData(_ data: Data, to endpoint: NWEndpoint)
 }
