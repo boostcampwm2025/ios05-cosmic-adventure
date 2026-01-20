@@ -10,11 +10,11 @@ import SwiftUI
 struct LobbyView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppRouter.self) private var router: AppRouter
-    @State private var viewModel: LobbyViewModel
+    private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
 
     init(viewModel: LobbyViewModel, channelListViewModel: ChannelListViewModel) {
-        _viewModel = State(initialValue: viewModel)
+        self.viewModel = viewModel
         _channelListViewModel = State(initialValue: channelListViewModel)
     }
 
