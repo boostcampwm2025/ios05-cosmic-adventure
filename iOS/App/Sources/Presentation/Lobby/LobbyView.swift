@@ -132,7 +132,7 @@ private extension LobbyView {
                 if viewModel.networkMode == .local {
                     viewModel.switchToRemoteMode()
                 } else {
-                    viewModel.switchToLocalMode()
+                    viewModel.leaveChannel()
                 }
             },
             showSecondary: viewModel.isNetworkAvailable)

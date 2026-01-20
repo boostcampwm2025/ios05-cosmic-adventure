@@ -134,6 +134,8 @@ extension LobbyViewModel {
     }
 
     func switchToRemoteMode() {
+        stopNetworkExploration()
+        networkMode = .remote
         selectedChannelId = nil
     }
 
