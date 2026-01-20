@@ -10,11 +10,11 @@ import SwiftUI
 struct LobbyView: View {
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppRouter.self) private var router: AppRouter
-    private var viewModel: LobbyViewModel
+    @State private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
 
     init(viewModel: LobbyViewModel, channelListViewModel: ChannelListViewModel) {
-        self.viewModel = viewModel
+        _viewModel = State(initialValue: viewModel)
         _channelListViewModel = State(initialValue: channelListViewModel)
     }
 
@@ -35,6 +35,7 @@ struct LobbyView: View {
             }
         }
         .onAppear {
+            viewModel.setup()
             handleNetworkModeChange()
         }
         .onChange(of: scenePhase) { _, newValue in

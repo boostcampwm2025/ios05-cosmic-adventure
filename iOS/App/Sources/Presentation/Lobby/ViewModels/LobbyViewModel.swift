@@ -93,9 +93,9 @@ final class LobbyViewModel {
             displayName: nickname,
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
+    }
 
-        self.selectedPeerID = nil
-
+    func setup() {
         setupConnectivityMonitor()
         setupP2PCallbacks()
         setupWebSocketCallbacks()
