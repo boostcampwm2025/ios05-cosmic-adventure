@@ -176,9 +176,11 @@ extension CharacterController {
     func beginRespawn(reason: RespawnReason, duration: TimeInterval) {
         guard let playerNode else { return }
 
-        // 반투명
-        playerNode.alpha = 0.25
-
+        // 반투명(로컬만 투명도 적용)
+        if playerRole == .me {
+            playerNode.alpha = 0.25
+        }
+        
         // 리스폰 중 충돌/접촉 방지 (무적)
         if storedMasks == nil, let body = playerNode.physicsBody {
             storedMasks = (body.categoryBitMask,
@@ -198,8 +200,10 @@ extension CharacterController {
     func endRespawn() {
         guard let playerNode else { return }
 
-        // 투명도 복구
-        playerNode.alpha = 1.0
+        // 투명도 복구(로컬만 투명도 복구)
+        if playerRole == .me {
+            playerNode.alpha = 1.0
+        }
 
         // 마스크 복구
         if let stored = storedMasks, let body = playerNode.physicsBody {
