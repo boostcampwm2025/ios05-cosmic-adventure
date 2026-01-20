@@ -91,7 +91,7 @@ final class ClientManager: ClientManaging {
             switch state {
             case .ready:
                 self.logger.info("호스트에 연결 성공")
-                self.receiveData()
+                self.receiveData(on: connection)
                 return
 
             case .failed(let error):
@@ -176,13 +176,11 @@ final class ClientManager: ClientManaging {
         onPeersUpdated?(Array(peers))
     }
 
-    private func receiveData() {
-        connection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+    private func receiveData(on connection: NWConnection) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
-                if let connection = self?.connection {
-                    self?.onDataReceived?(data, connection)
-                }
+                self?.onDataReceived?(data, connection)
             }
 
             if let error = error {
@@ -190,9 +188,19 @@ final class ClientManager: ClientManaging {
                 return
             }
 
-            if !isComplete {
-                self?.receiveData()
+            if isComplete {
+                self?.removeConnection(connection)
+            } else {
+                self?.receiveData(on: connection)
             }
+        }
+    }
+    
+    private func removeConnection(_ connection: NWConnection) {
+        connection.cancel()
+
+        if self.connection === connection {
+            self.connection = nil
         }
     }
 }
