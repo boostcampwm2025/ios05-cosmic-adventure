@@ -10,5 +10,4 @@ import Foundation
 struct PlayerRuntime: Sendable {
     var lastJumpTime: TimeInterval = 0
     var lastLandingTime: TimeInterval = 0
-    var timeSinceLastInput: TimeInterval = 0
 }
