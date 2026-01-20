@@ -79,7 +79,7 @@ final class HostManager: HostManaging {
     func sendData(_ data: Data, to connection: NWConnection) {
         logger.info("데이터 전송 시작: \(data.count) bytes")
 
-        connection.send(content: data, completion: .contentProcessed { [weak self] error in
+        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
             if let error = error {
                 self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
             } else {
@@ -141,14 +141,16 @@ final class HostManager: HostManaging {
 
             if let error = error {
                 self?.logger.error("데이터 수신 실패: \(error.localizedDescription)")
+                self?.removeConnection(connection)
                 return
             }
 
-            if isComplete {
-                self?.logger.info("Connection 완료")
-                self?.removeConnection(connection)
-            } else {
+            // isComplete가 true여도 connection 상태가 ready면 계속 수신 대기
+            if connection.state == .ready {
                 self?.receiveData(from: connection)
+            } else {
+                self?.logger.info("연결 상태가 ready가 아님: \(String(describing: connection.state))")
+                self?.removeConnection(connection)
             }
         }
     }

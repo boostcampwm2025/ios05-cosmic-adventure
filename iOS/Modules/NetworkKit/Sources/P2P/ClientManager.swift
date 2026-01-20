@@ -17,7 +17,7 @@ final class ClientManager: ClientManaging {
     private let networkQueue = DispatchQueue(label: "com.cosmicadventure.client")
 
     private var browser: NWBrowser?
-    private var connection: NWConnection?
+    private var connections: [NWEndpoint: NWConnection] = [:]
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "ClientManager")
 
@@ -61,61 +61,70 @@ final class ClientManager: ClientManaging {
     func stopBrowsing() {
         logger.info("탐색 종료")
 
-        connection?.cancel()
-        connection = nil
+        connections.forEach{ $0.value.cancel() }
+        connections.removeAll()
 
         browser?.cancel()
         browser = nil
     }
 
     func connectToHost(endpoint: NWEndpoint) async throws {
-        connection?.cancel()
+        if let existingConnection = connections[endpoint] {
+            switch existingConnection.state {
+            case .ready:     // 이미 연결이 완료된 상태면 재사용
+                return
+            case .preparing, .setup:    // 이미 연결 시도 중이면 상태가 변할 때까지 대기
+                try await waitForReady(connection: existingConnection)
+                return
+            default:        // 실패했거나 끊어진 상태면 새로 연결하기 위해 정리
+                existingConnection.cancel()
+                connections.removeValue(forKey: endpoint)
+            }
+        }
 
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = true
-
+        
         let connection = NWConnection(to: endpoint, using: parameters)
-        self.connection = connection
+        self.connections[endpoint] = connection
 
-        let stateStream = AsyncStream<NWConnection.State> { continuation in
+        connection.start(queue: self.networkQueue)
+
+        try await waitForReady(connection: connection)
+        
+        self.logger.info("호스트에 연결 성공")
+        self.receiveData(from: connection)
+    }
+
+    private func waitForReady(connection: NWConnection) async throws {
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             connection.stateUpdateHandler = { state in
-                continuation.yield(state)
-            }
-
-            connection.start(queue: self.networkQueue)
-        }
-
-        for await state in stateStream {
-            self.logger.info("연결 상태 변경: \(String(describing: state))")
-
-            switch state {
-            case .ready:
-                self.logger.info("호스트에 연결 성공")
-                self.receiveData()
-                return
-
-            case .failed(let error):
-                self.logger.error("연결 실패: \(error.localizedDescription)")
-                throw error
-
-            case .cancelled:
-                throw NWError.posix(.ECANCELED)
-
-            default:
-                break
+                switch state {
+                case .ready:
+                    connection.stateUpdateHandler = nil
+                    continuation.resume()
+                case .failed(let error):
+                    connection.stateUpdateHandler = nil
+                    continuation.resume(throwing: error)
+                case .cancelled:
+                    connection.stateUpdateHandler = nil
+                    continuation.resume(throwing: NWError.posix(.ECANCELED))
+                default:
+                    break
+                }
             }
         }
     }
 
-    func sendData(_ data: Data) {
-        guard let connection = connection else {
+    func sendData(_ data: Data, to endpoint: NWEndpoint) {
+        guard let connection = connections[endpoint] else {
             logger.error("connection이 존재하지 않습니다.")
             return
         }
 
         logger.info("데이터 전송: \(data.count) bytes")
 
-        connection.send(content: data, completion: .contentProcessed { [weak self] error in
+        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
             if let error = error {
                 self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
             } else {
@@ -176,8 +185,8 @@ final class ClientManager: ClientManaging {
         onPeersUpdated?(Array(peers))
     }
 
-    private func receiveData() {
-        connection?.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+    private func receiveData(from connection: NWConnection) {
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
                 self?.onDataReceived?(data)
@@ -188,8 +197,9 @@ final class ClientManager: ClientManaging {
                 return
             }
 
-            if !isComplete {
-                self?.receiveData()
+            // isComplete가 true여도 connection 상태가 ready면 계속 수신 대기
+            if connection.state == .ready {
+                self?.receiveData(from: connection)
             }
         }
     }
