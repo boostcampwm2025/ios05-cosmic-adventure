@@ -139,8 +139,9 @@ final class GameScene: SKScene {
         // 카메라 업데이트
         cameraSystem.update()
         
-        // 몬스터 업데이트
-        monsterController?.update(deltaTime: deltaTime)
+        // 몬스터 업데이트 (플랫폼과 겹치지 않도록 제한)
+        let safePlatformTopY = platformController?.safePlatformTopY()
+        monsterController?.update(deltaTime: deltaTime, platformTopY: safePlatformTopY)
         
         platformController?.update(cameraY: cameraSystem.cameraNode.position.y, cullBelowY: monsterController?.topY)
         

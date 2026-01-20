@@ -16,7 +16,9 @@ final class MonsterController {
     private var sceneSize: CGSize { scene?.size ?? .zero }
 
     private let riseSpeed: CGFloat = 90
-    private let bottomInset: CGFloat = 30   // 화면 안으로 얼마나 보일지
+
+    private let bottomInset: CGFloat = 10
+
     private let startBelowOffset: CGFloat = 80
 
     init(scene: SKScene, cameraSystem: CameraSystem) {
@@ -53,14 +55,28 @@ final class MonsterController {
         resetBelowCamera() // 시작 위치
     }
 
-    func update(deltaTime: TimeInterval) {
+    func update(deltaTime: TimeInterval, platformTopY: CGFloat?) {
         guard let node, let cameraSystem else { return }
 
         let cameraBottom = cameraSystem.cameraNode.position.y - sceneSize.height / 2
-        let maxY = cameraBottom + node.size.height / 2 - bottomInset
+        // 카메라 바닥 기준 제한
+        let cameraLimitTopY = cameraBottom + node.size.height / 2
+        // 플랫폼과 겹치지 않도록 제한
+        let platformLimitTopY: CGFloat
+
+        if let platformTopY {
+            platformLimitTopY = platformTopY - bottomInset
+        } else {
+            platformLimitTopY = .greatestFiniteMagnitude
+        }
+
+        let limitTopY = min(cameraLimitTopY, platformLimitTopY)
+
+        // topY 제한을 centerY 제한으로 변환
+        let maxCenterY = limitTopY
 
         let nextY = node.position.y + riseSpeed * CGFloat(deltaTime)
-        node.position.y = min(nextY, maxY)
+        node.position.y = min(nextY, maxCenterY)
     }
 
     func resetBelowCamera() {

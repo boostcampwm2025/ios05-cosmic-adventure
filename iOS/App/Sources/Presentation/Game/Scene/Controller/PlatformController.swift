@@ -97,6 +97,13 @@ final class PlatformController {
         updatePlatformCollisions(playerY: playerY, playerDY: playerDY)
     }
     
+    /// 세이프 포지션(마지막으로 밟은 플랫폼)의 topY(frame.maxY)
+    func safePlatformTopY() -> CGFloat? {
+        guard let node = platformNodesByIndex[lastSafePlatformIndex] else { return nil }
+        guard node.parent != nil else { return nil }
+        return node.frame.maxY
+    }
+    
     private func spawnNextPlatform() {
         guard let scene else { return }
         
