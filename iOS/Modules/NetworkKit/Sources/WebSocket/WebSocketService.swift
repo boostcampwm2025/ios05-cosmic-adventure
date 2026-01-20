@@ -33,15 +33,12 @@ public final class WebSocketService: NSObject {
         urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }
 
-    public func connect(to serverURL: String, channelId: String, nickname: String) {
+    public func connect(to wsURL: String, channelId: String, nickname: String) {
         guard !isConnected else { return }
 
         self.channelId = channelId
         self.nickname = nickname
 
-        let wsURL = serverURL
-            .replacingOccurrences(of: "https://", with: "wss://")
-            .replacingOccurrences(of: "http://", with: "ws://")
         let urlString = "\(wsURL)/ws?channelId=\(channelId)&nickname=\(nickname)"
         guard let url = URL(string: urlString) else { return }
 
