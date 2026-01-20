@@ -189,9 +189,7 @@ final class ClientManager: ClientManaging {
         connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
-                if let connection = self?.connection {
-                    self?.onDataReceived?(data, connection)
-                }
+                self?.onDataReceived?(data, connection)
             }
 
             if let error = error {
