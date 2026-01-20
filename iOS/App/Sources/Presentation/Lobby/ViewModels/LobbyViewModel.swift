@@ -22,7 +22,7 @@ final class LobbyViewModel {
     // MARK: - Properties
 
     private(set) var myExplorer: LobbyExplorer
-    var peers: [LobbyExplorer]
+    var peers: [LobbyExplorer] = []
     var selectedPeerID: String?
 
     var activeAlert: LobbyAlert = .none
@@ -80,6 +80,7 @@ final class LobbyViewModel {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
+        self.selectedPeerID = nil
         
         self.myExplorer = LobbyExplorer(
             role: .me,
@@ -87,11 +88,11 @@ final class LobbyViewModel {
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
         )
 
-        self.selectedPeerID = nil
-        
-        self.setupConnectivityMonitor()
-        self.setupP2PCallbacks()
-        self.setupWebSocketCallbacks()
+        // 모든 저장 프로퍼티 초기화 완료 (Phase 1 종료)
+        // 이후 self를 사용하는 메서드 호출 가능 (Phase 2 시작)
+        setupConnectivityMonitor()
+        setupP2PCallbacks()
+        setupWebSocketCallbacks()
     }
     
     private func setupConnectivityMonitor() {

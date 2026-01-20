@@ -38,8 +38,8 @@ final class AppContainer: ViewModelFactory {
         self.webSocketService = webSocketService
         let baseURL = Bundle.main.object(forInfoDictionaryKey: "API_BASE_URL") as? String ?? "http://localhost:8080"
         let wsURL = baseURL
-                    .replacingOccurrences(of: "http", with: "ws")
-                    .replacingOccurrences(of: "https", with: "wss")
+                    .replacingOccurrences(of: "https://", with: "wss://")
+                    .replacingOccurrences(of: "http://", with: "ws://")
         
         self.webSocketSessionManager = WebSocketSessionManager(
             service: webSocketService,
