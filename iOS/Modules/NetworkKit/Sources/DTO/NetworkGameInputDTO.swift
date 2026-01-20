@@ -11,7 +11,8 @@
 public struct NetworkGameInputDTO: Codable, Sendable {
     public enum Kind: String, Codable, Sendable {
         case horizontal
-        case jump
+        /// 로컬에서 검증 완료된 "점프 확정 이벤트"
+        case jumpTriggered
     }
 
     public var kind: Kind
@@ -26,7 +27,7 @@ public struct NetworkGameInputDTO: Codable, Sendable {
         .init(kind: .horizontal, x: x)
     }
 
-    public static var jump: Self {
-        .init(kind: .jump, x: nil)
+    public static var jumpTriggered: Self {
+        .init(kind: .jumpTriggered, x: nil)
     }
 }
