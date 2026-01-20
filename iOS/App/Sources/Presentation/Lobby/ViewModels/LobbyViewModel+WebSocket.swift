@@ -106,9 +106,6 @@ extension LobbyViewModel {
         playerIdMapping[player.id] = player.id
 
         let proximity = calculateProximity(latency: player.latency)
-        
-        // Proximity 확인을 위한 print문으로 정상 동작이 확인되면 제거
-        print("🌐 [LobbyViewModel+WebSocket] 플레이어 추가: \(player.nickname), latency: \(player.latency?.description ?? "nil")ms, proximity: \(proximity)")
 
         let explorer = LobbyExplorer(
             id: player.id,

@@ -64,9 +64,6 @@ extension LobbyViewModel {
             let effectiveLatency = peer.latency ?? discoveryLatency
             let proximity = calculateProximity(latency: effectiveLatency)
 
-            // Proximity 확인을 위한 print문으로 정상 동작이 확인되면 제거
-            print("🚀 [LobbyViewModel] 피어 변환: \(peer.name), ID: \(id), Proximity: \(proximity)")
-
             return LobbyExplorer(
                 id: id,
                 role: .peer,
