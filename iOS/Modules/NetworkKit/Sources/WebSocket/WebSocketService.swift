@@ -39,7 +39,10 @@ public final class WebSocketService: NSObject {
         self.channelId = channelId
         self.nickname = nickname
 
-        let urlString = "\(serverURL)?channelId=\(channelId)&nickname=\(nickname)"
+        let wsURL = serverURL
+            .replacingOccurrences(of: "https://", with: "wss://")
+            .replacingOccurrences(of: "http://", with: "ws://")
+        let urlString = "\(wsURL)/ws?channelId=\(channelId)&nickname=\(nickname)"
         guard let url = URL(string: urlString) else { return }
 
         webSocketTask = urlSession.webSocketTask(with: url)
