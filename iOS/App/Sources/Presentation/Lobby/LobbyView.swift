@@ -286,6 +286,7 @@ private extension LobbyView {
 
                     peerExplorerView(explorer: explorer)
                         .position(position)
+                        .id(explorer.id)
                 }
 
                 myExplorerView

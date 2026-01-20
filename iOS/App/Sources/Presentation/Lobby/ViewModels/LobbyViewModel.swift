@@ -23,7 +23,7 @@ final class LobbyViewModel {
 
     private(set) var myExplorer: LobbyExplorer
     var peers: [LobbyExplorer]
-    var selectedPeerID: UUID?
+    var selectedPeerID: String?
 
     var activeAlert: LobbyAlert = .none
     var showPermissionAlert: Bool {
@@ -49,7 +49,7 @@ final class LobbyViewModel {
     let webSocketSessionManager: WebSocketSessionManaging?
     
     @ObservationIgnored
-    var playerIdMapping: [String: UUID] = [:]
+    var playerIdMapping: [String: String] = [:]
 
     // MARK: - Computed Properties
     
@@ -126,7 +126,7 @@ final class LobbyViewModel {
     
     // TODO: proximity 업데이트 빈도/스케줄 정의 (실시간/주기적/디바운스 필요?)
     // TODO: proximity 변경에 따른 재정렬 애니메이션 정책 (너무 자주 움직이면 UX 저하)
-    func updateProximity(for explorerID: UUID, value: Double) {
+    func updateProximity(for explorerID: String, value: Double) {
         guard let index = peers.firstIndex(where: { $0.id == explorerID }) else { return }
         peers[index].proximity = max(0, min(1, value))
     }

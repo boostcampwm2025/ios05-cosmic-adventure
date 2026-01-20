@@ -16,8 +16,8 @@ enum ExplorerRole: Equatable {
 
 // MARK: - Lobby Explorer
 
-struct LobbyExplorer: Identifiable, Equatable, Hashable {
-    let id: UUID
+struct LobbyExplorer: Identifiable, Equatable {
+    let id: String
     let role: ExplorerRole
     let displayName: String
     let avatar: CharacterAvatar
@@ -28,13 +28,13 @@ struct LobbyExplorer: Identifiable, Equatable, Hashable {
     var proximity: Double?
     
     init(
-        id: UUID = UUID(),
+        id: String? = nil,
         role: ExplorerRole,
         displayName: String,
         avatar: CharacterAvatar,
         proximity: Double? = nil
     ) {
-        self.id = id
+        self.id = id ?? displayName
         self.role = role
         self.displayName = displayName
         self.avatar = avatar
