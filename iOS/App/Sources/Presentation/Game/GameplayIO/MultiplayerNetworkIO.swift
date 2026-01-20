@@ -92,6 +92,7 @@ actor MultiplayerNetworkIO {
         await installReceiveHandler()
         await startForwardingLocalInput()
         await installLocalJumpTriggeredSender()
+        await installLocalRespawnConfirmedSender()
     }
     
     private func resetTransientState() {
@@ -111,9 +112,9 @@ actor MultiplayerNetworkIO {
         remoteSendTask?.cancel()
         remoteSendTask = nil
 
-        // These touch @MainActor GameplayManager / external callbacks.
         await MainActor.run {
             self.gameplayManager.onJumpTriggered = nil
+            self.gameplayManager.onRespawnConfirmed = nil
         }
         networkSessionManager.onInputReceived = nil
     }
@@ -138,7 +139,6 @@ actor MultiplayerNetworkIO {
         guard let remotePlayerID = self.otherPlayerIDs.first else { return }
 
         guard let dto = try? self.jsonDecoder.decode(NetworkGameInputDTO.self, from: payload) else {
-            print("[NET][RECV] decode failed from \(sender)")
             return
         }
 
@@ -148,13 +148,51 @@ actor MultiplayerNetworkIO {
             self.lastRemoteReceivedAt = Date().timeIntervalSince1970
             self.didForceStopRemote = false
             self.remoteTargetMoveX = x
-
         case .jumpTriggered:
-            // 확정 이벤트: 검증 없이 즉시 적용
             await MainActor.run {
                 self.gameplayManager.applyJumpTriggered(for: remotePlayerID)
             }
+        case .respawnRequested:
+            guard let raw = dto.reason,
+                  let x = dto.respawnX,
+                  let y = dto.respawnY,
+                  let reason = self.decodeRespawnReason(raw) else {
+                return
+            }
+            let pos = RespawnPosition(x: x, y: y)
+            await MainActor.run {
+                self.gameplayManager.applyRespawnRequested(reason, position: pos, for: remotePlayerID)
+            }
         }
+    }
+    
+    private func installLocalRespawnConfirmedSender() async {
+        await MainActor.run {
+            self.gameplayManager.onRespawnConfirmed = { [weak self] playerID, reason, position in
+                guard let self else { return }
+                Task { await self.handleLocalRespawnConfirmed(playerID: playerID, reason: reason, position: position) }
+            }
+        }
+    }
+
+    private func handleLocalRespawnConfirmed(playerID: UUID, reason: RespawnReason, position: RespawnPosition) async {
+        guard playerID == self.localPlayerID else { return }
+        guard let peerName = self.peerName else { return }
+
+        let dto = NetworkGameInputDTO.respawnRequested(
+            reason: self.encodeRespawnReason(reason),
+            x: position.x,
+            y: position.y
+        )
+        self.sendDTO(dto, to: peerName)
+    }
+    
+    private func encodeRespawnReason(_ reason: RespawnReason) -> Int {
+        switch reason { case .fell: return 0; case .hitMonster: return 1 }
+    }
+    
+    private func decodeRespawnReason(_ raw: Int) -> RespawnReason? {
+        switch raw { case 0: return .fell; case 1: return .hitMonster; default: return nil }
     }
 
     // MARK: - Send (input -> cache)

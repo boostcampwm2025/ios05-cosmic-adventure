@@ -68,10 +68,16 @@ public struct GameState: Equatable, Sendable {
     }
     
     public mutating func consumePendingRespawnReason(for id: UUID) -> RespawnReason? {
-        guard var cs = characters[id] else { return nil }
-        let reason = cs.respawn.pendingReason
-        cs.respawn.pendingReason = nil
-        characters[id] = cs
+        guard var character = characters[id] else { return nil }
+        let reason = character.respawn.pendingReason
+        character.respawn.pendingReason = nil
+        characters[id] = character
         return reason
+    }
+    
+    mutating func setLastSafePosition(_ pos: RespawnPosition, for playerID: UUID) {
+        guard var character = characters[playerID] else { return }
+        character.respawn.lastSafePosition = pos
+        characters[playerID] = character
     }
 }
