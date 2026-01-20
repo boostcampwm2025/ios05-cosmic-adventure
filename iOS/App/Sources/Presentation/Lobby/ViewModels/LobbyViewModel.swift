@@ -6,6 +6,7 @@
 //
 
 import Observation
+import os
 import UIKit
 
 import NetworkKit
@@ -20,6 +21,8 @@ enum NetworkMode {
 final class LobbyViewModel {
 
     // MARK: - Properties
+    
+    private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "LobbyViewModel")
 
     // Explorer
     private(set) var myExplorer: LobbyExplorer
@@ -114,11 +117,9 @@ extension LobbyViewModel {
 
     private func handleConnectivityChange(isConnected: Bool) {
         if isConnected {
-            print("🔄 [LobbyViewModel] 네트워크 연결됨 → Remote 모드 전환")
             stopNetworkExploration()
             networkMode = .remote
         } else {
-            print("🔄 [LobbyViewModel] 네트워크 끊김 → Local 모드 전환")
             networkMode = .local
             selectedChannelId = nil
         }
@@ -142,15 +143,13 @@ extension LobbyViewModel {
     func startNetworkExploration() {
         switch networkMode {
         case .local:
-            print("📡 [LobbyViewModel] Local 모드 - P2P 탐색 시작")
             setupSessionManager()
             networkSessionManager.activate(nickname: myExplorer.displayName)
         case .remote:
             guard let channelId = selectedChannelId else {
-                print("❌ [LobbyViewModel] Remote 모드지만 selectedChannelId가 nil")
+                logger.warning("Remote 모드지만 selectedChannelId가 nil")
                 return
             }
-            print("🌐 [LobbyViewModel] Remote 모드 - WebSocket 탐색 시작, channelId: \(channelId), nickname: \(myExplorer.displayName)")
             webSocketSessionManager?.activate(channelId: channelId, nickname: myExplorer.displayName)
         }
     }
@@ -168,7 +167,6 @@ extension LobbyViewModel {
         stopNetworkExploration()
         networkMode = .remote
         selectedChannelId = channelId
-        print("🌐 [LobbyViewModel] networkMode = .remote, selectedChannelId = \(channelId)")
     }
 
     func leaveChannel() {
@@ -230,7 +228,7 @@ extension LobbyViewModel {
 extension LobbyViewModel {
     func handleInviteReceived(from senderIdentifier: String) {
         guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else {
-            print("❌ [LobbyViewModel] 초대한 피어를 찾을 수 없음: \(senderIdentifier). 현재 피어들: \(peers.map { "\($0.displayName)(\($0.id))" })")
+            logger.warning("초대한 피어를 찾을 수 없음: \(senderIdentifier)")
             return
         }
 
