@@ -8,8 +8,8 @@
 import AVFoundation
 import VideoKit
 import NetworkKit
+import os
 
-@Observable
 public final class VideoManager {
 
     private let configuration: VideoConfiguration
@@ -19,7 +19,16 @@ public final class VideoManager {
     private var latencyTimer: Timer?
     private var lastFrameTime: TimeInterval = 0
 
-    let remoteDisplayLayer = AVSampleBufferDisplayLayer()
+    lazy var remoteDisplayLayer: AVSampleBufferDisplayLayer = {
+        let layer = AVSampleBufferDisplayLayer()
+        let size = configuration.displaySize
+
+        layer.frame = CGRect(x: 0, y: 0, width: size, height: size)
+        layer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
+        layer.videoGravity = .resizeAspectFill
+        let address = Unmanaged.passUnretained(layer).toOpaque()
+        return layer
+    }()
 
     private(set) var networkMode: NetworkMode = .local
 
@@ -32,10 +41,12 @@ public final class VideoManager {
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
 
+    private let logger = Logger(subsystem: "com.cosmicadventure.Game", category: "VideoManager")
+
     init(connectivityMonitor: ConnectivityMonitoring,
-                networkSessionManager: NetworkSessionManaging,
-                webSocketSessionManager: WebSocketSessionManaging?,
-                configuration: VideoConfiguration = VideoConfiguration()
+         networkSessionManager: NetworkSessionManaging,
+         webSocketSessionManager: WebSocketSessionManaging?,
+         configuration: VideoConfiguration = VideoConfiguration()
     ) {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
@@ -54,13 +65,15 @@ public final class VideoManager {
     }
 
     private func setupConnectivityMonitor() {
-        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
-            Task { @MainActor in
-                self?.handleConnectivityChange(isConnected: isConnected)
-            }
-        }
-        connectivityMonitor.start()
-        networkMode = connectivityMonitor.isConnected ? .remote : .local
+        // TODO: lobbyViewModel의 networkMode 전달 받아야 함.
+        //        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
+        //            Task { @MainActor in
+        //                self?.handleConnectivityChange(isConnected: isConnected)
+        //            }
+        //        }
+        //        connectivityMonitor.start()
+        //        networkMode = connectivityMonitor.isConnected ? .remote : .local
+        networkMode = .local
     }
 
     private func handleConnectivityChange(isConnected: Bool) {
@@ -82,6 +95,9 @@ public final class VideoManager {
 
     // 압축된 데이터 전송
     private func handleEncodedData(data: Data) {
+        let sendLog = data.prefix(10).map { String(format: "%02x", $0) }.joined()
+        logger.info("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
+
         switch networkMode {
         case .local:
             networkSessionManager.sendVideo(data: data)
@@ -97,8 +113,8 @@ public final class VideoManager {
     }
 
     private func setupVideoDataCallbacks() {
-        // 상대방 영상 데이터 수신 -> 디코딩
         networkSessionManager.onVideoReceived = { [weak self] (_, data) in
+            self?.logger.info("[VideoManager] 비디오 데이터 수신: \(data.count) bytes, decoder=\(self?.videoDecoder != nil)")
             self?.videoDecoder?.decode(data: data)
         }
 
@@ -127,20 +143,7 @@ public final class VideoManager {
         }
     }
 
-    // 60fps로 들어오는 데이터는 PIP 용도로 너무 큼
     func processFrame(pixelBuffer: CVPixelBuffer) {
-        let currentTime = CACurrentMediaTime()
-
-        // 목표 프레임 간격 계산 (1초 / 30fps = 0.0333초)
-        let targetInterval = 1.0 / Double(configuration.frameRate)
-
-        // 마지막 보낸 시간보다 0.033초가 안 지났으면
-        if currentTime - lastFrameTime < targetInterval {
-            return
-        }
-
-        // 시간 갱신하고 인코딩 시작
-        lastFrameTime = currentTime
         videoEncoder?.encode(pixelBuffer: pixelBuffer)
     }
 }

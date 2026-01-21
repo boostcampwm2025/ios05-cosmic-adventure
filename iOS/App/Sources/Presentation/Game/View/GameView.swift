@@ -7,6 +7,7 @@
 
 import Games
 import InputSystem
+import VideoKit
 import SpriteKit
 import SwiftUI
 
@@ -14,6 +15,7 @@ struct GameView: View {
     @State private var viewModel: GameViewModel
     @State private var gameScene: GameScene?
     private var videoManager: VideoManager
+    private let size = VideoConfiguration().displaySize
 
     private var gameplayManager: GameplayManager {
         viewModel.gameplayManager
@@ -39,8 +41,23 @@ struct GameView: View {
                 SpriteView(scene: scene, options: [.allowsTransparency])
                     .edgesIgnoringSafeArea(.all)
             }
-            
-            gameHUD
+
+            VStack(alignment: .leading, spacing: 12) {
+                gameHUD
+
+                // TODO: 2인 모드 (상대가 있을 때만)
+//                if !otherPlayerIDs.isEmpty {
+                    RemoteVideoView(layer: videoManager.remoteDisplayLayer)
+                        .frame(width: size, height: size)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 14)
+                                .stroke(.white.opacity(0.35), lineWidth: 1)
+                        )
+                        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
+                        .zIndex(999)
+//                }
+            }
+            .padding(16)
 
             if let reason = viewModel.endReason {
                 gameEndOverlay(reason: reason)
@@ -76,15 +93,9 @@ struct GameView: View {
                     FacePreviewView(session: session)
                 }
             }
-            
-            if otherPlayerIDs.isEmpty {
-                FacePreviewPIPView {
-                    RemoteVideoView(layer: videoManager.remoteDisplayLayer)
-                }
-            }
         }
     }
-    
+
     private func setupGame() {
         let otherExplorersByID: [UUID: LobbyExplorer] = {
             guard let peer = viewModel.matchPeer,
@@ -152,5 +163,4 @@ struct GameView: View {
         }
         .transition(.opacity)
     }
-    
 }
