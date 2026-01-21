@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct LobbyView: View {
-    @Environment(\.scenePhase) private var scenePhase
+    @Environment(AppLifecycleStore.self) private var lifecycleStore: AppLifecycleStore
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
@@ -39,7 +39,7 @@ struct LobbyView: View {
             viewModel.setup()
             handleNetworkModeChange()
         }
-        .onChange(of: scenePhase) { _, newValue in
+        .onChange(of: lifecycleStore.scenePhase) { _, newValue in
             switch newValue {
             case .active:
                 viewModel.startNetworkExploration()

@@ -9,8 +9,10 @@ import SwiftUI
 import StorageKit
 
 struct RootView: View {
+    @Environment(\.scenePhase) private var scenePhase
     private let viewModelFactory: ViewModelFactory
     @State var router: AppRouter
+    @State private var lifecycleStore = AppLifecycleStore()
     @Query private var players: [Player]
 
     init(container: AppContainer? = nil, router: AppRouter? = nil) {
@@ -26,8 +28,12 @@ struct RootView: View {
                 }
         }
         .environment(router)
+        .environment(lifecycleStore)
         .onAppear {
             self.checkUserStatus()
+        }
+        .onChange(of: scenePhase) { _, newValue in
+            lifecycleStore.update(newValue)
         }
     }
 
