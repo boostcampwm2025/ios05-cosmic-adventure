@@ -219,7 +219,7 @@ private extension LobbyView {
                 }
 
                 topBarButton(systemName: "gearshape") {
-                    // TODO: SettingsView로 연결
+                    router.push(.settings)
                 }
             }
         }

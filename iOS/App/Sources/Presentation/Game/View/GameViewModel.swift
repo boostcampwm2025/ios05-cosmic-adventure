@@ -24,6 +24,7 @@ final class GameViewModel {
     public let otherPlayerIDs: [UUID]
     
     let gameplayManager: GameplayManager
+    let gameConfig: GameConfigProviding
     
     @ObservationIgnored
     let inputProvider: FaceTrackingGameInputProvider
@@ -57,13 +58,17 @@ final class GameViewModel {
         endCondition: any GameEndCondition,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging? = nil,
-        inputProvider: FaceTrackingGameInputProvider = FaceTrackingGameInputProvider()
+        gameConfig: GameConfigProviding
     ) {
         self.me = me
         self.matchPeer = matchPeer
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
-        self.inputProvider = inputProvider
+        self.gameConfig = gameConfig
+        self.inputProvider = FaceTrackingGameInputProvider(
+            jumpSensitivity: gameConfig.jumpSensitivity,
+            tiltSensitivity: gameConfig.tiltSensitivity
+        )
         
         self.localPlayerID = UUID()
         

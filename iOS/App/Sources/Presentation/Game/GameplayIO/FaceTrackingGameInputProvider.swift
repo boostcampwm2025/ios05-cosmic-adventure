@@ -17,8 +17,42 @@ final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked Sendab
         set { inputManager.onFrameUpdate = newValue }
     }
 
-    init() {
-        self.inputManager = InputManager(source: .faceTracking())
+    public init(
+        jumpSensitivity: SettingsLevel = .medium,
+        tiltSensitivity: SettingsLevel = .medium
+    ) {
+        let config = Self.makeConfig(
+            jumpSensitivity: jumpSensitivity,
+            tiltSensitivity: tiltSensitivity
+        )
+        self.inputManager = InputManager(source: .faceTracking(config: config))
+    }
+    
+    private static func makeConfig(
+        jumpSensitivity: SettingsLevel,
+        tiltSensitivity: SettingsLevel
+    ) -> InputManager.FaceTrackingConfig {
+        let puckerThreshold: Double = {
+            switch jumpSensitivity {
+            case .low: return 0.6
+            case .medium: return 0.5
+            case .high: return 0.35
+            }
+        }()
+        
+        let (rollThreshold, maxRoll): (Double, Double) = {
+            switch tiltSensitivity {
+            case .low: return (0.2, 1.0)
+            case .medium: return (0.15, 0.9)
+            case .high: return (0.1, 0.7)
+            }
+        }()
+        
+        return InputManager.FaceTrackingConfig(
+            puckerThreshold: puckerThreshold,
+            rollThreshold: rollThreshold,
+            maxRoll: maxRoll
+        )
     }
 
     func start() {

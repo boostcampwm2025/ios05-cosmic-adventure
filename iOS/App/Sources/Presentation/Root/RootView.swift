@@ -50,8 +50,9 @@ struct RootView: View {
             // TODO: DashboardView 연결
             EmptyView()
         case .settings:
-            // TODO: SettingsView 연결
-            EmptyView()
+            if let player = players.first {
+                SettingsView(viewModel: viewModelFactory.makeSettingsViewModel(player: player))
+            }
         case .gameReady(let me, let peer):
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
         case .game(let matchPeer):
@@ -62,10 +63,11 @@ struct RootView: View {
                     avatar: CharacterAvatar.init(rawValue: myExplorer.character)
                     ?? .character1
                 )
+                let gameConfig = UserDefaultsList.Settings()
                 
                 GameView(
                     viewModel: viewModelFactory
-                        .makeGameViewModel(me: me, matchPeer: matchPeer),
+                        .makeGameViewModel(me: me, matchPeer: matchPeer, gameConfig: gameConfig),
                     videoManager: viewModelFactory.makeVideoManager()
                 )
             }

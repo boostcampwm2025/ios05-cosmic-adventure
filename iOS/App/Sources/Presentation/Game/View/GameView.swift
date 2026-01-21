@@ -25,6 +25,10 @@ struct GameView: View {
         viewModel.inputProvider
     }
     
+    private var gameConfig: GameConfigProviding {
+        viewModel.gameConfig
+    }
+    
     init(viewModel: GameViewModel, videoManager: VideoManager) {
         _viewModel = State(initialValue: viewModel)
         self.videoManager = videoManager
@@ -93,7 +97,10 @@ struct GameView: View {
     private var facePreviewOverlay: some View {
         VStack(spacing: 16) {
             if let session = inputProvider.previewSession() {
-                FacePreviewPIPView {
+                let sizeStyle = FacePreviewPIPView<FacePreviewView>.SizeStyle(
+                    from: gameConfig.facePreviewSize
+                )
+                FacePreviewPIPView(sizeStyle: sizeStyle) {
                     FacePreviewView(session: session)
                 }
             }

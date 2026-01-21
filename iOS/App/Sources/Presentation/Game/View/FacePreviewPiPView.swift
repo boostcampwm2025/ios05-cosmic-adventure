@@ -19,10 +19,34 @@ public struct FacePreviewPIPView<Content: View>: View {
         case leading
         case trailing
     }
+    
+    public enum SizeStyle {
+        case small
+        case medium
+        case large
+        
+        public var pipSize: CGSize {
+            switch self {
+            case .small: return CGSize(width: 100, height: 130)
+            case .medium: return CGSize(width: 140, height: 180)
+            case .large: return CGSize(width: 180, height: 230)
+            }
+        }
+        
+        public init(from level: SettingsLevel) {
+            switch level {
+            case .low: self = .small
+            case .medium: self = .medium
+            case .high: self = .large
+            }
+        }
+    }
 
     private let content: Content
+    private let sizeStyle: SizeStyle
     
-    public init(@ViewBuilder content: () -> Content) {
+    public init(sizeStyle: SizeStyle = .medium, @ViewBuilder content: () -> Content) {
+        self.sizeStyle = sizeStyle
         self.content = content()
     }
     
@@ -30,7 +54,7 @@ public struct FacePreviewPIPView<Content: View>: View {
         GeometryReader { proxy in
             let defaultPadding = 25.0
             let containerSize = proxy.size
-            let pipSize = CGSize(width: 140, height: 180)
+            let pipSize = sizeStyle.pipSize
             let defaultCenter = CGPoint(
                 x: containerSize.width - pipSize.width / 2 - defaultPadding,
                 y: containerSize.height - pipSize.height / 2 - defaultPadding

@@ -8,6 +8,26 @@
 enum UserDefaultKeys: String {
     case isPermissionChecked
     case isGuideChecked
+    
+    // MARK: - Settings (SSOT)
+    
+    case jumpSensitivity
+    case tiltSensitivity
+    case soundVolume
+    case isHapticsEnabled
+    case facePreviewSize
+}
+
+public enum SettingsLevel: Int {
+    case low = 0
+    case medium = 1
+    case high = 2
+}
+
+public protocol GameConfigProviding {
+    var jumpSensitivity: SettingsLevel { get }
+    var tiltSensitivity: SettingsLevel { get }
+    var facePreviewSize: SettingsLevel { get }
 }
 
 public struct UserDefaultsList {
@@ -19,5 +39,34 @@ public struct UserDefaultsList {
     public struct Game {
         @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isGuideChecked.rawValue, defaultValue: false)
         public static var isGuideChecked
+    }
+    
+    public struct Settings: GameConfigProviding {
+        @UserDefaultWrapper<Int>(key: UserDefaultKeys.jumpSensitivity.rawValue, defaultValue: SettingsLevel.medium.rawValue)
+        public static var jumpSensitivityRaw
+        
+        @UserDefaultWrapper<Int>(key: UserDefaultKeys.tiltSensitivity.rawValue, defaultValue: SettingsLevel.medium.rawValue)
+        public static var tiltSensitivityRaw
+        
+        @UserDefaultWrapper<Double>(key: UserDefaultKeys.soundVolume.rawValue, defaultValue: 50.0)
+        public static var soundVolume
+        
+        @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isHapticsEnabled.rawValue, defaultValue: true)
+        public static var isHapticsEnabled
+        
+        @UserDefaultWrapper<Int>(key: UserDefaultKeys.facePreviewSize.rawValue, defaultValue: SettingsLevel.medium.rawValue)
+        public static var facePreviewSizeRaw
+        
+        public var jumpSensitivity: SettingsLevel {
+            SettingsLevel(rawValue: Self.jumpSensitivityRaw) ?? .medium
+        }
+        
+        public var tiltSensitivity: SettingsLevel {
+            SettingsLevel(rawValue: Self.tiltSensitivityRaw) ?? .medium
+        }
+        
+        public var facePreviewSize: SettingsLevel {
+            SettingsLevel(rawValue: Self.facePreviewSizeRaw) ?? .medium
+        }
     }
 }
