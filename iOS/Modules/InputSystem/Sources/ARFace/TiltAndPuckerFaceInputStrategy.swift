@@ -11,15 +11,21 @@ final class TiltAndPuckerFaceInputStrategy: FaceInputStrategy {
     
     // MARK: - Properties
     
-    private let rollThreshold = InputConstants.Face.rollThreshold
-    private let maxRoll = InputConstants.Face.maxRoll
+    private let rollThreshold: Double
+    private let maxRoll: Double
     private let puckerThreshold: Double
     private let jawOpenThreshold = InputConstants.Face.jawOpenThreshold
 
     // MARK: - Initialization
     
-    init(puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold) {
+    init(
+        puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold,
+        rollThreshold: Double = InputConstants.Face.rollThreshold,
+        maxRoll: Double = InputConstants.Face.maxRoll
+    ) {
         self.puckerThreshold = puckerThreshold
+        self.rollThreshold = rollThreshold
+        self.maxRoll = maxRoll
     }
     
     // MARK: - Methods

@@ -8,9 +8,11 @@
 import SwiftUI
 
 struct BackgroundContainerView<Content: View>: View {
+    let respectsSafeArea: Bool
     let content: Content
     
-    init(@ViewBuilder content: () -> Content) {
+    init(respectsSafeArea: Bool = false, @ViewBuilder content: () -> Content) {
+        self.respectsSafeArea = respectsSafeArea
         self.content = content()
     }
     
@@ -23,9 +25,10 @@ struct BackgroundContainerView<Content: View>: View {
                     .frame(width: geometry.size.width, height: geometry.size.height)
                     .clipped()
             }
+            .ignoresSafeArea()
             
             content
         }
-        .ignoresSafeArea()
+        .ignoresSafeArea(respectsSafeArea ? [] : .all)
     }
 }
