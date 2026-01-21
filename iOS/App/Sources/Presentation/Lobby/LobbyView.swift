@@ -8,7 +8,6 @@
 import SwiftUI
 
 struct LobbyView: View {
-    @Environment(AppLifecycleStore.self) private var lifecycleStore: AppLifecycleStore
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
@@ -37,20 +36,11 @@ struct LobbyView: View {
         }
         .onAppear {
             viewModel.setup()
-            handleNetworkModeChange()
         }
-        .onChange(of: lifecycleStore.scenePhase) { _, newValue in
-            switch newValue {
-            case .active:
-                viewModel.startNetworkExploration()
-            case .background:
-                viewModel.stopNetworkExploration()
-            default:
-                break
+        .onChange(of: viewModel.networkMode) { _, newMode in
+            if newMode == .remote && viewModel.selectedChannelId == nil {
+                Task { await channelListViewModel.fetchChannels() }
             }
-        }
-        .onChange(of: viewModel.networkMode) { _, _ in
-            handleNetworkModeChange()
         }
         .onChange(of: viewModel.matchStatus) { _, newValue in
             if case .gameReady(let peer) = newValue {
@@ -96,23 +86,6 @@ struct LobbyView: View {
             return false
         }
     }
-    
-    private func handleNetworkModeChange() {
-        viewModel.stopNetworkExploration()
-
-        switch viewModel.networkMode {
-        case .local:
-            viewModel.startNetworkExploration()
-        case .remote:
-            if viewModel.selectedChannelId == nil {
-                Task {
-                    await channelListViewModel.fetchChannels()
-                }
-            } else {
-                viewModel.startNetworkExploration()
-            }
-        }
-    }
 }
 
 // MARK: - Lobby View Content
@@ -132,7 +105,7 @@ private extension LobbyView {
             secondaryTitle: L10N.Lobby.remoteGalaxyButtonTitle,
             secondaryAction: {
                 if viewModel.networkMode == .local {
-                    viewModel.switchToRemoteMode()
+                    viewModel.switchNetworkMode(to: .remote)
                 } else {
                     viewModel.leaveChannel()
                 }
@@ -154,9 +127,7 @@ private extension LobbyView {
                 ForEach(channelListViewModel.channels) { channel in
                     // TODO: 채널 입장 후 연결 실패 시 분기 처리
                     ChannelRowView(channel: channel) {
-                        viewModel.stopNetworkExploration()
                         viewModel.selectChannel(channel.id)
-                        viewModel.startNetworkExploration()
                     }
                 }
             }
@@ -168,7 +139,7 @@ private extension LobbyView {
         
         bottomButtons(
             secondaryTitle: L10N.Lobby.localGalaxyButtonTitle,
-            secondaryAction: { viewModel.switchToLocalMode() }
+            secondaryAction: { viewModel.switchNetworkMode(to: .local) }
         )
     }
     
