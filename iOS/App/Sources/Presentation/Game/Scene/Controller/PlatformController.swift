@@ -50,33 +50,41 @@ final class PlatformController {
             spawnNextPlatform()
         }
         
-        // Initial state: keep platforms collision-disabled until GameScene provides player bottomY.
+        // 초기 상태: GameScene가 플레이어 bottomY를 넘겨주기 전까지 플랫폼 충돌을 비활성화
         applyLocalTransparency()
     }
     
-    func update(cameraY: CGFloat, cullBelowY: CGFloat? = nil) {
+    /// 플랫폼 생성 및 제거 업데이트
+    /// - Parameters:
+    ///   - requiredTopY: 플랫폼이 미리 생성되어 있어야 하는 최상단 월드 Y값 (예: 두 플레이어 Y 중 최대값)
+    ///   - cullBelowY: 이 값보다 충분히 아래(버퍼 포함)는 플랫폼을 제거해도 되는 기준 Y값 (예: 두 플레이어 Y 중 최소값)
+    func update(requiredTopY: CGFloat, cullBelowY: CGFloat) {
         guard let scene else { return }
-        
+
         let sceneHeight = scene.size.height
-        let defaultCullLineY = cameraY - (sceneHeight * 2)
-        let cullLineY = cullBelowY ?? defaultCullLineY - 100
+
+        // requiredTopY보다 위쪽까지 미리(prefetch) 플랫폼을 생성
+        let prefetchMargin: CGFloat = sceneHeight
+        while lastPlatformY < requiredTopY + prefetchMargin {
+            spawnNextPlatform()
+        }
+
+        // 보수적으로(충분한 버퍼를 두고) 컬링
+        let deleteBuffer: CGFloat = sceneHeight * 2
+        let cullLineY = cullBelowY - deleteBuffer
 
         scene.enumerateChildNodes(withName: L10N.Game.NodeName.platform) { [weak self] node, _ in
             guard let self else { return }
 
-            // "위험 구간" 아래에 있는 플랫폼을 제거
+            // 가장 아래 플레이어 기준선보다 훨씬 아래에 있고,
+            // 또한 로컬 lastSafePosition(안전 지점)보다 아래에 있는 플랫폼만 제거
+            // (멀티플레이에서 한쪽이 아직 필요로 하는 플랫폼을 실수로 삭제하는 것을 방지)
             if node.position.y < cullLineY && node.position.y < self.lastSafePosition.y {
                 if let idx = self.platformIndex(for: node) {
                     self.platformNodesByIndex[idx] = nil
                 }
                 node.removeFromParent()
             }
-        }
-        
-        // 다음 플랫폼 생성
-        let cameraTop = cameraY + sceneHeight / 2
-        if lastPlatformY < cameraTop + 100 {
-            spawnNextPlatform()
         }
     }
     
