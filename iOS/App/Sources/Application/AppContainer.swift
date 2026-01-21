@@ -22,6 +22,7 @@ protocol ViewModelFactory {
     func makeGameViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
     func makeVideoManager() -> VideoManager
     var explorationCoordinator: NetworkExplorationCoordinator { get }
+    var appEntryManager: AppEntryManager { get }
 }
 
 final class AppContainer: ViewModelFactory {
@@ -32,6 +33,7 @@ final class AppContainer: ViewModelFactory {
     private let webSocketSessionManager: WebSocketSessionManaging?
     private let channelService: ChannelServiceProtocol
     let explorationCoordinator: NetworkExplorationCoordinator
+    let appEntryManager: AppEntryManager
 
     private lazy var videoManager: VideoManager = {
         VideoManager(
@@ -40,7 +42,6 @@ final class AppContainer: ViewModelFactory {
             webSocketSessionManager: webSocketSessionManager
         )
     }()
-
     
     init(
         permissionService: PermissionServicing? = nil,
@@ -64,13 +65,19 @@ final class AppContainer: ViewModelFactory {
             httpClient: HTTPClient(),
             baseURL: baseURL
         )
-        self.permissionService = permissionService
+        
+        let permissionCheckSessionManager = NetworkSessionManager()
+        let resolvedPermissionService = permissionService
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
-                    networkSessionManager: networkSessionManager
+                    networkSessionManager: permissionCheckSessionManager
                 ),
                 notificationRequester: NotificationPermissionRequester()
             )
+        self.permissionService = resolvedPermissionService
+        
+        self.appEntryManager = AppEntryManager(permissionService: resolvedPermissionService)
+        
         self.explorationCoordinator = NetworkExplorationCoordinator(
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager
