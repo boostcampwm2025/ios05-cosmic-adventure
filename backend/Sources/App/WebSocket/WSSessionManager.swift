@@ -67,6 +67,7 @@ actor WSSessionManager {
     func removeSession(_ sessionId: String) {
         sessions.removeValue(forKey: sessionId)
         latencies.removeValue(forKey: sessionId)
+        pingTimestamps.removeValue(forKey: sessionId)
     }
 
     func getSession(_ sessionId: String) -> WSSession? {

@@ -95,7 +95,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
 
     private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"
-        let lat = latency ?? 0.0
+        let lat = latency ?? 1.0
         return "\(session.id):\(nickname):\(lat)"
     }
 }
