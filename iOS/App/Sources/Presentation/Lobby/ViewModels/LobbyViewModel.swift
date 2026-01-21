@@ -66,7 +66,7 @@ final class LobbyViewModel {
     var orderedPeers: [LobbyExplorer] {
         peers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
-            case let (l?, r?): return l > r
+            case let (l?, r?): return l < r
             case (_?, nil): return true
             case (nil, _?): return false
             case (nil, nil): return false
@@ -201,7 +201,7 @@ extension LobbyViewModel {
 
         let clamped = max(minLat, min(maxLat, latency))
 
-        return 1.0 - ((clamped - minLat) / (maxLat - minLat))
+        return (clamped - minLat) / (maxLat - minLat)
     }
 }
 
