@@ -158,7 +158,12 @@ final class GameScene: SKScene {
         let safePlatformTopY = platformController?.safePlatformTopY()
         monsterController?.update(deltaTime: deltaTime, platformTopY: safePlatformTopY)
         
-        platformController?.update(cameraY: cameraSystem.cameraNode.position.y, cullBelowY: monsterController?.topY)
+        // 플랫폼 추가 생성 및 제거(모든 캐릭터 기준)
+        let playerYs = characterControllers.values.compactMap { $0.playerNode?.position.y }
+        let highestPlayerY = playerYs.max() ?? cameraSystem.cameraNode.position.y
+        let lowestPlayerY = playerYs.min() ?? cameraSystem.cameraNode.position.y
+
+        platformController?.update(requiredTopY: highestPlayerY, cullBelowY: lowestPlayerY)
         
         updatePlatformCollisions(deltaTime: deltaTime)
         
