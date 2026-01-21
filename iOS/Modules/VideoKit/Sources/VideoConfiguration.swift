@@ -5,11 +5,15 @@
 //  Created by soyoung on 1/19/26.
 //
 
-public struct VideoConfiguration {
+import Foundation
 
-    // 해상도
-    public let width: Int32
-    public let height: Int32
+public struct VideoConfiguration {
+    // 인코딩 해상도 (픽셀 단위)
+    public let resolutionWidth: Int32
+    public let resolutionHeight: Int32
+
+    // 화면 표시 크기 (포인트 단위)
+    public let displaySize: CGFloat
 
     // 비트레이트 (네트워크 상태에 따른 화질)
     public let highBitrate: Int
@@ -23,16 +27,18 @@ public struct VideoConfiguration {
     public let keyFrameIntervalDuration: Double
 
     public init(
-        width: Int32 = 192,
-        height: Int32 = 192, // PIP용 저해상도
-        highBitrate: Int = 150_000,
-        lowBitrate: Int = 60_000,
+        resolutionWidth: Int32 = 192,
+        resolutionHeight: Int32 = 192,
+        displaySize: CGFloat = 60.0,
+        highBitrate: Int = 400_000,
+        lowBitrate: Int = 200_000,
         monitoringInterval: Double = 2.0,
-        frameRate: Int32 = 30,
-        keyFrameIntervalDuration: Double = 2.0
+        frameRate: Int32 = 60,
+        keyFrameIntervalDuration: Double = 1.0
     ) {
-        self.width = width
-        self.height = height
+        self.resolutionWidth = resolutionWidth
+        self.resolutionHeight = resolutionHeight
+        self.displaySize = displaySize
         self.highBitrate = highBitrate
         self.lowBitrate = lowBitrate
         self.monitoringInterval = monitoringInterval
