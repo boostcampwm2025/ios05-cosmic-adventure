@@ -48,8 +48,8 @@ public struct UserDefaultsList {
         @UserDefaultWrapper<Int>(key: UserDefaultKeys.tiltSensitivity.rawValue, defaultValue: SettingsLevel.medium.rawValue)
         public static var tiltSensitivityRaw
         
-        @UserDefaultWrapper<Double>(key: UserDefaultKeys.soundVolume.rawValue, defaultValue: 50.0)
-        public static var soundVolume
+        @UserDefaultWrapper<Int>(key: UserDefaultKeys.soundVolume.rawValue, defaultValue: SettingsLevel.medium.rawValue)
+        public static var soundVolumeRaw
         
         @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isHapticsEnabled.rawValue, defaultValue: true)
         public static var isHapticsEnabled

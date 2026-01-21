@@ -30,29 +30,39 @@ public final class InputManager {
 }
 
 public extension InputManager {
-    enum FaceTrackingStrategyOption {
-        case tiltAndPucker(puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold)
-        case custom(FaceInputStrategy)
-
+    struct FaceTrackingConfig {
+        public let puckerThreshold: Double
+        public let rollThreshold: Double
+        public let maxRoll: Double
+        
+        public init(
+            puckerThreshold: Double = InputConstants.Face.defaultPuckerThreshold,
+            rollThreshold: Double = InputConstants.Face.rollThreshold,
+            maxRoll: Double = InputConstants.Face.maxRoll
+        ) {
+            self.puckerThreshold = puckerThreshold
+            self.rollThreshold = rollThreshold
+            self.maxRoll = maxRoll
+        }
+        
         var strategy: FaceInputStrategy {
-            switch self {
-            case .tiltAndPucker(let threshold):
-                return TiltAndPuckerFaceInputStrategy(puckerThreshold: threshold)
-            case .custom(let s):
-                return s
-            }
+            TiltAndPuckerFaceInputStrategy(
+                puckerThreshold: puckerThreshold,
+                rollThreshold: rollThreshold,
+                maxRoll: maxRoll
+            )
         }
     }
 
     enum Source {
-        case faceTracking(strategy: FaceTrackingStrategyOption = .tiltAndPucker())
+        case faceTracking(config: FaceTrackingConfig = FaceTrackingConfig())
     }
 
     convenience init(source: Source) {
         switch source {
-        case .faceTracking(let option):
+        case .faceTracking(let config):
             self.init { hub in
-                ARFaceTrackingInputSource(strategy: option.strategy, hub: hub)
+                ARFaceTrackingInputSource(strategy: config.strategy, hub: hub)
             }
         }
     }

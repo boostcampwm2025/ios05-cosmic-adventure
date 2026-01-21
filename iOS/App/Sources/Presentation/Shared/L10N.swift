@@ -81,6 +81,24 @@ enum L10N {
         static let allReadyMessage = "모든 탐험가 준비 완료! 곧 시작합니다."
     }
 
+    enum Settings {
+        static let title: LocalizedStringKey = "설정"
+        static let characterLabel: LocalizedStringKey = "캐릭터"
+        
+        static let jumpSensitivity: LocalizedStringKey = "점프 민감도"
+        static let tiltSensitivity: LocalizedStringKey = "기울기 민감도"
+        static let sound: LocalizedStringKey = "사운드"
+        static let haptic: LocalizedStringKey = "진동"
+        static let preview: LocalizedStringKey = "얼굴 미리보기 크기"
+        
+        static let low: LocalizedStringKey = "적게"
+        static let medium: LocalizedStringKey = "중간"
+        static let high: LocalizedStringKey = "높게"
+        
+        static let small: LocalizedStringKey = "작게"
+        static let large: LocalizedStringKey = "크게"
+    }
+    
     enum Game {
         enum NodeName {
             static let platform = "platform"

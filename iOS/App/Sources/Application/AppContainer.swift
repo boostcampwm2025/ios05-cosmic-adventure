@@ -8,6 +8,7 @@
 import Foundation
 import NetworkKit
 import Games
+import StorageKit
 
 @MainActor
 protocol ViewModelFactory {
@@ -16,6 +17,7 @@ protocol ViewModelFactory {
     func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel
     func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
+    func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
     func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding) -> GameViewModel
     func makeVideoManager() -> VideoManager
@@ -98,6 +100,10 @@ final class AppContainer: ViewModelFactory {
     func makeChannelListViewModel() -> ChannelListViewModel {
         ChannelListViewModel(channelService: channelService)
     }
+    
+    func makeSettingsViewModel(player: Player) -> SettingsViewModel {
+        SettingsViewModel(player: player)
+    }
 
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager {
         WebSocketSessionManager(service: webSocketService, serverURL: serverURL)
@@ -119,5 +125,4 @@ final class AppContainer: ViewModelFactory {
     }
 
     // TODO: 게임 결과 화면 뷰모델 생성
-
 }
