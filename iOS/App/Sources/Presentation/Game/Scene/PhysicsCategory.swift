@@ -8,14 +8,15 @@
 struct PhysicsCategory: OptionSet {
     let rawValue: UInt32
 
-    static let player = PhysicsCategory(rawValue: 1 << 0)
-    static let ground = PhysicsCategory(rawValue: 1 << 1)
-    static let monster = PhysicsCategory(rawValue: 1 << 2)
-    static let wall  = PhysicsCategory(rawValue: 1 << 3)
+    static let playerMe = PhysicsCategory(rawValue: 1 << 0)
+    static let playerOther = PhysicsCategory(rawValue: 1 << 1)
 
-    // 플레이어가 물리적으로 부딪혀야 하는 대상 (땅, 벽)
-    static let playerCollidesWith: PhysicsCategory = [.ground, .wall]
+    static let groundMe = PhysicsCategory(rawValue: 1 << 2)
+    static let groundOther = PhysicsCategory(rawValue: 1 << 3)
 
-    // 플레이어가 닿았을 때 감지해야 하는 대상 (땅, 괴물)
-    static let playerContactsWith: PhysicsCategory = [.ground, .monster]
+    static let monster = PhysicsCategory(rawValue: 1 << 4)
+    static let wall  = PhysicsCategory(rawValue: 1 << 5)
+
+    static let anyPlayer: PhysicsCategory = PhysicsCategory(rawValue: PhysicsCategory.playerMe.rawValue | PhysicsCategory.playerOther.rawValue)
+    static let anyGround: PhysicsCategory = PhysicsCategory(rawValue: PhysicsCategory.groundMe.rawValue | PhysicsCategory.groundOther.rawValue)
 }

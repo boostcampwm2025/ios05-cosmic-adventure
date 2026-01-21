@@ -20,16 +20,16 @@ final class CharacterController {
 
     private var sceneSize: CGSize { scene?.size ?? .zero }
     
-    // 동작 조절
-    private let maxTiltAngle: CGFloat = 0.2
-    private let tiltSpeed: CGFloat = 0.2
-    
     // 리스폰 표시
     private var respawnLabel: SKLabelNode?
     private var storedMasks: (category: UInt32, contact: UInt32, collision: UInt32)?
     
     // 최소 정보만 노출
     var positionY: CGFloat? { playerNode?.position.y }
+    var bottomY: CGFloat? {
+        guard let node = playerNode else { return nil }
+        return node.position.y - (node.size.height / 2)
+    }
     var velocityDY: CGFloat { playerNode?.physicsBody?.velocity.dy ?? 0 }
     
     init(scene: SKScene, cameraSystem: CameraSystem, playerRole: PlayerRole = .me) {
@@ -55,13 +55,28 @@ final class CharacterController {
             player.alpha = 0.4
         }
         
-        let body = SKPhysicsBody(circleOfRadius: size.width / 2)
+        let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = true
         body.allowsRotation = false
         
-        body.categoryBitMask = PhysicsCategory.player.rawValue
-        body.collisionBitMask = PhysicsCategory.playerCollidesWith.rawValue
-        body.contactTestBitMask = PhysicsCategory.playerContactsWith.rawValue
+        if playerRole == .me {
+            body.categoryBitMask = PhysicsCategory.playerMe.rawValue
+            
+            let collidesWith: PhysicsCategory = [.groundMe, .wall]
+            body.collisionBitMask = collidesWith.rawValue
+            
+            let contactsWith: PhysicsCategory = [.groundMe, .monster]
+            body.contactTestBitMask = contactsWith.rawValue
+        } else {
+            body.categoryBitMask = PhysicsCategory.playerOther.rawValue
+
+            let collidesWith: PhysicsCategory = [.groundOther, .wall]
+            body.collisionBitMask = collidesWith.rawValue
+
+            let contactsWith: PhysicsCategory = [.groundOther]
+            body.contactTestBitMask = contactsWith.rawValue
+        }
+        
         body.velocity = .zero
         player.physicsBody = body
         
@@ -144,16 +159,7 @@ final class CharacterController {
             // 오른쪽 이동
             playerNode.xScale = -abs(playerNode.xScale)
         }
-        
-        // 기울기
-        // 목표 각도: 왼쪽으로 가면(+) 오른쪽으로 가면(-) 기울임
-        let targetRotation = -CGFloat(moveX) * maxTiltAngle
-        
-        // 현재 각도에서 목표 각도로 부드럽게 이동 (Lerp)
-        let currentRotation = playerNode.zRotation
-        let newRotation = currentRotation + (targetRotation - currentRotation) * tiltSpeed
-        
-        playerNode.zRotation = newRotation
+        // TODO: 애니메이션 적용
     }
     
     func applyJump() {

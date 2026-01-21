@@ -17,7 +17,7 @@ public enum PhysicsConstants {
     public static let airDeceleration: CGFloat = 0.04
 
     // 점프
-    public static let jumpImpulse: CGFloat = 65.0
+    public static let jumpImpulse: CGFloat = 100.0
 
     // 중력 보정 (Apex Control)
     public static let apexThreshold: CGFloat = 50.0
