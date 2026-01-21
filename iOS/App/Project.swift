@@ -1,4 +1,10 @@
+import Foundation
 import ProjectDescription
+
+let xconfigPath = URL(fileURLWithPath: #file)
+    .deletingLastPathComponent()
+    .appendingPathComponent("Environment.xcconfig")
+let xconfigExists = FileManager.default.fileExists(atPath: xconfigPath.path)
 
 let project = Project(
     name: "App",
@@ -59,9 +65,12 @@ let project = Project(
                     "DEVELOPMENT_TEAM": "B3PWYBKFUK",
                     "CODE_SIGN_STYLE": "Automatic",
                 ],
-                configurations: [
+                configurations: xconfigExists ? [
                     .debug(name: "Debug", xcconfig: "Environment.xcconfig"),
                     .release(name: "Release", xcconfig: "Environment.xcconfig")
+                ] : [
+                    .debug(name: "Debug"),
+                    .release(name: "Release")
                 ]
             )
         ),
