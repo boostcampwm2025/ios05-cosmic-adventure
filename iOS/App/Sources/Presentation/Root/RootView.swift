@@ -10,13 +10,12 @@ import StorageKit
 
 struct RootView: View {
     @Environment(\.scenePhase) private var scenePhase
-    private let viewModelFactory: ViewModelFactory
+    private let container: AppContainer
     @State var router: AppRouter
-    @State private var lifecycleStore = AppLifecycleStore()
     @Query private var players: [Player]
 
     init(container: AppContainer? = nil, router: AppRouter? = nil) {
-        self.viewModelFactory = container ?? AppContainer()
+        self.container = container ?? AppContainer()
         _router = State(initialValue: router ?? AppRouter())
     }
 
@@ -28,12 +27,11 @@ struct RootView: View {
                 }
         }
         .environment(router)
-        .environment(lifecycleStore)
         .onAppear {
             self.checkUserStatus()
         }
-        .onChange(of: scenePhase) { _, newValue in
-            lifecycleStore.update(newValue)
+        .onChange(of: scenePhase) { _, newPhase in
+            container.explorationCoordinator.setAppActive(newPhase == .active)
         }
     }
 
@@ -41,15 +39,15 @@ struct RootView: View {
     func screen(_ route: AppRoute) -> some View {
         switch route {
         case .permissionSetup:
-            PermissionSetupView(viewModel: viewModelFactory.makePermissionSetupViewModel())
+            PermissionSetupView(viewModel: container.makePermissionSetupViewModel())
         case .profileSetup:
-            ProfileSetupView(viewModel: viewModelFactory.makeProfileSetupViewModel())
+            ProfileSetupView(viewModel: container.makeProfileSetupViewModel())
         case .lobby:
             if let myExplorer = players.first {
                 LobbyView(viewModel:
-                            viewModelFactory.makeLobbyViewModel(nickname: myExplorer.nickname,
+                            container.makeLobbyViewModel(nickname: myExplorer.nickname,
                                                                 characterType: myExplorer.character),
-                          channelListViewModel: viewModelFactory.makeChannelListViewModel()
+                          channelListViewModel: container.makeChannelListViewModel()
                 )
             }
         case .dashboard:
@@ -57,10 +55,10 @@ struct RootView: View {
             EmptyView()
         case .settings:
             if let player = players.first {
-                SettingsView(viewModel: viewModelFactory.makeSettingsViewModel(player: player))
+                SettingsView(viewModel: container.makeSettingsViewModel(player: player))
             }
         case .gameReady(let me, let peer):
-             GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
+            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me, peer: peer))
         case .game(let matchPeer, let isNetwork):
             if let myExplorer = players.first {
                 let me = LobbyExplorer(
@@ -72,9 +70,9 @@ struct RootView: View {
                 let gameConfig = UserDefaultsList.Settings()
                 
                 GameView(
-                    viewModel: viewModelFactory
+                    viewModel: container
                         .makeGameViewModel(me: me, matchPeer: matchPeer, gameConfig: gameConfig, isNetwork: isNetwork),
-                    videoManager: viewModelFactory.makeVideoManager()
+                    videoManager: container.makeVideoManager()
                 )
             }
         case .operationGuide(let me, let peer, let isNetwork):

@@ -21,6 +21,7 @@ protocol ViewModelFactory {
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
     func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
     func makeVideoManager() -> VideoManager
+    var explorationCoordinator: NetworkExplorationCoordinator { get }
 }
 
 final class AppContainer: ViewModelFactory {
@@ -30,6 +31,7 @@ final class AppContainer: ViewModelFactory {
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
     private let channelService: ChannelServiceProtocol
+    let explorationCoordinator: NetworkExplorationCoordinator
 
     private lazy var videoManager: VideoManager = {
         VideoManager(
@@ -39,6 +41,7 @@ final class AppContainer: ViewModelFactory {
         )
     }()
 
+    
     init(
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
@@ -67,6 +70,10 @@ final class AppContainer: ViewModelFactory {
                     networkSessionManager: networkSessionManager
                 )
             )
+        self.explorationCoordinator = NetworkExplorationCoordinator(
+            networkSessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager
+        )
     }
     
     func makePermissionSetupViewModel() -> PermissionSetupViewModel {
@@ -79,6 +86,7 @@ final class AppContainer: ViewModelFactory {
     
     func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel {
         LobbyViewModel(
+            explorationCoordinator: explorationCoordinator,
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,

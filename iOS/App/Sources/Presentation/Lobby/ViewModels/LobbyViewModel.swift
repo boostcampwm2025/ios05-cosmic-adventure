@@ -44,6 +44,9 @@ final class LobbyViewModel {
     var matchStatus: GameMatchStatus = .idle
 
     @ObservationIgnored
+    let explorationCoordinator: NetworkExplorationCoordinator
+
+    @ObservationIgnored
     var connectivityMonitor: ConnectivityMonitoring
 
     @ObservationIgnored
@@ -76,12 +79,14 @@ final class LobbyViewModel {
     // MARK: - Initialization
 
     init(
+        explorationCoordinator: NetworkExplorationCoordinator,
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
         nickname: String,
         characterRawValue: String
     ) {
+        self.explorationCoordinator = explorationCoordinator
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
@@ -98,6 +103,7 @@ final class LobbyViewModel {
         setupConnectivityMonitor()
         setupP2PCallbacks()
         setupWebSocketCallbacks()
+        setupExploration()
     }
 }
 
@@ -116,46 +122,43 @@ extension LobbyViewModel {
 
     private func handleConnectivityChange(isConnected: Bool) {
         if isConnected {
-            stopNetworkExploration()
             networkMode = .remote
         } else {
             networkMode = .local
             selectedChannelId = nil
         }
+        setupExploration()
     }
 }
 
 // MARK: - Network Mode & Exploration
 
 extension LobbyViewModel {
-    func switchToLocalMode() {
-        stopNetworkExploration()
-        networkMode = .local
+    func switchNetworkMode(to mode: NetworkMode) {
+        networkMode = mode
+        if mode == .remote {
+            selectedChannelId = nil
+        }
+        setupExploration()
     }
 
-    func switchToRemoteMode() {
-        stopNetworkExploration()
-        networkMode = .remote
-        selectedChannelId = nil
-    }
-
-    func startNetworkExploration() {
+    func setupExploration() {
         switch networkMode {
         case .local:
             setupSessionManager()
-            networkSessionManager.activate(nickname: myExplorer.displayName)
+            explorationCoordinator.updateExploration(
+                mode: .local,
+                channelId: nil,
+                nickname: myExplorer.displayName
+            )
         case .remote:
-            guard let channelId = selectedChannelId else {
-                logger.warning("Remote 모드지만 selectedChannelId가 nil")
-                return
-            }
-            webSocketSessionManager?.activate(channelId: channelId, nickname: myExplorer.displayName)
+            guard let channelId = selectedChannelId else { return }
+            explorationCoordinator.updateExploration(
+                mode: .remote,
+                channelId: channelId,
+                nickname: myExplorer.displayName
+            )
         }
-    }
-
-    func stopNetworkExploration() {
-        networkSessionManager.deactivate()
-        webSocketSessionManager?.deactivate()
     }
 }
 
@@ -163,13 +166,13 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func selectChannel(_ channelId: String) {
-        stopNetworkExploration()
         networkMode = .remote
         selectedChannelId = channelId
+        setupExploration()
     }
 
     func leaveChannel() {
-        stopNetworkExploration()
+        explorationCoordinator.stopExploration()
         selectedChannelId = nil
         peers = []
     }
