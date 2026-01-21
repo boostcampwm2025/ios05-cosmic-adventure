@@ -147,8 +147,6 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     }
 
     public func sendVideo(data: Data) {
-        guard let connection = activeGameConnection else { return }
-
         let packet = NetworkPacket(
             type: .videoFrame,
             senderIdentifier: myNickname ?? "Unknown",
@@ -158,9 +156,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
         if let connection = self.activeGameConnection {
-            connection.send(content: encodedPacket, completion: .contentProcessed { error in
+            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
                 if let error = error {
-                    self.logger.error("전송 실패: \(error.localizedDescription)")
+                    self.logger.error("비디오 전송 실패: \(error.localizedDescription)")
                 }
             })
         }
@@ -264,10 +262,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
-    private func handleReceivedData(_ data: Data, from connection: NWConnection? = nil) {
+    private func handleReceivedData(_ data: Data, from connection: NWConnection) {
         guard let packet = try? decoder.decode(NetworkPacket.self, from: data) else { return }
 
-        if packet.type == .invite, let connection = connection {
+        if packet.type == .invite {
             self.pendingInviteConnections[packet.senderIdentifier] = connection
         }
 
@@ -278,10 +276,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             case .ping:
                 let pongPacket = NetworkPacket(type: .pong, senderIdentifier: myNickname ?? "Unknown")
                 guard let encodedPong = try? self.encoder.encode(pongPacket) else { return }
-                
-                if let connection = connection {
-                    host.sendData(encodedPong, to: connection)
-                }
+                host.sendData(encodedPong, to: connection)
 
             case .pong:
                 if let sendDate = lastPingTimestamps[packet.senderIdentifier] {
@@ -294,10 +289,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 onInviteReceived?(packet.senderIdentifier)
 
             case .inviteAccept:
-                if let connection = connection {
-                    activeGameConnection = connection
-                    pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
-                }
+                activeGameConnection = connection
+                pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
                 onInviteAccepted?(packet.senderIdentifier)
 
             case .inviteDecline:
@@ -351,6 +344,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         
         // TODO: 발신 보장되었을 때 동작하도록 수정하기
         // 초대받은 쪽(Invitee)도 즉시 게임 연결을 확정
+        if packet.type == .inviteAccept {
+            self.activeGameConnection = connection
+        }
+
         if packet.type == .inviteAccept {
             self.activeGameConnection = connection
         }
