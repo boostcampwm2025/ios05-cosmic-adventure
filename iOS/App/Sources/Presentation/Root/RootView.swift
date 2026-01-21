@@ -27,11 +27,13 @@ struct RootView: View {
                 }
         }
         .environment(router)
-        .onAppear {
-            self.checkUserStatus()
+        .task {
+            await handleScenePhase(.active)
         }
         .onChange(of: scenePhase) { _, newPhase in
-            container.explorationCoordinator.setAppActive(newPhase == .active)
+            Task {
+                await handleScenePhase(newPhase)
+            }
         }
     }
 
@@ -98,16 +100,32 @@ struct RootView: View {
 }
 
 extension RootView {
+    private func handleScenePhase(_ phase: ScenePhase) async {
+        switch phase {
+        case .active:
+            let canEnter = await container.appEntryManager.canEnterApp()
+            guard canEnter else {
+                router.setRoot(.permissionSetup)
+                container.explorationCoordinator.setAppActive(false)
+                return
+            }
+            checkUserStatus()
+            container.explorationCoordinator.setAppActive(true)
+        case .inactive, .background:
+            container.explorationCoordinator.setAppActive(false)
+        @unknown default:
+            break
+        }
+    }
+
     private func checkUserStatus() {
         let hasCompletedPermission = UserDefaultsList.Permission.hasCompletedPermissionSetup
         let hasPlayerInfo = !players.isEmpty
 
         if hasPlayerInfo {
             router.setRoot(.lobby)
-        } else if hasCompletedPermission {
-            router.setRoot(.profileSetup)
         } else {
-            router.setRoot(.permissionSetup)
+            router.setRoot(.profileSetup)
         }
     }
 }
