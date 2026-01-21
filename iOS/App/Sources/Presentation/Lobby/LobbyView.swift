@@ -288,8 +288,12 @@ private extension LobbyView {
                 radarRings(size: size, center: center)
 
                 ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, explorer in
-                    let slot = OrbitSlot.orderedSlots[index]
-                    let position = calculatePosition(slot: slot, size: size, center: center)
+                    let position = calculatePosition(
+                        index: index,
+                        proximity: explorer.proximity,
+                        size: size,
+                        center: center
+                    )
 
                     peerExplorerView(explorer: explorer)
                         .position(position)
@@ -318,9 +322,21 @@ private extension LobbyView {
         }
     }
 
-    func calculatePosition(slot: OrbitSlot, size: CGFloat, center: CGPoint) -> CGPoint {
-        let radius = size * slot.radiusFactor
+    func calculatePosition(index: Int, proximity: Double?, size: CGFloat, center: CGPoint) -> CGPoint {
+        let slot = OrbitSlot.orderedSlots[index % OrbitSlot.orderedSlots.count]
         let angleRadians = CGFloat(slot.angleDegrees) * .pi / 180
+        
+        let proximityValue = proximity ?? 0.5
+        let radiusFactor: CGFloat
+        if proximityValue < 0.33 {
+            radiusFactor = 0.28
+        } else if proximityValue < 0.66 {
+            radiusFactor = 0.38
+        } else {
+            radiusFactor = 0.48
+        }
+        
+        let radius = size * radiusFactor
         return CGPoint(
             x: center.x + radius * cos(angleRadians),
             y: center.y + radius * sin(angleRadians)
