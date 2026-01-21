@@ -39,6 +39,9 @@ final class PlatformController {
         register(platform: startPlatform)
         scene.addChild(startPlatform)
         
+        // 시작 플랫폼은 즉시 충돌 가능하도록 선활성
+        startPlatform.physicsBody?.categoryBitMask = PhysicsCategory([.groundMe, .groundOther]).rawValue
+        
         lastSafePosition = startPlatform.position
         lastSafePlatformIndex = platformIndex(for: startPlatform) ?? 0
         lastPlatformY = startY
@@ -47,8 +50,8 @@ final class PlatformController {
             spawnNextPlatform()
         }
         
-        // 초기 충돌 설정: 현재 + 다음 플랫폼만 충돌
-        updatePlatformCollisions()
+        // Initial state: keep platforms collision-disabled until GameScene provides player bottomY.
+        applyLocalTransparency()
     }
     
     func update(cameraY: CGFloat, cullBelowY: CGFloat? = nil) {
@@ -82,19 +85,7 @@ final class PlatformController {
         if let idx = platformIndex(for: platformNode) {
             lastSafePlatformIndex = idx
         }
-        updatePlatformCollisions()
-    }
-    
-    func isInCollisionWindow(_ platformNode: SKNode) -> Bool {
-        guard let idx = platformIndex(for: platformNode) else { return false }
-        let current = lastSafePlatformIndex
-        let prev = max(0, current - 1)
-        let next = current + 1
-        return idx == prev || idx == current || idx == next
-    }
-    
-    func updateCollisions(playerY: CGFloat?, playerDY: CGFloat?) {
-        updatePlatformCollisions(playerY: playerY, playerDY: playerDY)
+        applyLocalTransparency()
     }
     
     /// 세이프 포지션(마지막으로 밟은 플랫폼)의 topY(frame.maxY)
@@ -117,7 +108,7 @@ final class PlatformController {
         lastPlatformY = nextY
         isNextRight.toggle()
         
-        updatePlatformCollisions()
+        applyLocalTransparency()
     }
     
     private func createPlatform(index: Int, position: CGPoint, size: CGSize = CGSize(width: 110, height: 35)) -> SKSpriteNode {
@@ -132,13 +123,15 @@ final class PlatformController {
 
         let body = SKPhysicsBody(rectangleOf: size)
         body.isDynamic = false
-        body.categoryBitMask = PhysicsCategory.ground.rawValue
+
+        body.categoryBitMask = 0
         body.restitution = 0.0
         body.friction = 1.0    // 미끄러짐 방지
 
-        // 기본은 충돌 OFF (점프 중 방해 제거)
-        body.collisionBitMask = 0
-        body.contactTestBitMask = PhysicsCategory.player.rawValue
+        let collidesWith: PhysicsCategory = [.playerMe, .playerOther]
+        body.collisionBitMask = collidesWith.rawValue
+        // 플랫폼은 충돌만 담당. 접촉 이벤트는 플레이어 쪽 contactTest로 충분.
+        body.contactTestBitMask = 0
 
         platform.physicsBody = body
         return platform
@@ -161,41 +154,78 @@ final class PlatformController {
         return nil
     }
     
-    private func updatePlatformCollisions(playerY: CGFloat? = nil, playerDY: CGFloat? = nil) {
+    // MARK: - Collision + transparency
+
+    /// 각 플레이어의 위치(bottomY)와 낙하 속도(dy)를 이용해 플랫폼 충돌 카테고리를 갱신
+    /// - NOTE: 빠른 낙하 시 한 프레임 사이에 bottomY가 크게 변할 수 있어 dy*dt 기반 버퍼를 둔다.
+    ///         buffer = min(120, 10 + |dy| * dt)  (dy < 0일 때만 유의미하게 커짐)
+    func updateCollisions(
+        localBottomY: CGFloat?,
+        localDY: CGFloat?,
+        otherBottomY: CGFloat?,
+        otherDY: CGFloat?,
+        deltaTime: TimeInterval
+    ) {
+        applyCollisionCategories(
+            localBottomY: localBottomY,
+            localDY: localDY,
+            otherBottomY: otherBottomY,
+            otherDY: otherDY,
+            deltaTime: deltaTime
+        )
+        applyLocalTransparency()
+    }
+    
+    private func fallBuffer(dy: CGFloat?, dt: TimeInterval) -> CGFloat {
+        let base: CGFloat = 10
+        guard let dy else { return base }
+        // dy < 0(낙하)일 때만 버퍼를 크게(빠른 낙하 랜딩 누락 방지)
+        let extra = dy < 0 ? (-dy) * CGFloat(dt) : 0
+        return min(120, base + extra)
+    }
+    
+    private func applyCollisionCategories(
+        localBottomY: CGFloat?,
+        localDY: CGFloat?,
+        otherBottomY: CGFloat?,
+        otherDY: CGFloat?,
+        deltaTime: TimeInterval
+    ) {
+
+        for (_, node) in platformNodesByIndex {
+            guard node.parent != nil, let body = node.physicsBody else { continue }
+
+            let topY = node.frame.maxY
+            var category: PhysicsCategory = []
+
+            if let localBottomY {
+                let buffer = fallBuffer(dy: localDY, dt: deltaTime)
+                if topY <= localBottomY + buffer {
+                    category.insert(.groundMe)
+                }
+            }
+
+            if let otherBottomY {
+                let buffer = fallBuffer(dy: otherDY, dt: deltaTime)
+                if topY <= otherBottomY + buffer {
+                    category.insert(.groundOther)
+                }
+            }
+
+            body.categoryBitMask = category.rawValue
+        }
+    }
+
+    private func applyLocalTransparency() {
         let current = lastSafePlatformIndex
         let prev = max(0, current - 1)
         let next = current + 1
-        
-        func enableAsGround(_ body: SKPhysicsBody) {
-            body.categoryBitMask = PhysicsCategory.ground.rawValue
-            body.contactTestBitMask = PhysicsCategory.player.rawValue
-            body.collisionBitMask = 0
-        }
-        
-        func disableCompletely(_ body: SKPhysicsBody) {
-            body.categoryBitMask = 0
-            body.contactTestBitMask = PhysicsCategory.player.rawValue
-            body.collisionBitMask = 0
-        }
-        
+
         for (idx, node) in platformNodesByIndex {
-            guard let body = node.physicsBody else { continue }
-            
-            switch idx {
-            case current:
-                // 현재 플랫폼은 항상 활성
-                enableAsGround(body)
+            guard node.parent != nil else { continue }
+            if idx == prev || idx == current || idx == next {
                 node.alpha = 1.0
-            case prev:
-                // 이전 플랫폼은 항상 활성(뒤로 이동/실수 대비)
-                enableAsGround(body)
-            case next:
-                // 바로 다음 플랫폼 활성화
-                enableAsGround(body)
-                node.alpha = 1.0
-                
-            default:
-                disableCompletely(body)
+            } else {
                 node.alpha = 0.5
             }
         }

@@ -93,6 +93,21 @@ final class GameScene: SKScene {
         // 몬스터 설정
         monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
         monsterController?.setupInitialMonster()
+        
+        let localBottomY = characterControllers[localPlayerID]?.bottomY
+        let localDY = characterControllers[localPlayerID]?.velocityDY
+
+        let otherID = otherPlayerIDs.first(where: { $0 != localPlayerID })
+        let otherBottomY = otherID.flatMap { characterControllers[$0]?.bottomY }
+        let otherDY = otherID.flatMap { characterControllers[$0]?.velocityDY }
+
+        platformController?.updateCollisions(
+            localBottomY: localBottomY,
+            localDY: localDY,
+            otherBottomY: otherBottomY,
+            otherDY: otherDY,
+            deltaTime: 0
+        )
     }
 
     // Game Loop
@@ -145,10 +160,7 @@ final class GameScene: SKScene {
         
         platformController?.update(cameraY: cameraSystem.cameraNode.position.y, cullBelowY: monsterController?.topY)
         
-        if let localController = characterControllers[localPlayerID] {
-            // 플랫폼 충돌 창 업데이트: 점프 중 머리 박힘 방지
-            platformController?.updateCollisions(playerY: localController.positionY, playerDY: localController.velocityDY)
-        }
+        updatePlatformCollisions(deltaTime: deltaTime)
         
         // 플레이영역 아래로 떨어진 경우 처리
         handleOutOfBounds(cameraSystem: cameraSystem, gameplayManager: gameplayManager)
@@ -197,19 +209,36 @@ final class GameScene: SKScene {
             rightWall.position.y = currentCameraY
         }
     }
+    
+    private func updatePlatformCollisions(deltaTime: TimeInterval) {
+        // 플레이어별로 플랫폼 충돌 카테고리를 독립적으로 갱신
+        let localBottomY = characterControllers[localPlayerID]?.bottomY
+        let localDY = characterControllers[localPlayerID]?.velocityDY
+
+        let otherID = otherPlayerIDs.first(where: { $0 != localPlayerID })
+        let otherBottomY = otherID.flatMap { characterControllers[$0]?.bottomY }
+        let otherDY = otherID.flatMap { characterControllers[$0]?.velocityDY }
+
+        platformController?.updateCollisions(
+            localBottomY: localBottomY,
+            localDY: localDY,
+            otherBottomY: otherBottomY,
+            otherDY: otherDY,
+            deltaTime: deltaTime
+        )
+    }
 
     // MARK: Helper
     
     // BitMask -> GameContactType으로 변환
     private func convert(from mask: UInt32) -> GameContactType? {
-        switch mask {
-        case PhysicsCategory.ground.rawValue:
+        if (mask & PhysicsCategory.anyGround.rawValue) != 0 {
             return .ground
-        case PhysicsCategory.monster.rawValue:
-            return .monster
-        default:
-            return nil
         }
+        if mask == PhysicsCategory.monster.rawValue {
+            return .monster
+        }
+        return nil
     }
     
     private func playerID(from body: SKPhysicsBody) -> UUID? {
@@ -226,8 +255,9 @@ extension GameScene: SKPhysicsContactDelegate {
     func didBegin(_ contact: SKPhysicsContact) {
         // 충돌한 상대방 찾기
         let maskA = contact.bodyA.categoryBitMask
-        let playerBody = (maskA == PhysicsCategory.player.rawValue) ? contact.bodyA : contact.bodyB
-        let otherBody = (maskA == PhysicsCategory.player.rawValue) ? contact.bodyB : contact.bodyA
+        let aIsPlayer = (maskA & PhysicsCategory.anyPlayer.rawValue) != 0
+        let playerBody = aIsPlayer ? contact.bodyA : contact.bodyB
+        let otherBody = aIsPlayer ? contact.bodyB : contact.bodyA
         let otherMask = otherBody.categoryBitMask
         
         let playerID = playerID(from: playerBody) ?? localPlayerID
@@ -241,21 +271,19 @@ extension GameScene: SKPhysicsContactDelegate {
             if gameplayManager?.isPlayerRespawning(for: playerID) == false,
                let platformNode = otherBody.node {
                 
-                // 현재/이전/다음 플랫폼만 접지 판정 대상으로 (충돌 창과 동일)
-                guard platformController?.isInCollisionWindow(platformNode) == true else {
-                    return
-                }
+                // 착지 판정: 하강 중(velocity.dy <= 0)일 때만 땅으로 인정
+                // contactNormal은 기기/상황에 따라 0에 가깝게 나오는 경우가 있어 보조로만 사용
+                let isFalling = playerBody.velocity.dy <= 0
+                guard isFalling else { return }
                 
-                // 위에서 밟는 접촉만 착지로 인정
-                let playerIsBodyA = (maskA == PhysicsCategory.player.rawValue)
+                let playerIsBodyA = (playerBody == contact.bodyA)
                 let normalDY = contact.contactNormal.dy
+                let normalOK = playerIsBodyA ? (normalDY < -0.05) : (normalDY > 0.05)
                 
-                // player가 위에서 플랫폼을 밟으면
-                // - player가 bodyA인 경우 normal은 아래 방향(음수)
-                // - player가 bodyB인 경우 normal은 위 방향(양수)
-                let isLandingFromAbove = playerIsBodyA ? (normalDY < -0.2) : (normalDY > 0.2)
-                
-                guard isLandingFromAbove else { return }
+                // normal이 애매하게 0에 가까워도 하강 중이면 grounded를 갱신해 플랫폼 위에 설 수 있게 한다
+                if !normalOK {
+
+                }
                 
                 gameplayManager?.handleContact(.ground, for: playerID)
                 
@@ -285,8 +313,9 @@ extension GameScene: SKPhysicsContactDelegate {
     // 충돌 끝
     func didEnd(_ contact: SKPhysicsContact) {
         let maskA = contact.bodyA.categoryBitMask
-        let playerBody = (maskA == PhysicsCategory.player.rawValue) ? contact.bodyA : contact.bodyB
-        let otherBody = (maskA == PhysicsCategory.player.rawValue) ? contact.bodyB : contact.bodyA
+        let aIsPlayer = (maskA & PhysicsCategory.anyPlayer.rawValue) != 0
+        let playerBody = aIsPlayer ? contact.bodyA : contact.bodyB
+        let otherBody = aIsPlayer ? contact.bodyB : contact.bodyA
         let otherMask = otherBody.categoryBitMask
 
         guard let contactType = convert(from: otherMask) else { return }

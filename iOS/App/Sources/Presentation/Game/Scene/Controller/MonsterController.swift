@@ -45,7 +45,7 @@ final class MonsterController {
         let body = SKPhysicsBody(rectangleOf: sprite.size)
         body.isDynamic = false
         body.categoryBitMask = PhysicsCategory.monster.rawValue
-        body.contactTestBitMask = PhysicsCategory.player.rawValue
+        body.contactTestBitMask = PhysicsCategory.playerMe.rawValue
         body.collisionBitMask = 0
         sprite.physicsBody = body
 
