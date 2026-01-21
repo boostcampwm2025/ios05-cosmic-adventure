@@ -46,31 +46,41 @@ struct LobbyExplorer: Identifiable, Equatable, Hashable {
 
 enum OrbitSlot: CaseIterable {
     case orbit1Top
+    case orbit1Bottom
     case orbit2LeftTop
     case orbit2RightTop
+    case orbit2LeftBottom
+    case orbit2RightBottom
+    case orbit3LeftTop
+    case orbit3RightTop
     case orbit3LeftBottom
     case orbit3RightBottom
     
     var angleDegrees: Double {
         switch self {
         case .orbit1Top: 270
+        case .orbit1Bottom: 90
         case .orbit2LeftTop: 225
         case .orbit2RightTop: 315
-        case .orbit3LeftBottom: 135
-        case .orbit3RightBottom: 45
+        case .orbit2LeftBottom: 135
+        case .orbit2RightBottom: 45
+        case .orbit3LeftTop: 200
+        case .orbit3RightTop: 340
+        case .orbit3LeftBottom: 160
+        case .orbit3RightBottom: 20
         }
     }
     
     var radiusFactor: CGFloat {
         switch self {
-        case .orbit1Top: 0.28
-        case .orbit2LeftTop, .orbit2RightTop: 0.38
-        case .orbit3LeftBottom, .orbit3RightBottom: 0.48
+        case .orbit1Top, .orbit1Bottom: 0.28
+        case .orbit2LeftTop, .orbit2RightTop, .orbit2LeftBottom, .orbit2RightBottom: 0.38
+        case .orbit3LeftTop, .orbit3RightTop, .orbit3LeftBottom, .orbit3RightBottom: 0.48
         }
     }
     
     static var orderedSlots: [OrbitSlot] {
-        [.orbit1Top, .orbit2LeftTop, .orbit2RightTop, .orbit3LeftBottom, .orbit3RightBottom]
+        [.orbit1Top, .orbit1Bottom, .orbit2LeftTop, .orbit2RightTop, .orbit2LeftBottom, .orbit2RightBottom, .orbit3LeftTop, .orbit3RightTop, .orbit3LeftBottom, .orbit3RightBottom]
     }
 }
 
