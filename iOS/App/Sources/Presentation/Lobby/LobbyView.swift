@@ -12,6 +12,7 @@ struct LobbyView: View {
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
+    @State private var isAppearing = false
 
     init(viewModel: LobbyViewModel, channelListViewModel: ChannelListViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -279,61 +280,79 @@ private extension LobbyView {
 private extension LobbyView {
     var explorerOrbitSelector: some View {
         let displayPeers = viewModel.orderedPeers.prefix(OrbitSlot.orderedSlots.count)
+        let isZoomedOut = displayPeers.count > 5
+        let radarScale: CGFloat = isAppearing ? (isZoomedOut ? 0.8 : 1.0) : 0.1
         
         return GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
 
             ZStack {
-                radarRings(size: size, center: center)
+                ZStack {
+                    radarRings(size: size, center: center, isZoomedOut: isZoomedOut)
 
-                ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, explorer in
-                    let position = calculatePosition(
-                        index: index,
-                        proximity: explorer.proximity,
-                        size: size,
-                        center: center
-                    )
+                    ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, explorer in
+                        let position = calculatePosition(
+                            index: index,
+                            proximity: explorer.proximity,
+                            size: size,
+                            center: center,
+                            isZoomedOut: isZoomedOut
+                        )
 
-                    peerExplorerView(explorer: explorer)
-                        .position(position)
-                        .id(explorer.id)
+                        peerExplorerView(explorer: explorer)
+                            .position(position)
+                            .id(explorer.id)
+                    }
                 }
+                .scaleEffect(radarScale)
 
                 myExplorerView
                     .position(center)
+            }
+            .animation(.spring(response: 0.6, dampingFraction: 0.7), value: radarScale)
+            .onAppear {
+                isAppearing = true
+            }
+            .onDisappear {
+                isAppearing = false
             }
         }
         .frame(height: 400)
         .padding(.horizontal, 20)
     }
 
-    func radarRings(size: CGFloat, center: CGPoint) -> some View {
+    func radarRings(size: CGFloat, center: CGPoint, isZoomedOut: Bool) -> some View {
         ZStack {
             ForEach([OrbitSlot.orbit1Top.radiusFactor, OrbitSlot.orbit2LeftTop.radiusFactor, OrbitSlot.orbit3LeftBottom.radiusFactor], id: \.self) { factor in
+                let adjustedFactor = isZoomedOut ? factor * 1.25 : factor
                 Circle()
                     .stroke(
                         AppAsset.Color.rader.swiftUIColor.opacity(0.4),
                         lineWidth: 1.5
                     )
-                    .frame(width: size * factor * 2, height: size * factor * 2)
+                    .frame(width: size * adjustedFactor * 2, height: size * adjustedFactor * 2)
                     .position(center)
             }
         }
     }
 
-    func calculatePosition(index: Int, proximity: Double?, size: CGFloat, center: CGPoint) -> CGPoint {
+    func calculatePosition(index: Int, proximity: Double?, size: CGFloat, center: CGPoint, isZoomedOut: Bool) -> CGPoint {
         let slot = OrbitSlot.orderedSlots[index % OrbitSlot.orderedSlots.count]
         let angleRadians = CGFloat(slot.angleDegrees) * .pi / 180
         
         let proximityValue = proximity ?? 0.5
-        let radiusFactor: CGFloat
+        var radiusFactor: CGFloat
         if proximityValue < 0.33 {
             radiusFactor = 0.28
         } else if proximityValue < 0.66 {
             radiusFactor = 0.38
         } else {
             radiusFactor = 0.48
+        }
+        
+        if isZoomedOut {
+            radiusFactor *= 1.25
         }
         
         let radius = size * radiusFactor
