@@ -55,7 +55,7 @@ struct RootView: View {
             }
         case .gameReady(let me, let peer):
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
-        case .game(let matchPeer):
+        case .game(let matchPeer, let isNetwork):
             if let myExplorer = players.first {
                 let me = LobbyExplorer(
                     role: .me,
@@ -67,14 +67,14 @@ struct RootView: View {
                 
                 GameView(
                     viewModel: viewModelFactory
-                        .makeGameViewModel(me: me, matchPeer: matchPeer, gameConfig: gameConfig),
+                        .makeGameViewModel(me: me, matchPeer: matchPeer, gameConfig: gameConfig, isNetwork: isNetwork),
                     videoManager: viewModelFactory.makeVideoManager()
                 )
             }
-        case .operationGuide(let me, let peer):
-            OperationGuideView(me: me, peer: peer)
-        case .victoryGuide(let me, let peer):
-            VictoryGuideView(me: me, peer: peer)
+        case .operationGuide(let me, let peer, let isNetwork):
+            OperationGuideView(me: me, peer: peer, isNetwork: isNetwork)
+        case .victoryGuide(let me, let peer, let isNetwork):
+            VictoryGuideView(me: me, peer: peer, isNetwork: isNetwork)
         case .result:
             // TODO: ResultView 연결
             EmptyView()

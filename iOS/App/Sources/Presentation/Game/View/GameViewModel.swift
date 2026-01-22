@@ -30,10 +30,7 @@ final class GameViewModel {
     let inputProvider: FaceTrackingGameInputProvider
     
     @ObservationIgnored
-    var networkSessionManager: NetworkSessionManaging
-    
-    // TODO: 멀티플레이 입력 송수신 연결 시점에 실제 어댑터로 교체
-    let webSocketSessionManager: WebSocketSessionManaging?
+    var connectionSessionManager: ConnectionSessionManaging
     
     // Multiplayer Network IO
     @ObservationIgnored
@@ -56,14 +53,12 @@ final class GameViewModel {
         me: LobbyExplorer,
         matchPeer: LobbyExplorer?,
         endCondition: any GameEndCondition,
-        networkSessionManager: NetworkSessionManaging,
-        webSocketSessionManager: WebSocketSessionManaging? = nil,
+        connectionSessionManager: ConnectionSessionManaging,
         gameConfig: GameConfigProviding
     ) {
         self.me = me
         self.matchPeer = matchPeer
-        self.networkSessionManager = networkSessionManager
-        self.webSocketSessionManager = webSocketSessionManager
+        self.connectionSessionManager = connectionSessionManager
         self.gameConfig = gameConfig
         self.inputProvider = FaceTrackingGameInputProvider(
             jumpSensitivity: gameConfig.jumpSensitivity,
@@ -89,7 +84,7 @@ final class GameViewModel {
             otherPlayerIDs: otherPlayerIDs,
             gameplayManager: gameplayManager,
             inputProvider: inputProvider,
-            networkSessionManager: networkSessionManager
+            networkSessionManager: connectionSessionManager
         )
     }
     

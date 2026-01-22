@@ -13,7 +13,8 @@ struct OperationGuideView: View {
 
     let me: LobbyExplorer
     let peer: LobbyExplorer?
-
+    let isNetwork: Bool
+    
     var body: some View {
         BackgroundContainerView {
             Color.black.opacity(0.4)
@@ -55,12 +56,12 @@ struct OperationGuideView: View {
                 ) {
                     if isChecked {
                         if let peer = peer {
-                            router.push(.gameReady(me: me, peer: peer))
+                            router.push(.game(peer, isNetwork: isNetwork))
                         } else { // 1인 모드
                             router.push(.game(nil))
                         }
                     } else {
-                        router.push(.victoryGuide(me: me, peer: peer))
+                        router.push(.victoryGuide(me: me, peer: peer, isNetwork: isNetwork))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -118,6 +119,7 @@ private extension OperationGuideView {
 
 #Preview {
     OperationGuideView(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
-                       peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2))
+                       peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2),
+                       isNetwork: false)
         .environment(AppRouter())
 }

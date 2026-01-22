@@ -17,8 +17,8 @@ enum AppRoute: Hashable {
 
     // Game
     case gameReady(me: LobbyExplorer, peer: LobbyExplorer)
-    case game(LobbyExplorer?) // TODO: 나중에 이름 변경
-    case operationGuide(me: LobbyExplorer, peer: LobbyExplorer?)
-    case victoryGuide(me: LobbyExplorer, peer: LobbyExplorer?)
+    case game(LobbyExplorer?, isNetwork: Bool = false) // TODO: 나중에 이름 변경
+    case operationGuide(me: LobbyExplorer, peer: LobbyExplorer?, isNetwork: Bool)
+    case victoryGuide(me: LobbyExplorer, peer: LobbyExplorer?, isNetwork: Bool)
     case result
 }

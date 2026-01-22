@@ -13,7 +13,8 @@ struct VictoryGuideView: View {
 
     let me: LobbyExplorer
     let peer: LobbyExplorer?
-
+    let isNetwork: Bool
+    
     var body: some View {
         BackgroundContainerView {
             Color.black.opacity(0.4)
@@ -54,7 +55,7 @@ struct VictoryGuideView: View {
                     verticalPadding: 16
                 ) {
                     if let peer = peer {
-                        router.push(.game(peer))
+                        router.push(.game(peer, isNetwork: isNetwork))
                     } else { // 1인 모드
                         router.push(.game(nil))
                     }
@@ -84,6 +85,7 @@ struct VictoryGuideView: View {
 
 #Preview {
     VictoryGuideView(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
-                     peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2))
+                     peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2),
+                     isNetwork: false)
         .environment(AppRouter())
 }

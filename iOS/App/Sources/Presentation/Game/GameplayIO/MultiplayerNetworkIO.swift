@@ -16,7 +16,7 @@ actor MultiplayerNetworkIO {
     private let otherPlayerIDs: [UUID]
     private let gameplayManager: GameplayManager
     private let inputProvider: FaceTrackingGameInputProvider
-    private var networkSessionManager: NetworkSessionManaging
+    private var connectionSessionManager: ConnectionSessionManaging
 
     private let jsonDecoder = JSONDecoder()
 
@@ -56,13 +56,13 @@ actor MultiplayerNetworkIO {
         otherPlayerIDs: [UUID],
         gameplayManager: GameplayManager,
         inputProvider: FaceTrackingGameInputProvider,
-        networkSessionManager: NetworkSessionManaging
+        networkSessionManager: ConnectionSessionManaging
     ) {
         self.localPlayerID = localPlayerID
         self.otherPlayerIDs = otherPlayerIDs
         self.gameplayManager = gameplayManager
         self.inputProvider = inputProvider
-        self.networkSessionManager = networkSessionManager
+        self.connectionSessionManager = networkSessionManager
     }
 
     // MARK: - Public entrypoints (non-async friendly)
@@ -116,7 +116,7 @@ actor MultiplayerNetworkIO {
             self.gameplayManager.onJumpTriggered = nil
             self.gameplayManager.onRespawnConfirmed = nil
         }
-        networkSessionManager.onInputReceived = nil
+        connectionSessionManager.onInputReceived = nil
     }
 
     private func tickAsync(deltaTime: TimeInterval) async {
@@ -128,7 +128,7 @@ actor MultiplayerNetworkIO {
     // MARK: - Receive
 
     private func installReceiveHandler() async {
-        networkSessionManager.onInputReceived = { [weak self] sender, payload in
+        connectionSessionManager.onInputReceived = { [weak self] sender, payload in
             guard let self else { return }
             Task { await self.handleReceivedInput(sender: sender, payload: payload) }
         }
@@ -299,6 +299,6 @@ actor MultiplayerNetworkIO {
     }
 
     private func sendDTO(_ dto: NetworkGameInputDTO, to peerName: String) {
-        networkSessionManager.sendInput(dto, to: peerName)
+        connectionSessionManager.sendInput(dto, to: peerName)
     }
 }
