@@ -30,7 +30,10 @@ actor MultiplayerNetworkIO {
 
     /// 움직임 변화가 작으면 전송 생략(네트워크/지터 최적화)
     private let movementSendThreshold: Double = 0.02
-
+    private var timeSinceLastMovementSend: TimeInterval = 0
+    /// 동일 값 유지 시에도 liveness 보장을 위한 keep-alive 주기
+    private let movementKeepAliveInterval: TimeInterval = 0.4
+    
     private var lastSentMoveX: Double = 0
     private var pendingLocalMoveX: Double = 0
 
@@ -41,7 +44,7 @@ actor MultiplayerNetworkIO {
     /// 원격 스냅샷이 끊겼을 때 멈추기 위한 liveness
     private var lastRemoteReceivedAt: TimeInterval = 0
     private var didForceStopRemote: Bool = false
-
+    
     /// 지터를 줄이기 위한 smoothing 상수(작을수록 반응이 빠름)
     private let remoteSmoothingTimeConstant: TimeInterval = 0.08
 
@@ -84,13 +87,22 @@ actor MultiplayerNetworkIO {
     private func bindAsync(peerName: String) async {
         self.peerName = peerName
 
-        // reset liveness so we don't freeze immediately
-        lastRemoteReceivedAt = Date().timeIntervalSince1970
-        didForceStopRemote = false
+        resetTransientState()
 
         await installReceiveHandler()
         await startForwardingLocalInput()
         await installLocalJumpTriggeredSender()
+    }
+    
+    private func resetTransientState() {
+        movementSendAccumulator = 0
+        timeSinceLastMovementSend = 0
+        lastSentMoveX = 0
+        pendingLocalMoveX = 0
+        remoteTargetMoveX = 0
+        remoteSmoothedMoveX = 0
+        lastRemoteReceivedAt = Date().timeIntervalSince1970
+        didForceStopRemote = false
     }
 
     private func unbindAsync() async {
@@ -192,6 +204,7 @@ actor MultiplayerNetworkIO {
     private func sendMovementSnapshotIfNeeded(deltaTime: TimeInterval) async {
         guard let peerName = peerName else { return }
 
+        timeSinceLastMovementSend += deltaTime
         movementSendAccumulator += deltaTime
         guard movementSendAccumulator >= movementSendInterval else { return }
         movementSendAccumulator -= movementSendInterval
@@ -202,13 +215,16 @@ actor MultiplayerNetworkIO {
             gameplayManager.state.characters[localPlayerID]?.moveX ?? fallback
         }
 
-        // 임계치 이하 변화면 전송 생략
-        guard abs(currentMoveX - lastSentMoveX) >= movementSendThreshold else { return }
-
         // 간단 quantize(페이로드 안정화)
         let quantized = (currentMoveX * 100).rounded() / 100
+        
+        let hasSignificantChange = abs(quantized - lastSentMoveX) >= movementSendThreshold
+        let isKeepAliveDue = timeSinceLastMovementSend >= movementKeepAliveInterval
+        guard hasSignificantChange || isKeepAliveDue else { return }
+        
+        // 전송 성공 기준으로 reset
+        timeSinceLastMovementSend = 0
         lastSentMoveX = quantized
-
         sendDTO(.horizontal(quantized), to: peerName)
     }
 
