@@ -68,7 +68,8 @@ final class AppContainer: ViewModelFactory {
             ?? DefaultPermissionService(
                 localNetworkRequester: LocalNetworkPermissionRequester(
                     networkSessionManager: networkSessionManager
-                )
+                ),
+                notificationRequester: NotificationPermissionRequester()
             )
         self.explorationCoordinator = NetworkExplorationCoordinator(
             networkSessionManager: networkSessionManager,

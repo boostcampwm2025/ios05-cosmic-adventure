@@ -11,9 +11,13 @@ import UIKit
 
 final class DefaultPermissionService: PermissionServicing {
     private let localNetworkRequester: LocalNetworkPermissionRequesting
+    private let notificationRequester: NotificationPermissionRequesting
 
-    init(localNetworkRequester: LocalNetworkPermissionRequesting) {
+    init(localNetworkRequester: LocalNetworkPermissionRequesting,
+         notificationRequester: NotificationPermissionRequesting
+    ) {
         self.localNetworkRequester = localNetworkRequester
+        self.notificationRequester = notificationRequester
     }
 
     func refreshCameraState() -> PermissionState {
@@ -48,6 +52,11 @@ final class DefaultPermissionService: PermissionServicing {
 
     func requestLocalNetworkPermissionIfNeeded() async -> Bool {
         let isGranted = await localNetworkRequester.requestPermission(hostName: "permission-check")
+        return isGranted
+    }
+
+    func requestNotificationPermission() async -> Bool {
+        let isGranted = await notificationRequester.requestPermission()
         return isGranted
     }
 

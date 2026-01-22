@@ -24,6 +24,7 @@ final class PermissionSetupViewModel {
 
     private(set) var cameraState: PermissionState = .unknown
     private(set) var localNetworkState: PermissionState = .unknown
+    private(set) var notificationState: PermissionState = .unknown
 
     var showSettingsAlert: Bool = false
     var settingsAlertMessage: String = ""
@@ -44,7 +45,7 @@ final class PermissionSetupViewModel {
         // 1) 카메라
         guard await service.requestCameraIfNeeded() else {
             cameraState = .denied
-            settingsAlertMessage = "카메라 권한이 필요해요. 설정에서 카메라 접근을 허용해 주세요."
+            settingsAlertMessage = L10N.PermissionSetup.Alert.cameraAlert
             showSettingsAlert = true
             return
         }
@@ -53,12 +54,21 @@ final class PermissionSetupViewModel {
         // 2) 로컬 네트워크
         guard await service.requestLocalNetworkPermissionIfNeeded() else {
             localNetworkState = .denied
-            settingsAlertMessage = "근거리 통신(로컬 네트워크) 권한이 필요해요. 설정에서 로컬 네트워크 접근을 허용해 주세요."
+            settingsAlertMessage = L10N.PermissionSetup.Alert.localNetworkAlert
             showSettingsAlert = true
             return
         }
         localNetworkState = .allowed
         
+        // 3) 알림
+        guard await service.requestNotificationPermission() else {
+            notificationState = .denied
+            settingsAlertMessage = L10N.PermissionSetup.Alert.notificationAlert
+            showSettingsAlert = true
+            return
+        }
+        notificationState = .allowed
+
         UserDefaultsList.Permission.hasCompletedPermissionSetup = true
         shouldNavigateNext = true
     }
