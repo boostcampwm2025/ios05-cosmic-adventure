@@ -86,14 +86,10 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     }
     
     public func sendInput<T: Codable>(_ data: T, to playerId: String?) {
-        guard let playerId = playerId else { return }
+        guard let playerId,
+              let targetId = sessionId(forNickname: playerId) else { return }
 
-        guard let jsonData = try? JSONEncoder().encode(data),
-              let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return
-        }
-
-        service.sendInput(jsonString, to: playerId)
+        service.sendInput(data, to: targetId)
     }
 
     public func sendReadyStatus(to playerId: String) {
@@ -168,7 +164,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
             if let payloadString = message.payload,
                let payloadData = payloadString.data(using: .utf8) {
 
-                onInputReceived?(message.senderId, payloadData)
+                onInputReceived?(nickname(forSessionId: message.senderId) ?? "", payloadData)
             }
 
         case .gameReady:
@@ -224,4 +220,17 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         players.removeAll { $0.id == sessionId }
         onPlayerLeft?(sessionId)
     }
+}
+
+
+// TODO: 모델 구조랑 통신구조 p2p/webSocket 통일하면서 로직개선
+extension WebSocketSessionManager {
+    private func nickname(forSessionId sessionId: String) -> String? {
+        players.first(where: { $0.id == sessionId })?.nickname
+    }
+
+    private func sessionId(forNickname nickname: String) -> String? {
+        players.first(where: { $0.nickname == nickname })?.id
+    }
+
 }

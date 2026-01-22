@@ -18,7 +18,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             await forwardToTarget(message: message, manager: manager)
 
         case .input:
-            await forwardToTarget(message: message, manager: manager)
+            await forwardInput(message: message, manager: manager)
 
         case .ping:
             let pong = WSMessage(type: GameMessageType.pong.rawValue, senderId: "server")
@@ -92,6 +92,22 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         guard let targetId = message.payload else { return }
         await manager.send(to: targetId, message: message)
     }
+    
+    private func forwardInput(message: WSMessage, manager: WSSessionManager) async {
+        guard let payload = message.payload,
+              let data = payload.data(using: .utf8),
+              let routed = try? JSONDecoder().decode(InputForwardPayload.self, from: data) else {
+            return
+        }
+
+        let forwarded = WSMessage(
+            type: GameMessageType.input.rawValue,
+            senderId: message.senderId,
+            payload: routed.data
+        )
+        await manager.send(to: routed.to, message: forwarded)
+    }
+
 
     private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"

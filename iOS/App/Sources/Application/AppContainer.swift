@@ -19,7 +19,7 @@ protocol ViewModelFactory {
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
-    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding) -> GameViewModel
+    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
     func makeVideoManager() -> VideoManager
 }
 
@@ -109,13 +109,12 @@ final class AppContainer: ViewModelFactory {
         WebSocketSessionManager(service: webSocketService, serverURL: serverURL)
     }
 
-    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding) -> GameViewModel {
+    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding, isNetwork: Bool = false) -> GameViewModel {
         GameViewModel(
             me: me,
             matchPeer: matchPeer,
             endCondition: TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
-            networkSessionManager: networkSessionManager,
-            webSocketSessionManager: webSocketSessionManager,
+            connectionSessionManager: isNetwork ? webSocketSessionManager ?? networkSessionManager : networkSessionManager,
             gameConfig: gameConfig
         )
     }

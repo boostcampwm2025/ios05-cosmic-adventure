@@ -115,9 +115,16 @@ public final class WebSocketService: NSObject {
         send(message)
     }
 
-    public func sendInput(_ inputData: String, to targetId: String) {
-        let message = WebSocketMessage(type: .input, senderId: sessionId ?? "", payload: inputData)
-        send(message)
+    public func sendInput<T: Codable>(_ input: T, to targetId: String) {
+        guard let inputData = try? encoder.encode(input),
+              let inputJSON = String(data: inputData, encoding: .utf8) else { return }
+
+        let routed = InputForwardPayload(to: targetId, data: inputJSON)
+
+        guard let routedData = try? encoder.encode(routed),
+              let payload = String(data: routedData, encoding: .utf8) else { return }
+
+        send(WebSocketMessage(type: .input, senderId: sessionId ?? "", payload: payload))
     }
 
     public func sendReadyStatus(to targetId: String) {
