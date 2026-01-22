@@ -214,6 +214,7 @@ extension GameplayManager {
 
         state.setGrounded(false, for: playerID)
 
+        // TODO: 점프 카운트도 네트워크로 전달 받게 수정
         if character.jumpCount < maxJumpCount {
             state.setJumpCount(character.jumpCount + 1, for: playerID)
         }
