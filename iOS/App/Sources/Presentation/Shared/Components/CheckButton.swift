@@ -12,8 +12,8 @@ struct CheckButton: View {
     let title: LocalizedStringKey
     
     var body: some View {
-        HStack(spacing: 9) {
-            Button(action: { isChecked.toggle() }) {
+        Button(action: { isChecked.toggle() }) {
+            HStack(spacing: 9) {
                 ZStack {
                     RoundedRectangle(cornerRadius: 4)
                         .stroke(Color.white, lineWidth: 2)
@@ -25,11 +25,11 @@ struct CheckButton: View {
                             .foregroundColor(.white)
                     }
                 }
+                
+                Text(title)
+                    .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 15))
+                    .foregroundColor(.white)
             }
-            
-            Text(title)
-                .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 15))
-                .foregroundColor(.white)
         }
     }
 }
