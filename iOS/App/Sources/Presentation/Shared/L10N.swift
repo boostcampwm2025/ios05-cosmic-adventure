@@ -27,6 +27,9 @@ enum L10N {
 
             static let networkTitle: LocalizedStringKey = "근거리 통신 권한"
             static let networkSubtitle: LocalizedStringKey = "다른 플레이어와 연결하기 위해 필요해요."
+
+            static let notificationTitle: LocalizedStringKey = "알림 권한"
+            static let notificationSubtitle: LocalizedStringKey = "게임 중 초대 요청을 받기 위해 필요해요."
         }
     }
     
