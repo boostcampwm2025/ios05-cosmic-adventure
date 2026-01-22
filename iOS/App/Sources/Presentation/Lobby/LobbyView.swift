@@ -324,8 +324,8 @@ private extension LobbyView {
 
     func radarRings(size: CGFloat, center: CGPoint, isZoomedOut: Bool) -> some View {
         ZStack {
-            ForEach([OrbitSlot.orbit1Top.radiusFactor, OrbitSlot.orbit2LeftTop.radiusFactor, OrbitSlot.orbit3LeftBottom.radiusFactor], id: \.self) { factor in
-                let adjustedFactor = isZoomedOut ? factor * 1.25 : factor
+            ForEach([OrbitSlot.orbit1Radius, OrbitSlot.orbit2Radius, OrbitSlot.orbit3Radius], id: \.self) { factor in
+                let adjustedFactor = isZoomedOut ? factor * OrbitSlot.zoomOutScale : factor
                 Circle()
                     .stroke(
                         AppAsset.Color.rader.swiftUIColor.opacity(0.4),
@@ -340,21 +340,21 @@ private extension LobbyView {
     func calculatePosition(index: Int, proximity: Double?, size: CGFloat, center: CGPoint, isZoomedOut: Bool) -> CGPoint {
         let slot = OrbitSlot.orderedSlots[index % OrbitSlot.orderedSlots.count]
         let angleRadians = CGFloat(slot.angleDegrees) * .pi / 180
-        
-        let proximityValue = proximity ?? 0.5
+
+        let proximityValue = proximity ?? OrbitSlot.defaultProximity
         var radiusFactor: CGFloat
-        if proximityValue < 0.33 {
-            radiusFactor = 0.28
-        } else if proximityValue < 0.66 {
-            radiusFactor = 0.38
+        if proximityValue < OrbitSlot.proximityNearThreshold {
+            radiusFactor = OrbitSlot.orbit1Radius
+        } else if proximityValue < OrbitSlot.proximityFarThreshold {
+            radiusFactor = OrbitSlot.orbit2Radius
         } else {
-            radiusFactor = 0.48
+            radiusFactor = OrbitSlot.orbit3Radius
         }
-        
+
         if isZoomedOut {
-            radiusFactor *= 1.25
+            radiusFactor *= OrbitSlot.zoomOutScale
         }
-        
+
         let radius = size * radiusFactor
         return CGPoint(
             x: center.x + radius * cos(angleRadians),
