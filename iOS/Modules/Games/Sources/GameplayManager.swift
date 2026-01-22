@@ -298,6 +298,7 @@ extension GameplayManager {
     public func startNewGame() {
         state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
+        pendingRespawnPositionByPlayerID.removeAll(keepingCapacity: true)
 
         gameEnd.startNewGame()
         localRuntime = PlayerRuntime()
