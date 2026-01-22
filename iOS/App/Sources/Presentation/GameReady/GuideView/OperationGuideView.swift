@@ -31,7 +31,7 @@ struct OperationGuideView: View {
                     .padding(.horizontal, 58)
                 
                 // TODO: - Image GIF로 변환 필요
-                guideManualRow(
+                GuideManualRow(
                     characterImage: AppAsset.Image.character1.swiftUIImage,
                     manualText: L10N.Game.Guide.horizontalMove
                 )
@@ -42,7 +42,7 @@ struct OperationGuideView: View {
                     .padding(.horizontal, 58)
                 
                 // TODO: - Image GIF로 변환 필요
-                guideManualRow(
+                GuideManualRow(
                     characterImage: AppAsset.Image.character1.swiftUIImage,
                     manualText: L10N.Game.Guide.jumpManual,
                     subText: L10N.Game.Guide.doubleJumpManual
@@ -74,36 +74,7 @@ struct OperationGuideView: View {
     }
 }
 
-// MARK: - Components
 
-private extension OperationGuideView {
-    func guideManualRow(
-        characterImage: Image,
-        manualText: LocalizedStringKey,
-        subText: LocalizedStringKey? = nil
-    ) -> some View {
-        HStack(alignment: .top, spacing: 27) {
-            characterImage
-                .resizable()
-                .aspectRatio(contentMode: .fit)
-                .frame(width: 56, height: 67)
-                .padding(.leading, 67)
-            
-            VStack(alignment: .leading, spacing: 2) {
-                Text(manualText)
-                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
-                    .foregroundColor(.white)
-                    .padding(.top, subText == nil ? 9 : 8)
-                
-                if let subText = subText {
-                    Text(subText)
-                        .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 13))
-                        .foregroundColor(.white)
-                }
-            }
-        }
-    }
-}
 
 #Preview {
     OperationGuideView(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),

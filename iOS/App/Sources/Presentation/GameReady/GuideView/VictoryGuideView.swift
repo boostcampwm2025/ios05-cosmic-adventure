@@ -30,23 +30,14 @@ struct VictoryGuideView: View {
                     .padding(.top, 48)
                     .padding(.horizontal, 58)
                 
-                Text(L10N.Game.Guide.timeCondition)
-                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .frame(maxWidth: .infinity)
+                GuideManualRow(manualText: L10N.Game.Guide.timeCondition)
                     .padding(.top, 21)
                 
                 GuideImageView(image: AppAsset.Image.victoryConditionMonster.swiftUIImage)
                     .padding(.top, 60)
                     .padding(.horizontal, 58)
                 
-                Text(L10N.Game.Guide.monsterCondition)
-                    .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 15))
-                    .foregroundColor(.white)
-                    .multilineTextAlignment(.center)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity)
+                GuideManualRow(manualText: L10N.Game.Guide.monsterCondition)
                     .padding(.top, 22)
                 
                 Spacer()
