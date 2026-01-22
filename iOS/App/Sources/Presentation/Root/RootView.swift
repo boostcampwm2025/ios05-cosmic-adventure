@@ -12,12 +12,10 @@ struct RootView: View {
     private let viewModelFactory: ViewModelFactory
     @State var router: AppRouter
     @Query private var players: [Player]
-    private let videoManager: VideoManager
 
     init(container: AppContainer? = nil, router: AppRouter? = nil) {
         self.viewModelFactory = container ?? AppContainer()
         _router = State(initialValue: router ?? AppRouter())
-        self.videoManager = viewModelFactory.makeVideoManager()
     }
 
     var body: some View {
@@ -68,7 +66,7 @@ struct RootView: View {
                 GameView(
                     viewModel: viewModelFactory
                         .makeGameViewModel(me: me, matchPeer: matchPeer),
-                    videoManager: videoManager
+                    videoManager: viewModelFactory.makeVideoManager()
                 )
             }
         case .operationGuide(let me, let peer):

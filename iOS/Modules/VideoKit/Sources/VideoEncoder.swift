@@ -8,16 +8,13 @@
 import VideoToolbox
 import QuartzCore
 
-private enum VTPropertyKey {
-    static let hasBFrames = "HasBFrames" as CFString
-    static let inRefParameterSets = "InRefParameterSets" as CFString
-}
-
 final public class VideoEncoder: VideoEncoding {
 
     private let configuration: VideoConfiguration
     private var session: VTCompressionSession?
     public var output: ((Data) -> Void)?
+    private var isInvalidated = false
+    private var retainedSelf: Unmanaged<VideoEncoder>?
 
     private static var encodingCallback: VTCompressionOutputCallback = { (refCon, _, status, flags, sampleBuffer) in
         guard status == noErr,
@@ -34,6 +31,9 @@ final public class VideoEncoder: VideoEncoding {
 
         var framePayload = Data()
 
+        // NAL 유닛 헤더 길이를 담을 변수 (기본값 4로 설정하되 업데이트 예정)
+        var nalHeaderLength: Int32 = 4
+
         // 1. SPS/PPS (포맷 정보 설명서) 추출
         if let format = CMSampleBufferGetFormatDescription(sampleBuffer) {
             var spsPtr: UnsafePointer<UInt8>?, spsSize = 0
@@ -42,7 +42,7 @@ final public class VideoEncoder: VideoEncoding {
                                                                parameterSetPointerOut: &spsPtr,
                                                                parameterSetSizeOut: &spsSize,
                                                                parameterSetCountOut: nil,
-                                                               nalUnitHeaderLengthOut: nil)
+                                                               nalUnitHeaderLengthOut: &nalHeaderLength)
             CMVideoFormatDescriptionGetH264ParameterSetAtIndex(format,
                                                                parameterSetIndex: 1,
                                                                parameterSetPointerOut: &ppsPtr,
@@ -72,11 +72,23 @@ final public class VideoEncoder: VideoEncoding {
                 var offset = 0
                 while offset < length {
                     var unitLen: UInt32 = 0
-                    memcpy(&unitLen, ptr + offset, 4)
-                    unitLen = CFSwapInt32BigToHost(unitLen)
+
+                    // nalHeaderLength에 따라 바이트를 읽고 변환
+                    if nalHeaderLength == 4 {
+                        memcpy(&unitLen, ptr + offset, 4)
+                        unitLen = CFSwapInt32BigToHost(unitLen)
+                    } else if nalHeaderLength == 2 {
+                        var tempLen: UInt16 = 0
+                        memcpy(&tempLen, ptr + offset, 2)
+                        unitLen = UInt32(CFSwapInt16BigToHost(tempLen))
+                    } else if nalHeaderLength == 1 {
+                        unitLen = UInt32(UInt8(bitPattern: ptr[offset]))
+                    }
+
                     framePayload.append(startCode)
-                    framePayload.append(Data(bytes: ptr + offset + 4, count: Int(unitLen)))
-                    offset += Int(4 + unitLen)
+                    framePayload.append(Data(bytes: ptr + offset + Int(nalHeaderLength), count: Int(unitLen)))
+
+                    offset += Int(nalHeaderLength + Int32(unitLen))
                 }
             }
         }
@@ -92,13 +104,13 @@ final public class VideoEncoder: VideoEncoding {
     }
 
     deinit {
-        if let session = session {
-            VTCompressionSessionCompleteFrames(session, untilPresentationTimeStamp: .invalid) // 대기 중인 프레임 종료
-            VTCompressionSessionInvalidate(session) // 세션 무효화, 콜백 X
-        }
+        assert(isInvalidated || session == nil, "❌ VideoEncoder.invalidate()를 반드시 호출")
     }
 
     private func setupSession() {
+        let retained = Unmanaged.passRetained(self)
+        self.retainedSelf = retained
+
         let status = VTCompressionSessionCreate(
             allocator: nil,
             width: configuration.resolutionWidth,
@@ -108,21 +120,22 @@ final public class VideoEncoder: VideoEncoding {
             imageBufferAttributes: nil,
             compressedDataAllocator: nil,
             outputCallback: VideoEncoder.encodingCallback,
-            refcon: UnsafeMutableRawPointer(Unmanaged.passUnretained(self).toOpaque()),
+            refcon: UnsafeMutableRawPointer(retained.toOpaque()),
             compressionSessionOut: &session
         )
 
-        guard status == noErr, let session = session else { return }
+        guard status == noErr, let session = session else {
+            retained.release()
+            self.retainedSelf = nil
+            return
+        }
 
         // 실시간 저지연 설정
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_ProfileLevel, value: kVTProfileLevel_H264_Baseline_AutoLevel)
         VTSessionSetProperty(session, key: kVTCompressionPropertyKey_RealTime, value: kCFBooleanTrue)
 
-        // B-Frame 제거
-        VTSessionSetProperty(session, key: VTPropertyKey.hasBFrames as CFString, value: kCFBooleanFalse)
-
-        // 인라인 파라미터 세트 설정
-        VTSessionSetProperty(session, key: VTPropertyKey.inRefParameterSets as CFString, value: kCFBooleanTrue)
+        // kCFBooleanFalse를 설정하여 프레임 재정렬(B-Frame)을 허용하지 않음
+        VTSessionSetProperty(session, key: kVTCompressionPropertyKey_AllowFrameReordering, value: kCFBooleanFalse)
 
         // 2초마다 키프레임 (화면 깨짐 방어)
         let duration = configuration.keyFrameIntervalDuration // 2.0
@@ -152,5 +165,20 @@ final public class VideoEncoder: VideoEncoding {
                                         frameProperties: nil,
                                         sourceFrameRefcon: nil,
                                         infoFlagsOut: nil)
+    }
+
+    public func invalidate() {
+        guard !isInvalidated, let session = session else { return }
+        isInvalidated = true
+
+        // 대기 중인 프레임 처리 및 세션 중단
+        VTCompressionSessionCompleteFrames(session, untilPresentationTimeStamp: .invalid)
+        VTCompressionSessionInvalidate(session)
+
+        // setupSession에서 늘렸던 참조 카운트를 해제
+        retainedSelf?.release()
+        retainedSelf = nil
+
+        self.session = nil
     }
 }

@@ -28,7 +28,15 @@ final class AppContainer: ViewModelFactory {
     private let webSocketService: WebSocketService
     private let webSocketSessionManager: WebSocketSessionManaging?
     private let channelService: ChannelServiceProtocol
-    
+
+    private lazy var videoManager: VideoManager = {
+        VideoManager(
+            connectivityMonitor: connectivityMonitor,
+            networkSessionManager: networkSessionManager,
+            webSocketSessionManager: webSocketSessionManager
+        )
+    }()
+
     init(
         permissionService: PermissionServicing? = nil,
         connectivityMonitor: ConnectivityMonitoring = ConnectivityMonitor(),
@@ -107,11 +115,7 @@ final class AppContainer: ViewModelFactory {
     }
 
     func makeVideoManager() -> VideoManager {
-        VideoManager(
-            connectivityMonitor: connectivityMonitor,
-            networkSessionManager: networkSessionManager,
-            webSocketSessionManager: webSocketSessionManager
-        )
+        return videoManager
     }
 
     // TODO: 게임 결과 화면 뷰모델 생성

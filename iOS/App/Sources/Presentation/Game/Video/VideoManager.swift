@@ -26,19 +26,13 @@ public final class VideoManager {
         layer.frame = CGRect(x: 0, y: 0, width: size, height: size)
         layer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
         layer.videoGravity = .resizeAspectFill
-        let address = Unmanaged.passUnretained(layer).toOpaque()
         return layer
     }()
 
     private(set) var networkMode: NetworkMode = .local
 
-    @ObservationIgnored
     var connectivityMonitor: ConnectivityMonitoring
-
-    @ObservationIgnored
     var networkSessionManager: NetworkSessionManaging
-
-    @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
 
     private let logger = Logger(subsystem: "com.cosmicadventure.Game", category: "VideoManager")
@@ -57,11 +51,11 @@ public final class VideoManager {
         setupEncoder()
         setupDecoder()
         setupVideoDataCallbacks()
-        startLatencyMonitor()
     }
 
     deinit {
-        latencyTimer?.invalidate()
+        stopLatencyMonitoring()
+        videoEncoder?.invalidate()
     }
 
     private func setupConnectivityMonitor() {
@@ -96,7 +90,7 @@ public final class VideoManager {
     // 압축된 데이터 전송
     private func handleEncodedData(data: Data) {
         let sendLog = data.prefix(10).map { String(format: "%02x", $0) }.joined()
-        logger.info("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
+        logger.debug("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
 
         switch networkMode {
         case .local:
@@ -108,13 +102,13 @@ public final class VideoManager {
     }
 
     private func setupDecoder() {
-        self.videoDecoder = VideoDecoder(configuration: self.configuration)
+        self.videoDecoder = VideoDecoder()
         self.videoDecoder?.displayLayer = self.remoteDisplayLayer
     }
 
     private func setupVideoDataCallbacks() {
         networkSessionManager.onVideoReceived = { [weak self] (_, data) in
-            self?.logger.info("[VideoManager] 비디오 데이터 수신: \(data.count) bytes, decoder=\(self?.videoDecoder != nil)")
+            self?.logger.debug("[VideoManager] 비디오 데이터 수신: \(data.count) bytes, decoder=\(self?.videoDecoder != nil)")
             self?.videoDecoder?.decode(data: data)
         }
 
@@ -124,12 +118,6 @@ public final class VideoManager {
     }
 
     // Network Adaptation
-    private func startLatencyMonitor() {
-        latencyTimer = Timer.scheduledTimer(withTimeInterval: configuration.monitoringInterval, repeats: true) { [weak self] _ in
-            self?.checkNetworkHealth()
-        }
-    }
-
     private func checkNetworkHealth() {
         // TODO: 실제 'Ping & Pong'값 연동 (임시 랜덤값)
         let latency = Double.random(in: 50...400)
@@ -141,6 +129,23 @@ public final class VideoManager {
             // 화질 높임 (300kbps)
             videoEncoder?.changeBitrate(to: configuration.highBitrate)
         }
+    }
+
+    func startLatencyMonitoring() {
+        latencyTimer?.invalidate()
+
+        let timer = Timer(timeInterval: configuration.monitoringInterval, repeats: true) { [weak self] _ in
+            self?.checkNetworkHealth()
+        }
+
+        RunLoop.main.add(timer, forMode: .common)
+
+        self.latencyTimer = timer
+    }
+
+    func stopLatencyMonitoring() {
+        latencyTimer?.invalidate()
+        latencyTimer = nil
     }
 
     func processFrame(pixelBuffer: CVPixelBuffer) {

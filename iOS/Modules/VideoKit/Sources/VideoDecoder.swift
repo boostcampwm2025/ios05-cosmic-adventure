@@ -17,14 +17,22 @@ final public class VideoDecoder: VideoDecoding {
     private var lastSps: Data?
     private var lastPps: Data?
 
+    private let decodeQueue = DispatchQueue(label: "com.cosmicadventure.videokit.decoder")
     private var packetAccumulator = Data()
 
     private let logger = Logger(subsystem: "com.cosmicadventure.videokit", category: "VideoDecoder")
 
-    public init(configuration: VideoConfiguration) { }
+    public init() { }
 
     // 외부에서 받은 H.264 데이터를 디코딩하여 화면에 그림
     public func decode(data: Data) {
+        // 들어오는 모든 데이터를 직렬 큐에 넣어서 순차적으로 처리
+        decodeQueue.async { [weak self] in
+            self?.performDecode(data: data)
+        }
+    }
+
+    private func performDecode(data: Data) {
         packetAccumulator.append(data)
         let startCode = Data([0, 0, 0, 1])
 
@@ -58,30 +66,32 @@ final public class VideoDecoder: VideoDecoding {
     }
 
     private func handleNALUnit(_ unit: Data) {
-        guard unit.count > 0, let displayLayer = displayLayer else { return }
+        guard unit.count > 0 else { return }
         let type = unit[0] & 0x1F // 바이너리의 하위 5비트 = NAL Unit 타입
 
         if type == 7 { // SPS (Sequence Parameter Set)
             if lastSps != unit {
                 lastSps = unit
                 formatDescription = nil
-                logger.info("[Decoder] 새로운 SPS 감지, 설명서 재생성 예약")
+                logger.debug("[Decoder] 새로운 SPS 감지, 설명서 재생성 예약")
             }
         } else if type == 8 { // PPS (Picture Parameter Set)
             if lastPps != unit {
                 lastPps = unit
                 formatDescription = nil
-                logger.info("[Decoder] 새로운 PPS 감지, 설명서 재생성 예약")
+                logger.debug("[Decoder] 새로운 PPS 감지, 설명서 재생성 예약")
             }
         } else if type == 1 || type == 5 {
             // 프레임 데이터
             // type == 5: I-Frame (키프레임, 독립적)
             // type == 1: P-Frame (이전 프레임 참조)
+            guard let displayLayer = displayLayer else { return }
+
             if let sps = lastSps,
                let pps = lastPps {
                 if formatDescription == nil {
                     updateFormatDescription(sps: sps, pps: pps)
-                    logger.info("[Decoder] 설명서 생성 성공! 영상 렌더링 준비 완료")
+                    logger.debug("[Decoder] 설명서 생성 성공! 영상 렌더링 준비 완료")
                 }
 
                 guard let formatDesc = formatDescription else { return }
@@ -138,7 +148,7 @@ final public class VideoDecoder: VideoDecoding {
 
         // 데이터 복사
         if status == noErr, let buffer = blockBuffer {
-            _ = data.withUnsafeBytes { ptr in
+            let copyStatus = data.withUnsafeBytes { ptr in
                 CMBlockBufferReplaceDataBytes(
                     with: ptr.baseAddress!,
                     blockBuffer: buffer,
@@ -146,6 +156,10 @@ final public class VideoDecoder: VideoDecoding {
                     dataLength: length
                 )
             }
+            guard copyStatus == kCMBlockBufferNoErr else {
+                return nil
+            }
+
             return buffer
         }
         return nil
@@ -241,6 +255,12 @@ final public class VideoDecoder: VideoDecoding {
                                                 sourceClock: CMClockGetHostTimeClock(),
                                                 timebaseOut: &tb)
                 layer.controlTimebase = tb
+
+            }
+            
+            // 시계가 정상 속도(1.0)로 흐름
+            if let timebase = layer.controlTimebase {
+                CMTimebaseSetRate(timebase, rate: 1.0)
             }
 
             // 샘플 버퍼 투입
