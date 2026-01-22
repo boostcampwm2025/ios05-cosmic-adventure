@@ -70,6 +70,7 @@ struct GameView: View {
             viewModel.start()
             UIApplication.shared.isIdleTimerDisabled = true
 
+            videoManager.startLatencyMonitoring()
             inputProvider.onFrameUpdate = { pixelBuffer in
                 // TODO: 2인모드 체크
                 videoManager.processFrame(pixelBuffer: pixelBuffer)
@@ -78,6 +79,9 @@ struct GameView: View {
         .onDisappear {
             viewModel.stop()
             UIApplication.shared.isIdleTimerDisabled = false
+
+            inputProvider.onFrameUpdate = nil
+            videoManager.stopLatencyMonitoring()
         }
         .onChange(of: viewModel.endReason) { _, newValue in
             if newValue != nil {

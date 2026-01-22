@@ -24,8 +24,6 @@ class VideoContainerView: UIView {
     private func setupView() {
         self.backgroundColor = .black
         self.layer.cornerRadius = 14
-        self.layer.masksToBounds = true
-
         self.clipsToBounds = true
     }
 

@@ -11,4 +11,5 @@ public protocol VideoEncoding: AnyObject {
     var output: ((Data) -> Void)? { get set }
     func encode(pixelBuffer: CVPixelBuffer)
     func changeBitrate(to bps: Int)
+    func invalidate()
 }

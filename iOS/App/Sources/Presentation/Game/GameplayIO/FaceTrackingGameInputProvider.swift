@@ -9,27 +9,27 @@ import ARKit
 import Games
 import InputSystem
 
-public final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked Sendable {
+final class FaceTrackingGameInputProvider: GameInputProviding, @unchecked Sendable {
     private let inputManager: InputManager
 
-    public var onFrameUpdate: ((CVPixelBuffer) -> Void)? {
+    var onFrameUpdate: ((CVPixelBuffer) -> Void)? {
         get { inputManager.onFrameUpdate }
         set { inputManager.onFrameUpdate = newValue }
     }
 
-    public init() {
+    init() {
         self.inputManager = InputManager(source: .faceTracking())
     }
 
-    public func start() {
+    func start() {
         inputManager.start()
     }
 
-    public func stop() {
+    func stop() {
         inputManager.stop()
     }
 
-    public func events() async -> AsyncStream<GameInputEvent> {
+    func events() async -> AsyncStream<GameInputEvent> {
         let rawStream = await inputManager.events()
 
         return AsyncStream { continuation in

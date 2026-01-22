@@ -55,14 +55,13 @@ struct LobbyView: View {
         .onChange(of: viewModel.matchStatus) { _, newValue in
             if case .gameReady(let peer) = newValue {
                 // TODO: 연결 로직 수정 필요
-//                if UserDefaultsList.Game.isGuideChecked {
-//                    router.push(.gameReady(me: viewModel.myExplorer,
-//                                           peer: peer))
-//                } else {
-//                    router.push(.operationGuide(me: viewModel.myExplorer,
-//                                                peer: peer))
-//                }
-                router.push(.game)
+                if UserDefaultsList.Game.isGuideChecked {
+                    router.push(.gameReady(me: viewModel.myExplorer,
+                                           peer: peer))
+                } else {
+                    router.push(.operationGuide(me: viewModel.myExplorer,
+                                                peer: peer))
+                }
             }
         }
         .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
