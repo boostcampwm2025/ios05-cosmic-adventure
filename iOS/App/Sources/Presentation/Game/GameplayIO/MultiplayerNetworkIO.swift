@@ -188,11 +188,23 @@ actor MultiplayerNetworkIO {
     }
     
     private func encodeRespawnReason(_ reason: RespawnReason) -> Int {
-        switch reason { case .fell: return 0; case .hitMonster: return 1 }
+        switch reason {
+        case .fell:
+            return 0
+        case .hitMonster:
+            return 1
+        }
     }
     
     private func decodeRespawnReason(_ raw: Int) -> RespawnReason? {
-        switch raw { case 0: return .fell; case 1: return .hitMonster; default: return nil }
+        switch raw {
+        case 0:
+            return .fell
+        case 1:
+            return .hitMonster
+        default:
+            return nil
+        }
     }
 
     // MARK: - Send (input -> cache)

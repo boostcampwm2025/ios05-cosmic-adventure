@@ -71,12 +71,10 @@ final class MonsterController {
         }
 
         let limitTopY = min(cameraLimitTopY, platformLimitTopY)
-
         // topY 제한을 centerY 제한으로 변환
         let maxCenterY = limitTopY
-
         let nextY = node.position.y + riseSpeed * CGFloat(deltaTime)
-        print(maxCenterY, nextY)
+
         node.position.y = min(nextY, maxCenterY)
     }
 
