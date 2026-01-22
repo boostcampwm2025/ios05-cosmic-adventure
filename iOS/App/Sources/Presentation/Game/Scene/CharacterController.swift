@@ -41,7 +41,7 @@ final class CharacterController {
     func setupPlayer(
         initialPosition: CGPoint = CGPoint(x: 0, y: -50),
         size: CGSize = CGSize(width: 50, height: 60),
-        characterType: CharacterAvatar = .character1
+        characterType: CharacterAvatar
     ) {
         if playerNode != nil { return }
         guard let scene else { return }

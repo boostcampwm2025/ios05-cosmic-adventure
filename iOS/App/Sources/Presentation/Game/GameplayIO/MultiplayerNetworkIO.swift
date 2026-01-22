@@ -11,11 +11,10 @@ import NetworkKit
 
 // MARK: - Multiplayer Network IO
 
-@MainActor
-final class MultiplayerNetworkIO {
+actor MultiplayerNetworkIO {
     private let localPlayerID: UUID
     private let otherPlayerIDs: [UUID]
-    private unowned let gameplayManager: GameplayManager
+    private let gameplayManager: GameplayManager
     private let inputProvider: FaceTrackingGameInputProvider
     private var networkSessionManager: NetworkSessionManaging
 
@@ -63,70 +62,95 @@ final class MultiplayerNetworkIO {
         self.networkSessionManager = networkSessionManager
     }
 
-    func bind(peerName: String) {
+    // MARK: - Public entrypoints (non-async friendly)
+
+    nonisolated func bind(peerName: String) {
+        Task { await self.bindAsync(peerName: peerName) }
+    }
+
+    nonisolated func unbind() {
+        Task { await self.unbindAsync() }
+    }
+
+    /// gameplayManager.update(deltaTime:)와 동일 틱에 실행되는 네트워크 처리
+    /// `SKScene.update`는 동기(sync)로 호출되기 때문에, 여기서 바로 `await`를 사용할 수 없어
+    ///  실제 작업을 `Task`로 감싸 actor 큐에 등록(enqueue)하여 비동기로 처리합니다.
+    nonisolated func tick(deltaTime: TimeInterval) {
+        Task { await self.tickAsync(deltaTime: deltaTime) }
+    }
+
+    // MARK: - Actor-isolated implementations
+
+    private func bindAsync(peerName: String) async {
         self.peerName = peerName
 
         // reset liveness so we don't freeze immediately
         lastRemoteReceivedAt = Date().timeIntervalSince1970
         didForceStopRemote = false
 
-        installReceiveHandler()
-        startForwardingLocalInput()
-        installLocalJumpTriggeredSender()
+        await installReceiveHandler()
+        await startForwardingLocalInput()
+        await installLocalJumpTriggeredSender()
     }
 
-    func unbind() {
+    private func unbindAsync() async {
         peerName = nil
 
         remoteSendTask?.cancel()
         remoteSendTask = nil
 
-        gameplayManager.onJumpTriggered = nil
+        // These touch @MainActor GameplayManager / external callbacks.
+        await MainActor.run {
+            self.gameplayManager.onJumpTriggered = nil
+        }
         networkSessionManager.onInputReceived = nil
     }
 
-    /// gameplayManager.update(deltaTime:)와 동일 틱에 실행되는 네트워크 처리
-    func tick(deltaTime: TimeInterval) {
+    private func tickAsync(deltaTime: TimeInterval) async {
         guard peerName != nil else { return }
-        sendMovementSnapshotIfNeeded(deltaTime: deltaTime)
-        updateRemoteInterpolation(deltaTime: deltaTime)
+        await sendMovementSnapshotIfNeeded(deltaTime: deltaTime)
+        await updateRemoteInterpolation(deltaTime: deltaTime)
     }
 
     // MARK: - Receive
 
-    private func installReceiveHandler() {
+    private func installReceiveHandler() async {
         networkSessionManager.onInputReceived = { [weak self] sender, payload in
             guard let self else { return }
+            Task { await self.handleReceivedInput(sender: sender, payload: payload) }
+        }
+    }
 
-            Task { @MainActor in
-                guard let peerName = self.peerName, sender == peerName else { return }
-                guard let remotePlayerID = self.otherPlayerIDs.first else { return }
+    private func handleReceivedInput(sender: String, payload: Data) async {
+        guard let peerName = self.peerName, sender == peerName else { return }
+        guard let remotePlayerID = self.otherPlayerIDs.first else { return }
 
-                guard let dto = try? self.jsonDecoder.decode(NetworkGameInputDTO.self, from: payload) else {
-                    print("[NET][RECV] decode failed from \(sender)")
-                    return
-                }
+        guard let dto = try? self.jsonDecoder.decode(NetworkGameInputDTO.self, from: payload) else {
+            print("[NET][RECV] decode failed from \(sender)")
+            return
+        }
 
-                switch dto.kind {
-                case .horizontal:
-                    let x = Double(dto.x ?? 0)
-                    self.lastRemoteReceivedAt = Date().timeIntervalSince1970
-                    self.didForceStopRemote = false
-                    self.remoteTargetMoveX = x
+        switch dto.kind {
+        case .horizontal:
+            let x = Double(dto.x ?? 0)
+            self.lastRemoteReceivedAt = Date().timeIntervalSince1970
+            self.didForceStopRemote = false
+            self.remoteTargetMoveX = x
 
-                case .jumpTriggered:
-                    // 확정 이벤트: 검증 없이 즉시 적용
-                    self.gameplayManager.applyJumpTriggered(for: remotePlayerID)
-                }
+        case .jumpTriggered:
+            // 확정 이벤트: 검증 없이 즉시 적용
+            await MainActor.run {
+                self.gameplayManager.applyJumpTriggered(for: remotePlayerID)
             }
         }
     }
 
     // MARK: - Send (input -> cache)
 
-    private func startForwardingLocalInput() {
+    private func startForwardingLocalInput() async {
         remoteSendTask?.cancel()
-        remoteSendTask = Task { [weak self] in
+
+        remoteSendTask = Task { @MainActor [weak self] in
             guard let self else { return }
 
             let stream = await self.inputProvider.events()
@@ -135,7 +159,7 @@ final class MultiplayerNetworkIO {
 
                 switch event {
                 case .horizontal(let x):
-                    self.pendingLocalMoveX = x
+                    await self.setPendingLocalMoveX(x)
                 case .jump:
                     // 점프는 tryJump 검증 통과 시 onJumpTriggered에서만 전송
                     break
@@ -144,18 +168,28 @@ final class MultiplayerNetworkIO {
         }
     }
 
-    private func installLocalJumpTriggeredSender() {
-        gameplayManager.onJumpTriggered = { [weak self] playerID in
-            guard let self else { return }
-            guard playerID == self.localPlayerID else { return }
-            guard let peerName = self.peerName else { return }
-            self.sendDTO(.jumpTriggered, to: peerName)
+    private func setPendingLocalMoveX(_ x: Double) {
+        self.pendingLocalMoveX = x
+    }
+
+    private func installLocalJumpTriggeredSender() async {
+        await MainActor.run {
+            self.gameplayManager.onJumpTriggered = { [weak self] playerID in
+                guard let self else { return }
+                Task { await self.handleLocalJumpTriggered(playerID: playerID) }
+            }
         }
+    }
+
+    private func handleLocalJumpTriggered(playerID: UUID) async {
+        guard playerID == self.localPlayerID else { return }
+        guard let peerName = self.peerName else { return }
+        self.sendDTO(.jumpTriggered, to: peerName)
     }
 
     // MARK: - Tick send + smoothing
 
-    private func sendMovementSnapshotIfNeeded(deltaTime: TimeInterval) {
+    private func sendMovementSnapshotIfNeeded(deltaTime: TimeInterval) async {
         guard let peerName = peerName else { return }
 
         movementSendAccumulator += deltaTime
@@ -163,7 +197,10 @@ final class MultiplayerNetworkIO {
         movementSendAccumulator -= movementSendInterval
 
         // 스냅샷 소스는 "현재 캐릭터 상태" 기반이 더 일관적(입력 지터 방지)
-        let currentMoveX = gameplayManager.state.characters[localPlayerID]?.moveX ?? pendingLocalMoveX
+        let fallback = pendingLocalMoveX
+        let currentMoveX = await MainActor.run {
+            gameplayManager.state.characters[localPlayerID]?.moveX ?? fallback
+        }
 
         // 임계치 이하 변화면 전송 생략
         guard abs(currentMoveX - lastSentMoveX) >= movementSendThreshold else { return }
@@ -175,7 +212,7 @@ final class MultiplayerNetworkIO {
         sendDTO(.horizontal(quantized), to: peerName)
     }
 
-    private func updateRemoteInterpolation(deltaTime: TimeInterval) {
+    private func updateRemoteInterpolation(deltaTime: TimeInterval) async {
         guard let remotePlayerID = otherPlayerIDs.first else { return }
 
         // liveness: 일정 시간 수신이 없으면 안전하게 멈추기
@@ -189,14 +226,13 @@ final class MultiplayerNetworkIO {
         let tau = max(remoteSmoothingTimeConstant, 0.001)
         let alpha = 1.0 - exp(-deltaTime / tau)
         remoteSmoothedMoveX = remoteSmoothedMoveX + (remoteTargetMoveX - remoteSmoothedMoveX) * alpha
-        gameplayManager.updateMoveX(remoteSmoothedMoveX, for: remotePlayerID)
+        let moveX = remoteSmoothedMoveX
+        await MainActor.run {
+            gameplayManager.updateMoveX(moveX, for: remotePlayerID)
+        }
     }
 
     private func sendDTO(_ dto: NetworkGameInputDTO, to peerName: String) {
-        do {
-            networkSessionManager.sendInput(dto, to: peerName)
-        } catch {
-            print("[NET][SEND] encode failed: \(error)")
-        }
+        networkSessionManager.sendInput(dto, to: peerName)
     }
 }
