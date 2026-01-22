@@ -106,6 +106,12 @@ struct PermissionSetupView: View {
                 title: L10N.PermissionSetup.Card.networkTitle,
                 subtitle: L10N.PermissionSetup.Card.networkSubtitle
             )
+
+            PermissionCard(
+                iconImage: Image(systemName: "bell.badge.fill"),
+                title: L10N.PermissionSetup.Card.notificationTitle,
+                subtitle: L10N.PermissionSetup.Card.notificationSubtitle
+            )
         }
     }
     
