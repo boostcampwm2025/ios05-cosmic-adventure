@@ -31,6 +31,12 @@ enum L10N {
             static let notificationTitle: LocalizedStringKey = "알림 권한"
             static let notificationSubtitle: LocalizedStringKey = "게임 중 초대 요청을 받기 위해 필요해요."
         }
+        
+        enum Alert {
+            static let cameraAlert = "카메라 권한이 필요해요. 설정에서 카메라 접근을 허용해 주세요."
+            static let localNetworkAlert = "근거리 통신(로컬 네트워크) 권한이 필요해요. 설정에서 로컬 네트워크 접근을 허용해 주세요."
+            static let notificationAlert = "푸시 알림 권한이 필요해요. 설정에서 푸시 알림 접근을 허용해 주세요."
+        }
     }
     
     enum ProfileSetup {

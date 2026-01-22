@@ -10,5 +10,6 @@ protocol PermissionServicing {
     func refreshCameraState() -> PermissionState
     func requestCameraIfNeeded() async -> Bool
     func requestLocalNetworkPermissionIfNeeded() async -> Bool
+    func requestNotificationPermission() async -> Bool
     func openAppSettings()
 }
