@@ -80,8 +80,10 @@ struct LobbyView: View {
 
     private var isModalPresented: Bool {
         switch viewModel.matchStatus {
-        case .readyToSend, .sendingRequest, .requestDeclined, .receivedInvite:
+        case .readyToSend, .sendingRequest, .requestDeclined:
             return true
+        case .receivedInvite(_, let wasSoloGame):
+            return !wasSoloGame
         default:
             return false
         }
@@ -151,7 +153,7 @@ private extension LobbyView {
     ) -> some View {
         VStack(spacing: 12) {
             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
-
+                viewModel.setSoloMode()
                 if UserDefaultsList.Game.isGuideChecked {
                     router.push(.game(nil))
                 } else {
@@ -431,14 +433,16 @@ private extension LobbyView {
                 .transition(.opacity.combined(with: .scale))
                 .padding(.horizontal, 24)
 
-        case .receivedInvite(let peer):
-            VStack {
-                Spacer()
-                inviteReceivedSheet(peer: peer)
+        case .receivedInvite(let peer, let wasSoloGame):
+            if !wasSoloGame {
+                VStack {
+                    Spacer()
+                    inviteReceivedSheet(peer: peer)
+                }
+                .transition(.move(edge: .bottom))
+                .zIndex(1)
+                .ignoresSafeArea(edges: .bottom)
             }
-            .transition(.move(edge: .bottom))
-            .zIndex(1)
-            .ignoresSafeArea(edges: .bottom)
 
         case .requestDeclined(let peer):
             declineModal(peer: peer)

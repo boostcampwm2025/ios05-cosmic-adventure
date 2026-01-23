@@ -9,14 +9,20 @@ import Foundation
 
 enum GameMatchStatus: Equatable {
     case idle
+    case soloGame
+
     case readyToSend(peer: PlayerInfo)
     case sendingRequest(peer: PlayerInfo)
-    case receivedInvite(peer: PlayerInfo)
+    case receivedInvite(peer: PlayerInfo, wasSoloGame: Bool = false)
     case requestDeclined(peer: PlayerInfo)
     case gameReady(peer: PlayerInfo)
 
     mutating func reset() {
         self = .idle
+    }
+    
+    mutating func setSoloGame() {
+        self = .soloGame
     }
 
     mutating func select(_ peer: PlayerInfo) {
@@ -33,8 +39,8 @@ enum GameMatchStatus: Equatable {
         self = .requestDeclined(peer: peer)
     }
 
-    mutating func receiveInvite(from peer: PlayerInfo) {
-        self = .receivedInvite(peer: peer)
+    mutating func receiveInvite(from peer: PlayerInfo, wasSoloGame: Bool = false) {
+        self = .receivedInvite(peer: peer, wasSoloGame: wasSoloGame)
     }
 
     mutating func setGameReady(with peer: PlayerInfo) {

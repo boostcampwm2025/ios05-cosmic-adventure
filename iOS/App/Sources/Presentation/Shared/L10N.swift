@@ -82,6 +82,14 @@ enum L10N {
         static let localNetworkSubTitle: LocalizedStringKey = "근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요. 설정에서 권한을 허용해주세요."
         static let unknownSubTitle: LocalizedStringKey = "알 수 없는 네트워크 오류가 발생했습니다."
     }
+    
+    enum InviteNotification {
+        static let title: String = String(localized: "초대요청")
+        static let body: String = String(localized: "님이 게임에 초대했습니다!")
+        
+        static let accept: String = String(localized: "수락하기")
+        static let decline: String = String(localized: "거절하기")
+    }
 
     enum GameReady {
         static let connectingMessage = "다른 탐험가와 연결중.."
