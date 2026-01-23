@@ -103,7 +103,17 @@ final class LobbyViewModel {
         setupP2PCallbacks()
         setupWebSocketCallbacks()
         setupExploration()
+        setupNotificationHandlers()
         resetToIdle()
+    }
+
+    private func setupNotificationHandlers() {
+        NotificationManager.shared.onAcceptInvite = { [weak self] in
+            self?.acceptInvite()
+        }
+        NotificationManager.shared.onDeclineInvite = { [weak self] in
+            self?.declineInvite()
+        }
     }
 }
 
@@ -210,6 +220,10 @@ extension LobbyViewModel {
 // MARK: - Game Actions
 
 extension LobbyViewModel {
+    func setSoloMode() {
+        matchStatus.setSoloGame()
+    }
+
     func resetToIdle() {
         matchStatus.reset()
         selectedPeerID = nil
@@ -236,7 +250,11 @@ extension LobbyViewModel {
         
         switch matchStatus {
         case .idle:
-            matchStatus.receiveInvite(from: peer)
+            matchStatus.receiveInvite(from: peer, wasSoloGame: false)
+        case .soloGame:
+            // TODO: - 알림 권한 사전 확인 필요, 권한이 없다면 초대를 수신받을 수 없음
+            NotificationManager.shared.sendInviteNotification(from: peer)
+            matchStatus.receiveInvite(from: peer, wasSoloGame: true)
         default:
             break
         }
@@ -261,6 +279,13 @@ extension LobbyViewModel {
     func handleInviteCancelled(from senderId: UUID) {
         if case .receivedInvite = matchStatus {
             resetToIdle()
+            if case .receivedInvite(_, let wasSoloGame) = matchStatus {
+                if wasSoloGame {
+                    setSoloMode()
+                } else {
+                    resetToIdle()
+                }
+            }
         }
     }
 }
@@ -296,7 +321,7 @@ extension LobbyViewModel {
     }
 
     func acceptInvite() {
-        guard case .receivedInvite(let peer) = matchStatus else { return }
+        guard case .receivedInvite(let peer, _) = matchStatus else { return }
 
         switch networkMode {
         case .local:
@@ -310,7 +335,7 @@ extension LobbyViewModel {
     }
 
     func declineInvite() {
-        guard case .receivedInvite(let peer) = matchStatus else { return }
+        guard case .receivedInvite(let peer, let wasSoloGame) = matchStatus else { return }
 
         switch networkMode {
         case .local:
@@ -320,7 +345,11 @@ extension LobbyViewModel {
             webSocketSessionManager?.declineInvite(from: peer.id)
         }
 
-        resetToIdle()
+        if wasSoloGame {
+            setSoloMode()
+        } else {
+            resetToIdle()
+        }
     }
 
     func confirmDecline() {
