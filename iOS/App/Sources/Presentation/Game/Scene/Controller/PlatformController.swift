@@ -18,7 +18,8 @@ final class PlatformController {
     // Platform indexing
     private var nextPlatformIndex: Int = 0
     private var platformNodesByIndex: [Int: SKSpriteNode] = [:]
-
+    private var goalPlatformIndex: Int = .max
+    
     // Player가 마지막으로 밟은(안전) 플랫폼
     private(set) var lastSafePosition: CGPoint = CGPoint(x: 0, y: -150)
     private(set) var lastSafePlatformIndex: Int = 0
@@ -27,9 +28,11 @@ final class PlatformController {
         self.scene = scene
     }
     
-    func setupInitialPlatforms() {
+    func setupInitialPlatforms(goalIndex: Int) {
         guard let scene else { return }
         
+        self.goalPlatformIndex = max(0, goalIndex)
+
         let startY: CGFloat = -200
         let startPlatform = createPlatform(
             index: allocateIndex(),
@@ -46,8 +49,9 @@ final class PlatformController {
         lastSafePlatformIndex = platformIndex(for: startPlatform) ?? 0
         lastPlatformY = startY
         
-        for _ in 0..<10 {
-            spawnNextPlatform()
+        let initialMaxIndex = min(goalPlatformIndex, 5)
+        while nextPlatformIndex <= initialMaxIndex {
+            spawnNextPlatform(isGoal: nextPlatformIndex == goalPlatformIndex)
         }
         
         // 초기 상태: GameScene가 플레이어 bottomY를 넘겨주기 전까지 플랫폼 충돌을 비활성화
@@ -65,8 +69,9 @@ final class PlatformController {
 
         // requiredTopY보다 위쪽까지 미리(prefetch) 플랫폼을 생성
         let prefetchMargin: CGFloat = sceneHeight
-        while lastPlatformY < requiredTopY + prefetchMargin {
-            spawnNextPlatform()
+        while nextPlatformIndex <= goalPlatformIndex &&
+                lastPlatformY < requiredTopY + prefetchMargin {
+            spawnNextPlatform(isGoal: nextPlatformIndex == goalPlatformIndex)
         }
 
         // 보수적으로(충분한 버퍼를 두고) 컬링
@@ -103,24 +108,37 @@ final class PlatformController {
         return node.frame.maxY
     }
     
-    private func spawnNextPlatform() {
+    private func spawnNextPlatform(isGoal: Bool) {
         guard let scene else { return }
-        
+
         let nextY = lastPlatformY + yGap
         let nextX: CGFloat = isNextRight ? xOffset : -xOffset
         
-        let platform = createPlatform(index: allocateIndex(), position: CGPoint(x: nextX, y: nextY))
+        // 결승 플랫폼은 시작 플랫폼과 동일한 크기로 생성
+        let size: CGSize = isGoal
+        ? CGSize(width: 200, height: 35)
+        : CGSize(width: 110, height: 35)
+        
+        let platform = createPlatform(
+            index: allocateIndex(),
+            position: CGPoint(x: isGoal ? 0 :nextX, y: nextY),
+            size: size
+        )
         register(platform: platform)
         scene.addChild(platform)
         
         lastPlatformY = nextY
         isNextRight.toggle()
         
+        if isGoal {
+            attachGoalShipAnimation(on: platform)
+        }
+
         applyLocalTransparency()
     }
     
     private func createPlatform(index: Int, position: CGPoint, size: CGSize = CGSize(width: 110, height: 35)) -> SKSpriteNode {
-        let platform = SKSpriteNode(imageNamed: AppAsset.Image.platform.name)
+        let platform = SKSpriteNode(imageNamed: GameSpriteAsset.platform.name)
         platform.name = L10N.Game.NodeName.platform
         platform.size = size
         platform.position = position
@@ -231,7 +249,7 @@ final class PlatformController {
 
         for (idx, node) in platformNodesByIndex {
             guard node.parent != nil else { continue }
-            if idx == prev || idx == current || idx == next {
+            if idx == prev || idx == current || idx == next || idx == goalPlatformIndex {
                 node.alpha = 1.0
             } else {
                 node.alpha = 0.5
@@ -239,3 +257,66 @@ final class PlatformController {
         }
     }
 }
+
+extension PlatformController {
+    // MARK: - Goal decoration
+
+    /// 결승 플랫폼 위에 우주선 이미지를 올리고 프레임 애니메이션을 반복 재생
+    private func attachGoalShipAnimation(on platform: SKSpriteNode) {
+        // 중복 부착 방지
+        guard platform.childNode(withName: GameSpriteAsset.goalRocket.name) == nil else { return }
+
+        let shipNode: SKSpriteNode
+        let textures = loadGoalShipTextures()
+
+        if let first = textures.first {
+            shipNode = SKSpriteNode(texture: first)
+        } else {
+            shipNode = SKSpriteNode(imageNamed: GameSpriteAsset.goalRocket.name)
+        }
+
+        shipNode.name = GameSpriteAsset.goalRocket.name
+        shipNode.zPosition = platform.zPosition + 1
+        shipNode.size = CGSize(width: 170, height: 90)
+
+        // 우주선은 충돌에 관여하지 않음
+        shipNode.physicsBody = nil
+
+        // 플랫폼 위 중앙에 배치
+        let yOffset = (platform.size.height / 2) + (shipNode.size.height / 2) + 2
+        shipNode.position = CGPoint(x: 0, y: yOffset)
+
+        platform.addChild(shipNode)
+
+        // 프레임 애니메이션
+        if textures.count >= 2 {
+            let animate = SKAction.animate(with: textures, timePerFrame: 0.1, resize: false, restore: true)
+
+            // 프레임 수가 적어도 자연스럽게 보이도록 호버/스웨이 액션을 추가
+            let hoverUp = SKAction.moveBy(x: 0, y: 3, duration: 0.6)
+            hoverUp.timingMode = .easeInEaseOut
+            let hoverDown = hoverUp.reversed()
+            let hover = SKAction.repeatForever(.sequence([hoverUp, hoverDown]))
+
+            let swayLeft = SKAction.rotate(byAngle: 0.02, duration: 0.8)
+            swayLeft.timingMode = .easeInEaseOut
+            let swayRight = swayLeft.reversed()
+            let sway = SKAction.repeatForever(.sequence([swayLeft, swayRight]))
+
+            let frameLoop = SKAction.repeatForever(animate)
+            shipNode.run(frameLoop, withKey: "goalRocketAnimation")
+            shipNode.run(hover, withKey: "goalRocketHover")
+            shipNode.run(sway, withKey: "goalRocketSway")
+        }
+    }
+
+    /// 우주선 프레임 텍스처를 로드
+    private func loadGoalShipTextures() -> [SKTexture] {
+        // 아틀라스가 없더라도 런타임에서 빈 배열로 떨어지도록 설계
+        let atlas = SKTextureAtlas(named: GameSpriteAsset.goalRocket.atlasName)
+        let names = atlas.textureNames.sorted()
+        return names.map { atlas.textureNamed($0) }
+    }
+}
+
+
