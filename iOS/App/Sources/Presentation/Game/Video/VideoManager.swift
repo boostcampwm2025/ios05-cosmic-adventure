@@ -90,7 +90,7 @@ public final class VideoManager {
     // 압축된 데이터 전송
     private func handleEncodedData(data: Data) {
         let sendLog = data.prefix(10).map { String(format: "%02x", $0) }.joined()
-        logger.debug("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
+//        logger.debug("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
 
         switch networkMode {
         case .local:

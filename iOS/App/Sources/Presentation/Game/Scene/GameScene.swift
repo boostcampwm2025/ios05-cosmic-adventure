@@ -27,6 +27,8 @@ final class GameScene: SKScene {
     private let outOfBoundsMargin: CGFloat = 100
     private var lastUpdateTime: TimeInterval = 0
 
+    private var goalPlatformIndex: Int
+    
     init(
         size: CGSize,
         gameplayManager: GameplayManager,
@@ -38,6 +40,7 @@ final class GameScene: SKScene {
         self.otherPlayerIDs = gameplayManager.otherPlayerIDs
         self.localExplorer = localExplorer
         self.otherExplorersByID = otherExplorersByID
+        self.goalPlatformIndex = gameplayManager.getGoalPlatformIndex()
         super.init(size: size)
         self.physicsWorld.gravity = CGVector(dx: 0, dy: PhysicsConstants.gravityDY)
         self.physicsWorld.contactDelegate = self
@@ -48,6 +51,7 @@ final class GameScene: SKScene {
         self.otherPlayerIDs = []
         self.localExplorer = nil
         self.otherExplorersByID = [:]
+        self.goalPlatformIndex = 1
         super.init(coder: coder)
     }
 
@@ -62,7 +66,7 @@ final class GameScene: SKScene {
         
         // 맵 설정
         platformController = PlatformController(scene: self)
-        platformController?.setupInitialPlatforms()
+        platformController?.setupInitialPlatforms(goalIndex: goalPlatformIndex)
         setupWalls()
 
         // 캐릭터 설정 (항상 로컬 플레이어는 생성)
@@ -94,20 +98,7 @@ final class GameScene: SKScene {
         monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
         monsterController?.setupInitialMonster()
         
-        let localBottomY = characterControllers[localPlayerID]?.bottomY
-        let localDY = characterControllers[localPlayerID]?.velocityDY
-
-        let otherID = otherPlayerIDs.first(where: { $0 != localPlayerID })
-        let otherBottomY = otherID.flatMap { characterControllers[$0]?.bottomY }
-        let otherDY = otherID.flatMap { characterControllers[$0]?.velocityDY }
-
-        platformController?.updateCollisions(
-            localBottomY: localBottomY,
-            localDY: localDY,
-            otherBottomY: otherBottomY,
-            otherDY: otherDY,
-            deltaTime: 0
-        )
+        updatePlatformCollisions(deltaTime: 0)
     }
 
     // Game Loop

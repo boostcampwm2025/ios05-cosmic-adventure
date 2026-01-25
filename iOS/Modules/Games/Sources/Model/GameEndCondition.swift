@@ -9,6 +9,8 @@ import Foundation
 
 public protocol GameEndCondition {
     func check(elapsedTime: TimeInterval, lastLandedPlatformIndex: Int) -> GameEndReason?
+    
+    var goalPlatformIndex: Int { get }
 }
 
 public struct TimeoutOrFinishEndCondition: GameEndCondition {
