@@ -21,7 +21,7 @@ public final class GameEndTracker {
 
     private var elapsedTime: TimeInterval = 0
     private var timeLimit: TimeInterval? = nil
-    private var endCondition: any GameEndCondition
+    private(set) var endCondition: any GameEndCondition
 
     public init(condition: any GameEndCondition) {
         self.endCondition = condition

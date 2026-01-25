@@ -165,6 +165,10 @@ public final class GameplayManager {
             state.setGrounded(false, for: playerID)
         }
     }
+    
+    public func getGoalPlatformIndex() -> Int {
+        return gameEnd.endCondition.goalPlatformIndex
+    }
 }
 
 // MARK: 캐릭터 input 처리
