@@ -29,6 +29,7 @@ public final class VideoManager {
         return layer
     }()
 
+    private(set) var peerName: String?
     private(set) var networkMode: NetworkMode = .local
 
     private let networkSessionManager: ConnectionSessionManaging
@@ -131,6 +132,10 @@ public final class VideoManager {
     func stopLatencyMonitoring() {
         latencyTimer?.invalidate()
         latencyTimer = nil
+    }
+
+    public func setTargetPlayer(nickName: String?) {
+        self.peerName = nickName
     }
 
     func processFrame(pixelBuffer: CVPixelBuffer) {
