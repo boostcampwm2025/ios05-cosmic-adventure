@@ -1,11 +1,11 @@
 //
-//  InputForwardPayload.swift
+//  ForwardingPayload.swift
 //  backend
 //
 //  Created by sungkug_apple_developer_ac on 1/22/26.
 //
 
-struct InputForwardPayload: Codable {
+struct ForwardingPayload: Codable {
     let to: String
     let data: String
 }
