@@ -24,6 +24,23 @@ final public class VideoDecoder: VideoDecoding {
 
     public init() { }
 
+    public func reset() {
+        packetAccumulator.removeAll()
+        self.formatDescription = nil
+        self.lastSps = nil
+        self.lastPps = nil
+
+        DispatchQueue.main.async { [weak self] in
+            guard let layer = self?.displayLayer else { return }
+
+            if #available(iOS 18.0, *) {
+                layer.sampleBufferRenderer.flush()
+            } else {
+                layer.flushAndRemoveImage()
+            }
+        }
+    }
+
     // 외부에서 받은 H.264 데이터를 디코딩하여 화면에 그림
     public func decode(data: Data) {
         // 들어오는 모든 데이터를 직렬 큐에 넣어서 순차적으로 처리

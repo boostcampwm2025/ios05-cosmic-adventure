@@ -31,15 +31,15 @@ public final class VideoManager {
 
     private(set) var networkMode: NetworkMode = .local
 
+    private let networkSessionManager: ConnectionSessionManaging
+    private let webSocketSessionManager: ConnectionSessionManaging?
     var connectivityMonitor: ConnectivityMonitoring
-    var networkSessionManager: NetworkSessionManaging
-    let webSocketSessionManager: WebSocketSessionManaging?
 
     private let logger = Logger(subsystem: "com.cosmicadventure.Game", category: "VideoManager")
 
     init(connectivityMonitor: ConnectivityMonitoring,
-         networkSessionManager: NetworkSessionManaging,
-         webSocketSessionManager: WebSocketSessionManaging?,
+         networkSessionManager: ConnectionSessionManaging,
+         webSocketSessionManager: ConnectionSessionManaging?,
          configuration: VideoConfiguration = VideoConfiguration()
     ) {
         self.connectivityMonitor = connectivityMonitor
@@ -59,23 +59,12 @@ public final class VideoManager {
     }
 
     private func setupConnectivityMonitor() {
-        // TODO: lobbyViewModel의 networkMode 전달 받아야 함.
-        //        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
-        //            Task { @MainActor in
-        //                self?.handleConnectivityChange(isConnected: isConnected)
-        //            }
-        //        }
-        //        connectivityMonitor.start()
-        //        networkMode = connectivityMonitor.isConnected ? .remote : .local
-        networkMode = .local
-    }
-
-    private func handleConnectivityChange(isConnected: Bool) {
-        if isConnected {
-            networkMode = .remote
-        } else {
-            networkMode = .local
+        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
+            Task { @MainActor in
+                self?.handleConnectivityChange(isConnected: isConnected)
+            }
         }
+        connectivityMonitor.start()
     }
 
     private func setupEncoder() {
@@ -92,13 +81,8 @@ public final class VideoManager {
         let sendLog = data.prefix(10).map { String(format: "%02x", $0) }.joined()
         logger.debug("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
 
-        switch networkMode {
-        case .local:
-            networkSessionManager.sendVideo(data: data)
-
-        case .remote:
-            webSocketSessionManager?.sendVideo(data: data)
-        }
+        let connectionSessionManager = (networkMode == .remote) ? webSocketSessionManager : networkSessionManager
+        connectionSessionManager?.sendVideo(data, to: peerName)
     }
 
     private func setupDecoder() {
@@ -113,6 +97,7 @@ public final class VideoManager {
         }
 
         webSocketSessionManager?.onVideoReceived = { [weak self] (_, data) in
+            self?.logger.debug("[VideoManager] 비디오 데이터 수신: \(data.count) bytes, decoder=\(self?.videoDecoder != nil)")
             self?.videoDecoder?.decode(data: data)
         }
     }
@@ -150,5 +135,26 @@ public final class VideoManager {
 
     func processFrame(pixelBuffer: CVPixelBuffer) {
         videoEncoder?.encode(pixelBuffer: pixelBuffer)
+    }
+
+    public func reset() {
+        DispatchQueue.main.async { [weak self] in
+            if #available(iOS 18.0, *) {
+                self?.remoteDisplayLayer.sampleBufferRenderer.flush()
+            } else {
+                self?.remoteDisplayLayer.flush()
+            }
+            self?.remoteDisplayLayer.controlTimebase = nil
+        }
+
+        videoDecoder?.reset()
+        self.peerName = nil
+        self.lastFrameTime = 0
+        setupEncoder()
+    }
+
+    func handleConnectivityChange(isConnected: Bool) {
+        self.networkMode = isConnected ? .remote : .local
+        logger.info("네트워크 모드 변경: \(self.networkMode == .remote ? "Remote" : "Local")")
     }
 }

@@ -20,7 +20,7 @@ protocol ViewModelFactory {
     func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
     func makeGameViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
-    func makeVideoManager() -> VideoManager
+    func makeVideoManager(isNetwork: Bool) -> VideoManager
     var explorationCoordinator: NetworkExplorationCoordinator { get }
     var appEntryManager: AppEntryManager { get }
 }
@@ -143,7 +143,10 @@ final class AppContainer: ViewModelFactory {
         )
     }
 
-    func makeVideoManager() -> VideoManager {
+    func makeVideoManager(isNetwork: Bool) -> VideoManager {
+        videoManager.reset()
+        videoManager.handleConnectivityChange(isConnected: isNetwork)
+
         return videoManager
     }
 
