@@ -79,7 +79,7 @@ struct RootView: View {
                                            remotePlayer: matchPeer,
                                            gameConfig: gameConfig,
                                            isNetwork: isNetwork),
-                    videoManager: container.makeVideoManager()
+                    videoManager: container.makeVideoManager(isNetwork: isNetwork)
                 )
             }
         case .operationGuide(let me, let peer, let isNetwork):
