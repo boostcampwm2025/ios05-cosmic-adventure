@@ -150,7 +150,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         sendToPeer(to: targetPeer, packet: packet)
     }
 
-    public func sendVideo(data: Data) {
+
+    public func sendVideo(_ data: Data, to targetId: String?) {
         let packet = NetworkPacket(
             type: .videoFrame,
             senderIdentifier: localSessionId.uuidString,

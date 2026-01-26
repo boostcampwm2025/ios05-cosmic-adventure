@@ -119,16 +119,31 @@ public final class WebSocketService: NSObject {
         guard let inputData = try? encoder.encode(input),
               let inputJSON = String(data: inputData, encoding: .utf8) else { return }
 
-        let routed = InputForwardPayload(to: targetId, data: inputJSON)
-
-        guard let routedData = try? encoder.encode(routed),
-              let payload = String(data: routedData, encoding: .utf8) else { return }
-
-        send(WebSocketMessage(type: .input, senderId: sessionId ?? "", payload: payload))
+        let payload = ForwardingPayload(to: targetId, data: inputJSON)
+        sendForwardingMessage(type: .input, payload: payload)
     }
 
     public func sendReadyStatus(to targetId: String) {
         let message = WebSocketMessage(type: .gameReady, senderId: sessionId ?? "", payload: targetId)
+        send(message)
+    }
+
+    public func sendVideo(_ data: Data, to targetId: String) {
+        let base64Video = data.base64EncodedString()
+
+        let payload = ForwardingPayload(to: targetId, data: base64Video)
+        sendForwardingMessage(type: .videoFrame, payload: payload)
+    }
+
+    private func sendForwardingMessage(type: WebSocketMessageType, payload: ForwardingPayload) {
+        guard let routedData = try? encoder.encode(payload),
+              let payloadString = String(data: routedData, encoding: .utf8) else { return }
+
+        let message = WebSocketMessage(
+            type: type,
+            senderId: sessionId ?? "",
+            payload: payloadString
+        )
         send(message)
     }
 

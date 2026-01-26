@@ -101,8 +101,11 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         service.sendReadyStatus(to: sessionId)
     }
 
-    public func sendVideo(data: Data) {
-        // TODO: 데이터 String 변환, service sendVideo 추가 후 호출
+    public func sendVideo(_ data: Data, to playerId: String?) {
+        guard let playerId,
+              let targetId = sessionId(forNickname: playerId) else { return }
+
+        service.sendVideo(data, to: targetId)
     }
 
     // MARK: - Private Methods
@@ -170,6 +173,13 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
                let payloadData = payloadString.data(using: .utf8) {
 
                 onInputReceived?(playerId(forSenderId: message.senderId), payloadData)
+            }
+
+        case .videoFrame:
+            if let payloadString = message.payload {
+                if let payloadData = Data(base64Encoded: payloadString) {
+                    onVideoReceived?(nickname(forSessionId: message.senderId) ?? "", payloadData)
+                }
             }
 
         case .gameReady:
