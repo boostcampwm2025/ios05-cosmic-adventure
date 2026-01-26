@@ -33,7 +33,7 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
 
             // 초기 요청 시 응답이 없을 경우를 대비한 타임아웃
             Task {
-                try? await Task.sleep(nanoseconds: 3_000_000_000)
+                try? await Task.sleep(for: .seconds(3))
                 networkSessionManager.deactivate()
                 continuation.yield(false)
                 continuation.finish()
