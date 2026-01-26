@@ -23,10 +23,10 @@ final class LobbyViewModel {
     
     private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "LobbyViewModel")
 
-    // Explorer
-    private(set) var myExplorer: LobbyExplorer
-    var peers: [LobbyExplorer] = []
-    var selectedPeerID: String?
+    // Player
+    private(set) var localPlayer: PlayerInfo
+    var peers: [PlayerInfo] = []
+    var selectedPeerID: UUID?
 
     // UI State
     var activeAlert: LobbyAlert = .none
@@ -55,9 +55,6 @@ final class LobbyViewModel {
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
 
-    // Internal State
-    @ObservationIgnored
-    var playerIdMapping: [String: String] = [:]
 
     // MARK: - Computed Properties
 
@@ -65,7 +62,7 @@ final class LobbyViewModel {
         connectivityMonitor.isConnected
     }
 
-    var orderedPeers: [LobbyExplorer] {
+    var orderedPeers: [PlayerInfo] {
         peers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
             case let (l?, r?): return l < r
@@ -83,6 +80,7 @@ final class LobbyViewModel {
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
+        playerId: UUID,
         nickname: String,
         characterRawValue: String
     ) {
@@ -92,7 +90,8 @@ final class LobbyViewModel {
         self.webSocketSessionManager = webSocketSessionManager
         self.selectedPeerID = nil
         
-        self.myExplorer = LobbyExplorer(
+        self.localPlayer = PlayerInfo(
+            id: playerId,
             role: .me,
             displayName: nickname,
             avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
@@ -104,6 +103,7 @@ final class LobbyViewModel {
         setupP2PCallbacks()
         setupWebSocketCallbacks()
         setupExploration()
+        resetToIdle()
     }
 }
 
@@ -149,14 +149,14 @@ extension LobbyViewModel {
             explorationCoordinator.updateExploration(
                 mode: .local,
                 channelId: nil,
-                nickname: myExplorer.displayName
+                nickname: localPlayer.displayName
             )
         case .remote:
             guard let channelId = selectedChannelId else { return }
             explorationCoordinator.updateExploration(
                 mode: .remote,
                 channelId: channelId,
-                nickname: myExplorer.displayName
+                nickname: localPlayer.displayName
             )
         }
     }
@@ -178,16 +178,16 @@ extension LobbyViewModel {
     }
 }
 
-// MARK: - Peer Management
+// MARK: - NetworkPeer Management
 
 extension LobbyViewModel {
-    func selectPeer(_ peer: LobbyExplorer) {
+    func selectPeer(_ peer: PlayerInfo) {
         self.selectedPeerID = peer.id
         self.matchStatus.select(peer)
     }
 
-    func updateProximity(for explorerID: String, value: Double) {
-        guard let index = peers.firstIndex(where: { $0.id == explorerID }) else { return }
+    func updateProximity(for playerID: UUID, value: Double) {
+        guard let index = peers.firstIndex(where: { $0.id == playerID }) else { return }
         peers[index].proximity = max(0, min(1, value))
     }
 
@@ -226,14 +226,14 @@ extension LobbyViewModel {
 }
 
 // MARK: - Invite Event Handlers
-// TODO: - UUID 추가 후 id와 name 모두 확인하는 로직으로 수정
+
 extension LobbyViewModel {
-    func handleInviteReceived(from senderIdentifier: String) {
-        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else {
-            logger.warning("초대한 피어를 찾을 수 없음: \(senderIdentifier)")
+    func handleInviteReceived(from senderId: UUID) {
+        guard let peer = peers.first(where: { $0.id == senderId }) else {
+            logger.warning("초대한 피어를 찾을 수 없음: \(senderId.uuidString)")
             return
         }
-
+        
         switch matchStatus {
         case .idle:
             matchStatus.receiveInvite(from: peer)
@@ -242,23 +242,23 @@ extension LobbyViewModel {
         }
     }
 
-    func handleInviteAccepted(from senderIdentifier: String) {
-        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else { return }
+    func handleInviteAccepted(from senderId: UUID) {
+        guard let peer = peers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.setGameReady(with: peer)
         }
     }
 
-    func handleInviteDeclined(from senderIdentifier: String) {
-        guard let peer = peers.first(where: { $0.id == senderIdentifier || $0.displayName == senderIdentifier }) else { return }
+    func handleInviteDeclined(from senderId: UUID) {
+        guard let peer = peers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.requestDeclined(by: peer)
         }
     }
 
-    func handleInviteCancelled(from senderName: String) {
+    func handleInviteCancelled(from senderId: UUID) {
         if case .receivedInvite = matchStatus {
             resetToIdle()
         }
@@ -274,12 +274,10 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            networkSessionManager.sendInvite(to: peer.displayName)
+            networkSessionManager.sendInvite(to: peer.id)
 
         case .remote:
-            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
-                webSocketSessionManager?.sendInvite(to: playerId)
-            }
+            webSocketSessionManager?.sendInvite(to: peer.id)
         }
     }
 
@@ -287,12 +285,10 @@ extension LobbyViewModel {
         if case .sendingRequest(let peer) = matchStatus {
             switch networkMode {
             case .local:
-                networkSessionManager.cancelInvite(to: peer.displayName)
+                networkSessionManager.cancelInvite(to: peer.id)
 
             case .remote:
-                if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
-                    webSocketSessionManager?.cancelInvite(to: playerId)
-                }
+                webSocketSessionManager?.cancelInvite(to: peer.id)
             }
         }
 
@@ -304,12 +300,10 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            networkSessionManager.acceptInvite(from: peer.displayName)
+            networkSessionManager.acceptInvite(from: peer.id)
 
         case .remote:
-            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
-                webSocketSessionManager?.acceptInvite(from: playerId)
-            }
+            webSocketSessionManager?.acceptInvite(from: peer.id)
         }
 
         matchStatus.setGameReady(with: peer)
@@ -320,12 +314,10 @@ extension LobbyViewModel {
 
         switch networkMode {
         case .local:
-            networkSessionManager.declineInvite(from: peer.displayName)
+            networkSessionManager.declineInvite(from: peer.id)
 
         case .remote:
-            if let playerId = playerIdMapping.first(where: { $0.value == peer.id })?.key {
-                webSocketSessionManager?.declineInvite(from: playerId)
-            }
+            webSocketSessionManager?.declineInvite(from: peer.id)
         }
 
         resetToIdle()

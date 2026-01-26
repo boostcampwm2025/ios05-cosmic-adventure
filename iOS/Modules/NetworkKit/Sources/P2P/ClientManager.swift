@@ -25,7 +25,7 @@ final class ClientManager: ClientManaging {
 
     var onPermissionGranted: (() -> Void)?
     var onPermissionDeniedOrFailed: ((Error) -> Void)?
-    var onPeersUpdated: (([Peer]) -> Void)?
+    var onPeersUpdated: (([NetworkPeer]) -> Void)?
     var onDataReceived: ((Data, NWConnection) -> Void)?
 
     // MARK: - Initialization
@@ -45,7 +45,7 @@ final class ClientManager: ClientManaging {
         let parameters = NWParameters()
         parameters.includePeerToPeer = true
 
-        browser = NWBrowser(for: .bonjour(type: serviceType, domain: nil), using: parameters)
+        browser = NWBrowser(for: .bonjourWithTXTRecord(type: serviceType, domain: nil), using: parameters)
         
         browser?.browseResultsChangedHandler = { [weak self] results, changes in
             self?.handleBrowseResultsChanged(results: results, changes: changes)
@@ -147,13 +147,15 @@ final class ClientManager: ClientManaging {
     private func handleBrowseResultsChanged(results: Set<NWBrowser.Result>, changes: Set<NWBrowser.Result.Change>) {
         logger.info("탐색 결과 변경: \(results.count) 명의 동료 찾음")
 
-        let peers = results.compactMap { result -> Peer? in
+        let peers = results.compactMap { result -> NetworkPeer? in
             // 서비스 이름 추출
             guard case .service(let name, _, _, _) = result.endpoint else {
                 return nil
             }
 
             var status: PeerStatus = .available
+            var nickname = name
+            var sessionId: UUID?
 
             if case .bonjour(let txtRecord) = result.metadata {
                 if let statusString = txtRecord["status"],
@@ -161,10 +163,19 @@ final class ClientManager: ClientManaging {
                     status = parsedStatus
                     logger.info("Parsed peer \(name) with status: \(status.rawValue)")
                 }
+                if let nicknameString = txtRecord["nickname"] {
+                    nickname = nicknameString
+                }
+                if let sessionIdString = txtRecord["sessionId"] {
+                    sessionId = UUID(uuidString: sessionIdString)
+                }
             }
 
-            return Peer(
-                name: name,
+            guard let sessionId else { return nil }
+
+            return NetworkPeer(
+                sessionId: sessionId,
+                name: nickname,
                 status: status,
                 endpoint: result.endpoint,
                 latency: nil                    // 탐색 직후부터 latency를 계산할 수 없으므로 초기값 nil

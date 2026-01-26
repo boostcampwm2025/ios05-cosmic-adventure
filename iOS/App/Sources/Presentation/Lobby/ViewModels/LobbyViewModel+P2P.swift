@@ -30,42 +30,39 @@ extension LobbyViewModel {
             }
         }
 
-        networkSessionManager.onInviteReceived = { [weak self] senderName in
+        networkSessionManager.onInviteReceived = { [weak self] senderId in
             Task { @MainActor in
-                self?.handleInviteReceived(from: senderName)
+                self?.handleInviteReceived(from: senderId)
             }
         }
 
-        networkSessionManager.onInviteAccepted = { [weak self] senderName in
+        networkSessionManager.onInviteAccepted = { [weak self] senderId in
             Task { @MainActor in
-                self?.handleInviteAccepted(from: senderName)
+                self?.handleInviteAccepted(from: senderId)
             }
         }
 
-        networkSessionManager.onInviteDeclined = { [weak self] senderName in
+        networkSessionManager.onInviteDeclined = { [weak self] senderId in
             Task { @MainActor in
-                self?.handleInviteDeclined(from: senderName)
+                self?.handleInviteDeclined(from: senderId)
             }
         }
 
-        networkSessionManager.onInviteCancelled = { [weak self] senderName in
+        networkSessionManager.onInviteCancelled = { [weak self] senderId in
             Task { @MainActor in
-                self?.handleInviteCancelled(from: senderName)
+                self?.handleInviteCancelled(from: senderId)
             }
         }
     }
 
-    func updateLocalPeers(_ peers: [Peer]) {
+    func updateLocalPeers(_ peers: [NetworkPeer]) {
         self.peers = peers.enumerated().map { index, peer in
-            let id = peer.name
-            playerIdMapping[peer.name] = id
-
             let discoveryLatency = Double(index * 10 + 5)
             let effectiveLatency = peer.latency ?? discoveryLatency
             let proximity = calculateProximity(latency: effectiveLatency)
-
-            return LobbyExplorer(
-                id: id,
+            
+            return PlayerInfo(
+                id: peer.sessionId,
                 role: .peer,
                 displayName: peer.name,
                 avatar: .character1,

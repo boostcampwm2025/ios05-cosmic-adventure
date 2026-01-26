@@ -13,14 +13,14 @@ import NetworkKit
 
 actor MultiplayerNetworkIO {
     private let localPlayerID: UUID
-    private let otherPlayerIDs: [UUID]
+    private let remotePlayerIDs: [UUID]
     private let gameplayManager: GameplayManager
     private let inputProvider: FaceTrackingGameInputProvider
     private var connectionSessionManager: ConnectionSessionManaging
 
     private let jsonDecoder = JSONDecoder()
 
-    private var peerName: String?
+    private var peerId: UUID?
 
     private var remoteSendTask: Task<Void, Never>?
     private var movementSendAccumulator: TimeInterval = 0
@@ -53,13 +53,13 @@ actor MultiplayerNetworkIO {
 
     init(
         localPlayerID: UUID,
-        otherPlayerIDs: [UUID],
+        remotePlayerIDs: [UUID],
         gameplayManager: GameplayManager,
         inputProvider: FaceTrackingGameInputProvider,
         networkSessionManager: ConnectionSessionManaging
     ) {
         self.localPlayerID = localPlayerID
-        self.otherPlayerIDs = otherPlayerIDs
+        self.remotePlayerIDs = remotePlayerIDs
         self.gameplayManager = gameplayManager
         self.inputProvider = inputProvider
         self.connectionSessionManager = networkSessionManager
@@ -67,8 +67,8 @@ actor MultiplayerNetworkIO {
 
     // MARK: - Public entrypoints (non-async friendly)
 
-    nonisolated func bind(peerName: String) {
-        Task { await self.bindAsync(peerName: peerName) }
+    nonisolated func bind(peerId: UUID) {
+        Task { await self.bindAsync(peerId: peerId) }
     }
 
     nonisolated func unbind() {
@@ -84,8 +84,8 @@ actor MultiplayerNetworkIO {
 
     // MARK: - Actor-isolated implementations
 
-    private func bindAsync(peerName: String) async {
-        self.peerName = peerName
+    private func bindAsync(peerId: UUID) async {
+        self.peerId = peerId
 
         resetTransientState()
 
@@ -107,7 +107,7 @@ actor MultiplayerNetworkIO {
     }
 
     private func unbindAsync() async {
-        peerName = nil
+        peerId = nil
 
         remoteSendTask?.cancel()
         remoteSendTask = nil
@@ -120,7 +120,7 @@ actor MultiplayerNetworkIO {
     }
 
     private func tickAsync(deltaTime: TimeInterval) async {
-        guard peerName != nil else { return }
+        guard peerId != nil else { return }
         await sendMovementSnapshotIfNeeded(deltaTime: deltaTime)
         await updateRemoteInterpolation(deltaTime: deltaTime)
     }
@@ -134,9 +134,9 @@ actor MultiplayerNetworkIO {
         }
     }
 
-    private func handleReceivedInput(sender: String, payload: Data) async {
-        guard let peerName = self.peerName, sender == peerName else { return }
-        guard let remotePlayerID = self.otherPlayerIDs.first else { return }
+    private func handleReceivedInput(sender: UUID, payload: Data) async {
+        guard let peerId = self.peerId, sender == peerId else { return }
+        guard let remotePlayerID = self.remotePlayerIDs.first else { return }
 
         guard let dto = try? self.jsonDecoder.decode(NetworkGameInputDTO.self, from: payload) else {
             return
@@ -177,14 +177,14 @@ actor MultiplayerNetworkIO {
 
     private func handleLocalRespawnConfirmed(playerID: UUID, reason: RespawnReason, position: RespawnPosition) async {
         guard playerID == self.localPlayerID else { return }
-        guard let peerName = self.peerName else { return }
+        guard let peerId = self.peerId else { return }
 
         let dto = NetworkGameInputDTO.respawnRequested(
             reason: self.encodeRespawnReason(reason),
             x: position.x,
             y: position.y
         )
-        self.sendDTO(dto, to: peerName)
+        self.sendDTO(dto, to: peerId)
     }
     
     private func encodeRespawnReason(_ reason: RespawnReason) -> Int {
@@ -245,14 +245,14 @@ actor MultiplayerNetworkIO {
 
     private func handleLocalJumpTriggered(playerID: UUID) async {
         guard playerID == self.localPlayerID else { return }
-        guard let peerName = self.peerName else { return }
-        self.sendDTO(.jumpTriggered, to: peerName)
+        guard let peerId = self.peerId else { return }
+        self.sendDTO(.jumpTriggered, to: peerId)
     }
 
     // MARK: - Tick send + smoothing
 
     private func sendMovementSnapshotIfNeeded(deltaTime: TimeInterval) async {
-        guard let peerName = peerName else { return }
+        guard let peerId = peerId else { return }
 
         timeSinceLastMovementSend += deltaTime
         movementSendAccumulator += deltaTime
@@ -275,11 +275,11 @@ actor MultiplayerNetworkIO {
         // 전송 성공 기준으로 reset
         timeSinceLastMovementSend = 0
         lastSentMoveX = quantized
-        sendDTO(.horizontal(quantized), to: peerName)
+        sendDTO(.horizontal(quantized), to: peerId)
     }
 
     private func updateRemoteInterpolation(deltaTime: TimeInterval) async {
-        guard let remotePlayerID = otherPlayerIDs.first else { return }
+        guard let remotePlayerID = remotePlayerIDs.first else { return }
 
         // liveness: 일정 시간 수신이 없으면 안전하게 멈추기
         let now = Date().timeIntervalSince1970
@@ -298,7 +298,7 @@ actor MultiplayerNetworkIO {
         }
     }
 
-    private func sendDTO(_ dto: NetworkGameInputDTO, to peerName: String) {
-        connectionSessionManager.sendInput(dto, to: peerName)
+    private func sendDTO(_ dto: NetworkGameInputDTO, to peerId: UUID) {
+        connectionSessionManager.sendInput(dto, to: peerId)
     }
 }

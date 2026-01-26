@@ -22,29 +22,31 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     private var hostGranted: Bool? = nil
     private var clientGranted: Bool? = nil
     private var myNickname: String?
-    public var nearbyPlayer: [Peer] = []
+    public var nearbyPlayer: [NetworkPeer] = []
+    private var localSessionId: UUID = UUID()
 
     private let decoder = JSONDecoder()
     private let encoder = JSONEncoder()
 
-    private var pendingInviteConnections: [String: NWConnection] = [:]
+    private var pendingInviteConnections: [UUID: NWConnection] = [:]
     private var activeGameConnection: NWConnection?
-    private var lastPingTimestamps: [String: Date] = [:]
+    private var lastPingTimestamps: [UUID: Date] = [:]
     private var pingTimer: Timer?
+    private var peerById: [UUID: NetworkPeer] = [:]
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "NetworkSessionManager")
 
     // MARK: - Callbacks
 
     public var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)?
-    public var onInviteReceived: ((String) -> Void)?
-    public var onInviteAccepted: ((String) -> Void)?
-    public var onInviteDeclined: ((String) -> Void)?
-    public var onInviteCancelled: ((String) -> Void)?
-    public var onInputReceived: ((String, Data) -> Void)?
-    public var onPeersUpdated: (([Peer]) -> Void)?
-    public var onReadyStatusReceived: ((String) -> Void)?
-    public var onVideoReceived: ((String, Data) -> Void)?
+    public var onInviteReceived: ((UUID) -> Void)?
+    public var onInviteAccepted: ((UUID) -> Void)?
+    public var onInviteDeclined: ((UUID) -> Void)?
+    public var onInviteCancelled: ((UUID) -> Void)?
+    public var onInputReceived: ((UUID, Data) -> Void)?
+    public var onPeersUpdated: (([NetworkPeer]) -> Void)?
+    public var onReadyStatusReceived: ((UUID) -> Void)?
+    public var onVideoReceived: ((UUID, Data) -> Void)?
 
     // MARK: - Initialization
 
@@ -72,8 +74,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          logger.info("P2P 탐색 시작")
 
          myNickname = nickname
+         localSessionId = UUID()
 
-         host.startHosting(nickName: nickname, status: .available)
+         host.startHosting(nickName: nickname, status: .available, sessionId: localSessionId)
          client.startBrowsing()
          startPingTimer()
      }
@@ -89,6 +92,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          stopPingTimer()
 
          nearbyPlayer.removeAll()
+         peerById.removeAll()
          myNickname = nil
 
          hostGranted = nil
@@ -97,35 +101,35 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          onPermissionResult = nil
      }
 
-    public func sendInvite(to peerName: String) {
-        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
-        let packet = NetworkPacket(type: .invite, senderIdentifier: myNickname ?? "Unknown")
+    public func sendInvite(to targetId: UUID) {
+        guard let targetPeer = peerById[targetId] else { return }
+        let packet = NetworkPacket(type: .invite, senderIdentifier: localSessionId.uuidString)
 
         sendToPeer(to: targetPeer, packet: packet)
     }
 
-    public func cancelInvite(to peerName: String) {
-        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
-        let packet = NetworkPacket(type: .inviteCancel, senderIdentifier: myNickname ?? "Unknown")
+    public func cancelInvite(to targetId: UUID) {
+        guard let targetPeer = peerById[targetId] else { return }
+        let packet = NetworkPacket(type: .inviteCancel, senderIdentifier: localSessionId.uuidString)
 
         sendToPeer(to: targetPeer, packet: packet)
     }
 
-    public func acceptInvite(from peerName: String) {
-        let packet = NetworkPacket(type: .inviteAccept, senderIdentifier: myNickname ?? "Unknown")
-        replyToPeer(to: peerName, packet: packet)
+    public func acceptInvite(from targetId: UUID) {
+        let packet = NetworkPacket(type: .inviteAccept, senderIdentifier: localSessionId.uuidString)
+        replyToPeer(to: targetId, packet: packet)
     }
 
-    public func declineInvite(from peerName: String) {
-        let packet = NetworkPacket(type: .inviteDecline, senderIdentifier: myNickname ?? "Unknown")
-        replyToPeer(to: peerName, packet: packet)
+    public func declineInvite(from targetId: UUID) {
+        let packet = NetworkPacket(type: .inviteDecline, senderIdentifier: localSessionId.uuidString)
+        replyToPeer(to: targetId, packet: packet)
     }
 
-    public func sendInput<T: Codable>(_ data: T, to targetId: String?) {
+    public func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {
         guard let payload = try? encoder.encode(data) else { return }
         let packet = NetworkPacket(
             type: .input,
-            senderIdentifier: myNickname ?? "Unknown",
+            senderIdentifier: localSessionId.uuidString,
             payload: payload
         )
         guard let encodedPacket = try? encoder.encode(packet) else { return }
@@ -139,9 +143,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
-    public func sendReadyStatus(to peerName: String) {
-        guard let targetPeer = nearbyPlayer.first(where: { $0.name == peerName }) else { return }
-        let packet = NetworkPacket(type: .gameReady, senderIdentifier: myNickname ?? "Unknown")
+    public func sendReadyStatus(to targetId: UUID) {
+        guard let targetPeer = peerById[targetId] else { return }
+        let packet = NetworkPacket(type: .gameReady, senderIdentifier: localSessionId.uuidString)
 
         sendToPeer(to: targetPeer, packet: packet)
     }
@@ -149,7 +153,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public func sendVideo(data: Data) {
         let packet = NetworkPacket(
             type: .videoFrame,
-            senderIdentifier: myNickname ?? "Unknown",
+            senderIdentifier: localSessionId.uuidString,
             payload: data
         )
 
@@ -195,8 +199,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
         client.onPeersUpdated = { [weak self] peers in
             guard let self else { return }
-            print("📡 [NetworkSessionManager] 원본 피어 발견: \(peers.count)명")
-            let filteredPeers = peers.filter { $0.name != self.myNickname }
+            logger.debug("📡 [NetworkSessionManager] 원본 피어 발견: \(peers.count)명")
+            let filteredPeers = peers.filter { $0.sessionId != self.localSessionId }
 
             // UI에 표시될 순서대로 정렬(연결 가능한 순서대로 처리)
             // 추후 변경 가능성 존재
@@ -209,8 +213,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                     return peer1.name < peer2.name
                 }
             }
+            self.peerById = Dictionary(uniqueKeysWithValues: self.nearbyPlayer.map { ($0.sessionId, $0) })
             self.onPeersUpdated?(self.nearbyPlayer)
-            print("📡 [NetworkSessionManager] 필터링 후 피어: \(self.nearbyPlayer.count)명")
+            logger.debug("📡 [NetworkSessionManager] 필터링 후 피어: \(self.nearbyPlayer.count)명")
         }
 
         client.onDataReceived = { [weak self] data, connection in
@@ -256,8 +261,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
     private func sendPingsToAll() {
         for player in nearbyPlayer {
-            let packet = NetworkPacket(type: .ping, senderIdentifier: myNickname ?? "Unknown")
-            lastPingTimestamps[player.name] = Date()
+            let packet = NetworkPacket(type: .ping, senderIdentifier: localSessionId.uuidString)
+            lastPingTimestamps[player.sessionId] = Date()
             sendToPeer(to: player, packet: packet)
         }
     }
@@ -265,8 +270,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     private func handleReceivedData(_ data: Data, from connection: NWConnection) {
         guard let packet = try? decoder.decode(NetworkPacket.self, from: data) else { return }
 
+        guard let senderId = UUID(uuidString: packet.senderIdentifier) else { return }
+
         if packet.type == .invite {
-            self.pendingInviteConnections[packet.senderIdentifier] = connection
+            self.pendingInviteConnections[senderId] = connection
         }
 
         DispatchQueue.main.async { [weak self] in
@@ -274,56 +281,56 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
             switch packet.type {
             case .ping:
-                let pongPacket = NetworkPacket(type: .pong, senderIdentifier: myNickname ?? "Unknown")
+                let pongPacket = NetworkPacket(type: .pong, senderIdentifier: localSessionId.uuidString)
                 guard let encodedPong = try? self.encoder.encode(pongPacket) else { return }
                 host.sendData(encodedPong, to: connection)
 
             case .pong:
-                if let sendDate = lastPingTimestamps[packet.senderIdentifier] {
+                if let sendDate = lastPingTimestamps[senderId] {
                     let latency = Date().timeIntervalSince(sendDate) * 1000.0
-                    updatePeerLatency(name: packet.senderIdentifier, latency: latency)
-                    lastPingTimestamps.removeValue(forKey: packet.senderIdentifier)
+                    updatePeerLatency(sessionId: senderId, latency: latency)
+                    lastPingTimestamps.removeValue(forKey: senderId)
                 }
 
             case .invite:
-                onInviteReceived?(packet.senderIdentifier)
+                onInviteReceived?(senderId)
 
             case .inviteAccept:
                 activeGameConnection = connection
-                pendingInviteConnections.removeValue(forKey: packet.senderIdentifier)
-                onInviteAccepted?(packet.senderIdentifier)
+                pendingInviteConnections.removeValue(forKey: senderId)
+                onInviteAccepted?(senderId)
 
             case .inviteDecline:
-                onInviteDeclined?(packet.senderIdentifier)
+                onInviteDeclined?(senderId)
 
             case .inviteCancel:
-                onInviteCancelled?(packet.senderIdentifier)
+                onInviteCancelled?(senderId)
 
             case .input:
                 if let payload = packet.payload {
-                    onInputReceived?(packet.senderIdentifier, payload)
+                    onInputReceived?(senderId, payload)
                 }
 
             case .gameReady:
-                onReadyStatusReceived?(packet.senderIdentifier)
+                onReadyStatusReceived?(senderId)
 
             case .videoFrame:
                 if let payload = packet.payload {
-                    onVideoReceived?(packet.senderIdentifier, payload)
+                    onVideoReceived?(senderId, payload)
                 }
             }
         }
     }
 
     /// ping/pong 결과에 따라 latency 상태 업데이트
-    private func updatePeerLatency(name: String, latency: Double) {
-        if let index = nearbyPlayer.firstIndex(where: { $0.name == name }) {
+    private func updatePeerLatency(sessionId: UUID, latency: Double) {
+        if let index = nearbyPlayer.firstIndex(where: { $0.sessionId == sessionId }) {
             nearbyPlayer[index].latency = latency
             onPeersUpdated?(nearbyPlayer)
         }
     }
 
-    private func sendToPeer(to peer: Peer, packet: NetworkPacket) {
+    private func sendToPeer(to peer: NetworkPeer, packet: NetworkPacket) {
         guard let data = try? encoder.encode(packet) else { return }
 
         Task {
@@ -336,8 +343,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
-    private func replyToPeer(to targetName: String, packet: NetworkPacket) {
-        guard let connection = self.pendingInviteConnections[targetName] else { return }
+    private func replyToPeer(to targetId: UUID, packet: NetworkPacket) {
+        guard let connection = self.pendingInviteConnections[targetId] else { return }
 
         guard let data = try? encoder.encode(packet) else { return }
         host.sendData(data, to: connection)
@@ -352,6 +359,6 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             self.activeGameConnection = connection
         }
 
-        self.pendingInviteConnections.removeValue(forKey: targetName)
+        self.pendingInviteConnections.removeValue(forKey: targetId)
     }
 }
