@@ -52,13 +52,24 @@ actor WSSessionManager {
         pingTimestamps[sessionId] = Date()
     }
 
-    func handlePong(from sessionId: String) {
+    func handlePong(from sessionId: String) async {
         guard let pingDate = pingTimestamps[sessionId] else { return }
 
         let latency = Date().timeIntervalSince(pingDate) * 1000.0
         latencies[sessionId] = latency
         pingTimestamps.removeValue(forKey: sessionId)
         lastPongTimes[sessionId] = Date()
+
+        // Latency가 갱신되었으니, 유저가 속한 채널에 최신 리스트 전파
+        if let session = sessions[sessionId],
+           let channelId = session.metadata["channelId"] {
+            for handler in handlers {
+                if let gameHandler = handler as? GameMessageHandler {
+                    await gameHandler.sendPlayerList(in: channelId, manager: self)
+                    break
+                }
+            }
+        }
     }
 
     func register(_ handler: any WSMessageHandler) {
