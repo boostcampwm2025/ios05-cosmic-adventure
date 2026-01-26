@@ -44,6 +44,8 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             senderId: session.id,
             payload: playerInfo
         )
+        
+        /// 채널에 있는 다른 플레이어에게 새로운 플레이어가 입장했음을 알림
         await ChannelManager.shared.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
 
         await sendPlayerList(to: session, manager: manager)
@@ -58,6 +60,8 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             type: GameMessageType.playerLeft.rawValue,
             senderId: session.id
         )
+        
+        /// 채널에 있는 다른 플레이어에게 새로운 플레이어가 퇴장했음을 알림
         await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: session.id)
     }
 

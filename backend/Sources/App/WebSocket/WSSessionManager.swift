@@ -9,6 +9,9 @@ actor WSSessionManager {
     private var latencies: [String: Double] = [:]
     private var pingTask: Task<Void, Never>?
 
+    private var lastPongTimes: [String: Date] = [:]      // sessionId → 마지막 pong 시간
+    private let pongTimeout: TimeInterval = 7.0
+
     private init() {
         Task {
             await startPingTimer()
@@ -23,7 +26,8 @@ actor WSSessionManager {
         pingTask = Task {
             while !Task.isCancelled {
                 await sendPings()
-                try? await Task.sleep(nanoseconds: 5 * 1_000_000_000)
+                await checkTimeouts()
+                try? await Task.sleep(nanoseconds: 5_000_000_000)
             }
         }
     }
@@ -50,10 +54,11 @@ actor WSSessionManager {
 
     func handlePong(from sessionId: String) {
         guard let pingDate = pingTimestamps[sessionId] else { return }
-        
+
         let latency = Date().timeIntervalSince(pingDate) * 1000.0
         latencies[sessionId] = latency
         pingTimestamps.removeValue(forKey: sessionId)
+        lastPongTimes[sessionId] = Date()
     }
 
     func register(_ handler: any WSMessageHandler) {
@@ -62,12 +67,26 @@ actor WSSessionManager {
 
     func addSession(_ session: WSSession) {
         sessions[session.id] = session
+        lastPongTimes[session.id] = Date()
     }
 
-    func removeSession(_ sessionId: String) {
+    func removeSession(_ sessionId: String) async {
+        guard let channelId = sessions[sessionId]?.metadata["channelId"] else { return }
+        
+        await ChannelManager.shared.leave(channelId, sessionId: sessionId)
+        
+        let leftMessage = WSMessage(
+            type: GameMessageType.playerLeft.rawValue,
+            senderId: sessionId
+        )
+        
+        /// 채널 내 다른 플레이어들에게 특정 플레이어의 퇴장을 알림
+        await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: sessionId)
+
         sessions.removeValue(forKey: sessionId)
         latencies.removeValue(forKey: sessionId)
         pingTimestamps.removeValue(forKey: sessionId)
+        lastPongTimes.removeValue(forKey: sessionId)
     }
 
     func getSession(_ sessionId: String) -> WSSession? {
@@ -115,6 +134,24 @@ actor WSSessionManager {
                     await session.send(text)
                 }
             }
+        }
+    }
+
+    // MARK: - Timeout Check
+
+    private func checkTimeouts() async {
+        let now = Date()
+        var timedOutSessionIds: [String] = []
+
+        for (sessionId, lastPong) in lastPongTimes {
+            if now.timeIntervalSince(lastPong) > pongTimeout {
+                timedOutSessionIds.append(sessionId)
+            }
+        }
+
+        for sessionId in timedOutSessionIds {
+            print("[WSSessionManager] 세션 \(sessionId) 타임아웃 (\(pongTimeout)s 동안 응답없음)")
+            await removeSession(sessionId)
         }
     }
 }
