@@ -15,22 +15,22 @@ public protocol ConnectionSessionManaging: AnyObject {
 
     // MARK: - call back
 
-    var onInviteReceived: ((String) -> Void)? { get set }
-    var onInviteAccepted: ((String) -> Void)? { get set }
-    var onInviteDeclined: ((String) -> Void)? { get set }
-    var onInviteCancelled: ((String) -> Void)? { get set }
-    var onInputReceived: ((String, Data) -> Void)? { get set }
-    var onReadyStatusReceived: ((String) -> Void)? { get set }
-    var onVideoReceived: ((String, Data) -> Void)? { get set }
+    var onInviteReceived: ((UUID) -> Void)? { get set }
+    var onInviteAccepted: ((UUID) -> Void)? { get set }
+    var onInviteDeclined: ((UUID) -> Void)? { get set }
+    var onInviteCancelled: ((UUID) -> Void)? { get set }
+    var onInputReceived: ((UUID, Data) -> Void)? { get set }
+    var onReadyStatusReceived: ((UUID) -> Void)? { get set }
+    var onVideoReceived: ((UUID, Data) -> Void)? { get set }
 
     // MARK: - action
 
-    func sendInvite(to targetId: String)
-    func acceptInvite(from targetId: String)
-    func declineInvite(from targetId: String)
-    func cancelInvite(to targetId: String)
-    func sendInput<T: Codable>(_ data: T, to targetId: String?)
-    func sendReadyStatus(to targetId: String)
+    func sendInvite(to targetId: UUID)
+    func acceptInvite(from targetId: UUID)
+    func declineInvite(from targetId: UUID)
+    func cancelInvite(to targetId: UUID)
+    func sendInput<T: Codable>(_ data: T, to targetId: UUID?)
+    func sendReadyStatus(to targetId: UUID)
     func sendVideo(data: Data)
 }
 

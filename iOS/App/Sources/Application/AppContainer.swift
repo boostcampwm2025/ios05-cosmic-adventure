@@ -14,12 +14,12 @@ import StorageKit
 protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
-    func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel
-    func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel
+    func makeLobbyViewModel(playerId: UUID, nickname: String, characterType: String) -> LobbyViewModel
+    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
-    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
+    func makeGameViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, gameConfig: GameConfigProviding, isNetwork: Bool) -> GameViewModel
     func makeVideoManager() -> VideoManager
 }
 
@@ -77,17 +77,18 @@ final class AppContainer: ViewModelFactory {
         ProfileSetupViewModel()
     }
     
-    func makeLobbyViewModel(nickname: String, characterType: String) -> LobbyViewModel {
+    func makeLobbyViewModel(playerId: UUID, nickname: String, characterType: String) -> LobbyViewModel {
         LobbyViewModel(
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,
+            playerId: playerId,
             nickname: nickname,
             characterRawValue: characterType
         )
     }
 
-    func makeGameReadyViewModel(me: LobbyExplorer, peer: LobbyExplorer) -> GameReadyViewModel {
+    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo) -> GameReadyViewModel {
         GameReadyViewModel(
             me: me,
             peer: peer,
@@ -109,10 +110,10 @@ final class AppContainer: ViewModelFactory {
         WebSocketSessionManager(service: webSocketService, serverURL: serverURL)
     }
 
-    func makeGameViewModel(me: LobbyExplorer, matchPeer: LobbyExplorer?, gameConfig: GameConfigProviding, isNetwork: Bool = false) -> GameViewModel {
+    func makeGameViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, gameConfig: GameConfigProviding, isNetwork: Bool = false) -> GameViewModel {
         GameViewModel(
-            me: me,
-            matchPeer: matchPeer,
+            localPlayer: localPlayer,
+            remotePlayer: remotePlayer,
             endCondition: TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 10),
             connectionSessionManager: isNetwork ? webSocketSessionManager ?? networkSessionManager : networkSessionManager,
             gameConfig: gameConfig

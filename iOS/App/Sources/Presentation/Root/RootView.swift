@@ -39,10 +39,11 @@ struct RootView: View {
         case .profileSetup:
             ProfileSetupView(viewModel: viewModelFactory.makeProfileSetupViewModel())
         case .lobby:
-            if let myExplorer = players.first {
+            if let myPlayer = players.first {
                 LobbyView(viewModel:
-                            viewModelFactory.makeLobbyViewModel(nickname: myExplorer.nickname,
-                                                                characterType: myExplorer.character),
+                            viewModelFactory.makeLobbyViewModel(playerId: myPlayer.id,
+                                                                nickname: myPlayer.nickname,
+                                                                characterType: myPlayer.character),
                           channelListViewModel: viewModelFactory.makeChannelListViewModel()
                 )
             }
@@ -56,18 +57,19 @@ struct RootView: View {
         case .gameReady(let me, let peer):
              GameReadyView(viewModel: viewModelFactory.makeGameReadyViewModel(me: me, peer: peer))
         case .game(let matchPeer, let isNetwork):
-            if let myExplorer = players.first {
-                let me = LobbyExplorer(
+            if let myPlayer = players.first {
+                let me = PlayerInfo(
+                    id: myPlayer.id,
                     role: .me,
-                    displayName: myExplorer.nickname,
-                    avatar: CharacterAvatar.init(rawValue: myExplorer.character)
+                    displayName: myPlayer.nickname,
+                    avatar: CharacterAvatar.init(rawValue: myPlayer.character)
                     ?? .character1
                 )
                 let gameConfig = UserDefaultsList.Settings()
                 
                 GameView(
                     viewModel: viewModelFactory
-                        .makeGameViewModel(me: me, matchPeer: matchPeer, gameConfig: gameConfig, isNetwork: isNetwork),
+                        .makeGameViewModel(localPlayer: me, remotePlayer: matchPeer, gameConfig: gameConfig, isNetwork: isNetwork),
                     videoManager: viewModelFactory.makeVideoManager()
                 )
             }
@@ -85,9 +87,9 @@ struct RootView: View {
 extension RootView {
     private func checkUserStatus() {
         let hasCompletedPermission = UserDefaultsList.Permission.hasCompletedPermissionSetup
-        let hasPlayerProfile = !players.isEmpty
+        let hasPlayerInfo = !players.isEmpty
 
-        if hasPlayerProfile {
+        if hasPlayerInfo {
             router.setRoot(.lobby)
         } else if hasCompletedPermission {
             router.setRoot(.profileSetup)
