@@ -12,7 +12,9 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             await handleChannelLeave(session: session, manager: manager)
 
         case .channelPlayerList:
-            await sendPlayerList(to: session, manager: manager)
+            if let channelId = session.metadata["channelId"] {
+                await sendPlayerList(in: channelId, to: session, manager: manager)
+            }
 
         case .invite, .inviteAccept, .inviteDecline, .inviteCancel, .gameReady:
             await forwardToTarget(message: message, manager: manager)
@@ -48,7 +50,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         /// 채널에 있는 다른 플레이어에게 새로운 플레이어가 입장했음을 알림
         await ChannelManager.shared.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
 
-        await sendPlayerList(to: session, manager: manager)
+        await sendPlayerList(in: channelId, to: session, manager: manager)
     }
 
     private func handleChannelLeave(session: WSSession, manager: WSSessionManager) async {
@@ -65,10 +67,9 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: session.id)
     }
 
-    private func sendPlayerList(to session: WSSession, manager: WSSessionManager) async {
-        guard let channelId = session.metadata["channelId"] else { return }
-
+    func sendPlayerList(in channelId: String, to toSession: WSSession? = nil, manager: WSSessionManager) async {
         let players = await ChannelManager.shared.getSessionsInChannel(channelId)
+        guard !players.isEmpty else { return }
 
         let playerInfos = await withTaskGroup(of: String.self) { group in
             for player in players {
@@ -89,7 +90,13 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             payload: payload
         )
 
-        await manager.send(to: session.id, message: listMessage)
+        if let session = toSession {
+            // 특정 유저에게만 전송
+            await manager.send(to: session.id, message: listMessage)
+        } else {
+            // 채널 전체에 전송
+            await ChannelManager.shared.broadcastToChannel(channelId, message: listMessage)
+        }
     }
 
     private func forwardToTarget(message: WSMessage, manager: WSSessionManager) async {
@@ -114,7 +121,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
 
     private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"
-        let lat = latency ?? 1.0
+        let lat = latency ?? 200.0
         return "\(session.id):\(nickname):\(lat)"
     }
 }

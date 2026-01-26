@@ -31,7 +31,7 @@ public struct VideoConfiguration {
         resolutionHeight: Int32 = 192,
         displaySize: CGFloat = 60.0,
         highBitrate: Int = 400_000,
-        lowBitrate: Int = 200_000,
+        lowBitrate: Int = 100_000,
         monitoringInterval: Double = 2.0,
         frameRate: Int32 = 60,
         keyFrameIntervalDuration: Double = 1.0

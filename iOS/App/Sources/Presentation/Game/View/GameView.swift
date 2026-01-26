@@ -86,6 +86,7 @@ struct GameView: View {
 
             inputProvider.onFrameUpdate = nil
             videoManager.stopLatencyMonitoring()
+            videoManager.reset(includePeer: true)
         }
         .onChange(of: viewModel.endReason) { _, newValue in
             if newValue != nil {

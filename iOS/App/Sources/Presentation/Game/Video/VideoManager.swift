@@ -17,7 +17,7 @@ public final class VideoManager {
     private var videoDecoder: (any VideoDecoding)?
 
     private var latencyTimer: Timer?
-    private var lastFrameTime: TimeInterval = 0
+    private var isLowBitrateMode: Bool = false
 
     lazy var remoteDisplayLayer: AVSampleBufferDisplayLayer = {
         let layer = AVSampleBufferDisplayLayer()
@@ -105,15 +105,37 @@ public final class VideoManager {
 
     // Network Adaptation
     private func checkNetworkHealth() {
-        // TODO: 실제 'Ping & Pong'값 연동 (임시 랜덤값)
-        let latency = Double.random(in: 50...400)
+        guard let peerName = self.peerName else { return }
 
-        if latency > 300 {
-            // 화질 낮춤 (100kbps)
-            videoEncoder?.changeBitrate(to: configuration.lowBitrate)
-        } else if latency < 150 {
-            // 화질 높임 (300kbps)
-            videoEncoder?.changeBitrate(to: configuration.highBitrate)
+        let currentLatency: Double = {
+            if networkMode == .remote {
+                return (webSocketSessionManager as? WebSocketSessionManager)?
+                    .players.first { $0.nickname == peerName }?.latency ?? 150.0
+            } else {
+                return (networkSessionManager as? NetworkSessionManager)?
+                    .nearbyPlayer.first { $0.name == peerName }?.latency ?? 50.0
+            }
+        }()
+
+        // 모드에 따른 가변 기준점 설정
+        // P2P는 150ms만 넘어도 이상 상태로 볼 수 있고, 서버는 300ms까지 정상으로 볼 수 있음.
+        let highLatencyThreshold = (networkMode == .remote) ? 350.0 : 180.0
+        let lowLatencyThreshold = (networkMode == .remote) ? 150.0 : 80.0
+
+        if currentLatency > highLatencyThreshold {
+            if !isLowBitrateMode {
+                videoEncoder?.changeBitrate(to: configuration.lowBitrate)
+                isLowBitrateMode = true
+                logger.debug("[Latency] 지연 발생: 화질 낮춤")
+            }
+        } else if currentLatency < lowLatencyThreshold {
+            if isLowBitrateMode {
+                videoEncoder?.changeBitrate(to: configuration.highBitrate)
+                isLowBitrateMode = false
+                logger.debug("[Latency] 안정적: 화질 복구")
+
+                reset(includePeer: false)
+            }
         }
     }
 
@@ -142,7 +164,7 @@ public final class VideoManager {
         videoEncoder?.encode(pixelBuffer: pixelBuffer)
     }
 
-    public func reset() {
+    func reset(includePeer: Bool = false) {
         DispatchQueue.main.async { [weak self] in
             if #available(iOS 18.0, *) {
                 self?.remoteDisplayLayer.sampleBufferRenderer.flush()
@@ -153,13 +175,19 @@ public final class VideoManager {
         }
 
         videoDecoder?.reset()
-        self.peerName = nil
-        self.lastFrameTime = 0
+
+        if includePeer {
+            self.peerName = nil
+        }
+
         setupEncoder()
     }
 
     func handleConnectivityChange(isConnected: Bool) {
         self.networkMode = isConnected ? .remote : .local
         logger.info("네트워크 모드 변경: \(self.networkMode == .remote ? "Remote" : "Local")")
+
+        reset(includePeer: false)
+        checkNetworkHealth()
     }
 }
