@@ -45,7 +45,13 @@ let project = Project(
                   "Fonts/Pretendard-ExtraBold.otf",
                   "Fonts/Pretendard-Black.otf",
                 ],
-                "CFBundleDisplayName": "CosmicAdventure"
+                "CFBundleDisplayName": "CosmicAdventure",
+                "UISupportedInterfaceOrientations": [
+                  "UIInterfaceOrientationPortrait"
+                ],
+                "UISupportedInterfaceOrientations~ipad": [
+                  "UIInterfaceOrientationPortrait"
+                ]
             ]),
             sources: [
                 "Sources/**"
