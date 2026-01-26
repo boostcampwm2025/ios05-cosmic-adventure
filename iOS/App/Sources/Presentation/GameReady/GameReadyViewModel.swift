@@ -11,8 +11,8 @@ import NetworkKit
 @MainActor
 @Observable
 final class GameReadyViewModel {
-    let me: LobbyExplorer
-    let peer: LobbyExplorer
+    let me: PlayerInfo
+    let peer: PlayerInfo
 
     private(set) var isMeReady: Bool = false
     private(set) var isPeerReady: Bool = false
@@ -32,8 +32,8 @@ final class GameReadyViewModel {
     let webSocketSessionManager: WebSocketSessionManaging?
 
     init(
-        me: LobbyExplorer,
-        peer: LobbyExplorer,
+        me: PlayerInfo,
+        peer: PlayerInfo,
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?
@@ -81,10 +81,10 @@ final class GameReadyViewModel {
     }
 
     private func setupP2PCallbacks() {
-        networkSessionManager.onReadyStatusReceived = { [weak self] senderName in
+        networkSessionManager.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
 
-            guard senderName == self.peer.displayName else { return }
+            guard senderId == self.peer.id else { return }
 
             Task { @MainActor in
                 self.handlePeerReady()
@@ -93,10 +93,10 @@ final class GameReadyViewModel {
     }
 
     private func setupWebSocketCallbacks() {
-        webSocketSessionManager?.onReadyStatusReceived = { [weak self] senderName in
+        webSocketSessionManager?.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
 
-            guard senderName == self.peer.displayName else { return }
+            guard senderId == self.peer.id else { return }
 
             Task { @MainActor in
                 self.handlePeerReady()
@@ -107,10 +107,10 @@ final class GameReadyViewModel {
     private func sendReadySignal() {
         switch networkMode {
         case .local:
-            networkSessionManager.sendReadyStatus(to: peer.displayName)
+            networkSessionManager.sendReadyStatus(to: peer.id)
 
         case .remote:
-            webSocketSessionManager?.sendReadyStatus(to: peer.displayName)
+            webSocketSessionManager?.sendReadyStatus(to: peer.id)
         }
     }
 

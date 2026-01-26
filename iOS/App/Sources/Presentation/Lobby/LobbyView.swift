@@ -58,7 +58,7 @@ struct LobbyView: View {
                 if UserDefaultsList.Game.isGuideChecked {
                     router.push(.game(peer, isNetwork: viewModel.networkMode == .remote))
                 } else {
-                    router.push(.operationGuide(me: viewModel.myExplorer,
+                    router.push(.operationGuide(me: viewModel.localPlayer,
                                                 peer: peer, isNetwork: viewModel.networkMode == .remote))
                 }
             }
@@ -124,7 +124,7 @@ private extension LobbyView {
             .padding(.top, 40)
             .padding(.horizontal, 30)
         
-        explorerOrbitSelector
+        playerOrbitSelector
         
         Spacer()
         
@@ -184,7 +184,7 @@ private extension LobbyView {
                 if UserDefaultsList.Game.isGuideChecked {
                     router.push(.game(nil))
                 } else {
-                    router.push(.operationGuide(me: viewModel.myExplorer, peer: nil, isNetwork: viewModel.networkMode == .remote))
+                    router.push(.operationGuide(me: viewModel.localPlayer, peer: nil, isNetwork: viewModel.networkMode == .remote))
                 }
             }
             
@@ -251,7 +251,7 @@ private extension LobbyView {
     var greetingCard: some View {
         VStack(spacing: 4) {
             HStack(spacing: 0) {
-                Text(viewModel.myExplorer.displayName)
+                Text(viewModel.localPlayer.displayName)
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
                 Text(L10N.Lobby.greetingSuffix)
                     .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
@@ -276,10 +276,10 @@ private extension LobbyView {
     }
 }
 
-// MARK: - Explorer Orbit Selector
+// MARK: - Player Orbit Selector
 
 private extension LobbyView {
-    var explorerOrbitSelector: some View {
+    var playerOrbitSelector: some View {
         let displayPeers = viewModel.orderedPeers.prefix(OrbitSlot.orderedSlots.count)
         let isZoomedOut = displayPeers.count > 5
         let radarScale: CGFloat = isAppearing ? (isZoomedOut ? 0.8 : 1.0) : 0.1
@@ -292,23 +292,23 @@ private extension LobbyView {
                 ZStack {
                     radarRings(size: size, center: center, isZoomedOut: isZoomedOut)
 
-                    ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, explorer in
+                    ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, player in
                         let position = calculatePosition(
                             index: index,
-                            proximity: explorer.proximity,
+                            proximity: player.proximity,
                             size: size,
                             center: center,
                             isZoomedOut: isZoomedOut
                         )
 
-                        peerExplorerView(explorer: explorer)
+                        peerPlayerView(player: player)
                             .position(position)
-                            .id(explorer.id)
+                            .id(player.id)
                     }
                 }
                 .scaleEffect(radarScale)
 
-                myExplorerView
+                localPlayerView
                     .position(center)
             }
             .animation(.spring(response: 0.6, dampingFraction: 0.7), value: radarScale)
@@ -364,17 +364,17 @@ private extension LobbyView {
     }
 }
 
-// MARK: - Explorer Views
+// MARK: - Player Views
 
 private extension LobbyView {
-    var myExplorerView: some View {
+    var localPlayerView: some View {
         let labelOffset: CGFloat = -70
 
         return ZStack {
-            explorerLabel(text: viewModel.myExplorer.displayName)
+            playerLabel(text: viewModel.localPlayer.displayName)
                 .offset(y: labelOffset)
 
-            viewModel.myExplorer.avatar.image
+            viewModel.localPlayer.avatar.image
                 .resizable()
                 .scaledToFit()
                 .frame(width: 100, height: 100)
@@ -391,15 +391,15 @@ private extension LobbyView {
         }
     }
 
-    func peerExplorerView(explorer: LobbyExplorer) -> some View {
-        let isSelected = viewModel.selectedPeerID == explorer.id
+    func peerPlayerView(player: PlayerInfo) -> some View {
+        let isSelected = viewModel.selectedPeerID == player.id
         let labelOffset: CGFloat = -50
 
         return ZStack {
-            explorerLabel(text: explorer.displayName)
+            playerLabel(text: player.displayName)
                 .offset(y: labelOffset)
 
-            explorer.avatar.image
+            player.avatar.image
                 .resizable()
                 .scaledToFit()
                 .frame(width: 70, height: 70)
@@ -422,12 +422,12 @@ private extension LobbyView {
         }
         .onTapGesture {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                viewModel.selectPeer(explorer)
+                viewModel.selectPeer(player)
             }
         }
     }
 
-    func explorerLabel(text: String) -> some View {
+    func playerLabel(text: String) -> some View {
         Text(text)
             .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 12))
             .foregroundStyle(AppAsset.Color.blackLabel.swiftUIColor)
@@ -485,7 +485,7 @@ private extension LobbyView {
 
 // MARK: - Request Modal Views
 private extension LobbyView {
-    func requestModal(peer: LobbyExplorer) -> some View {
+    func requestModal(peer: PlayerInfo) -> some View {
         let isSending: Bool = {
             if case .sendingRequest = viewModel.matchStatus { return true }
             return false
@@ -518,7 +518,7 @@ private extension LobbyView {
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
     }
 
-    func modalAvatarView(for peer: LobbyExplorer, isGrayscale: Bool) -> some View {
+    func modalAvatarView(for peer: PlayerInfo, isGrayscale: Bool) -> some View {
         ZStack {
             Circle()
                 .fill(.white.opacity(0.5))
@@ -534,7 +534,7 @@ private extension LobbyView {
         }
     }
 
-    func modalDisplayName(for peer: LobbyExplorer) -> some View {
+    func modalDisplayName(for peer: PlayerInfo) -> some View {
         Text(peer.displayName)
             .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 20))
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
@@ -577,7 +577,7 @@ private extension LobbyView {
 // MARK: - Decline Modal Views
 
 private extension LobbyView {
-    func declineModal(peer: LobbyExplorer) -> some View {
+    func declineModal(peer: PlayerInfo) -> some View {
         VStack(spacing: 24) {
             modalTitle(L10N.Lobby.DeclineModal.invitationDeclinedTitle)
 
@@ -596,7 +596,7 @@ private extension LobbyView {
         .shadow(radius: 10)
     }
 
-    func declineModalMessage(for peer: LobbyExplorer) -> some View {
+    func declineModalMessage(for peer: PlayerInfo) -> some View {
         (Text("'\(peer.displayName)'") +
          Text(L10N.Lobby.DeclineModal.invitationDeclinedMessage))
         .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
@@ -628,7 +628,7 @@ private extension LobbyView {
 // MARK: - 초대 수신 Bottom Sheet
 
 private extension LobbyView {
-    func inviteReceivedSheet(peer: LobbyExplorer) -> some View {
+    func inviteReceivedSheet(peer: PlayerInfo) -> some View {
         VStack(spacing: 24) {
             inviteSheetHeader
 
@@ -666,7 +666,7 @@ private extension LobbyView {
         }
     }
 
-    func inviteSheetContent(for peer: LobbyExplorer) -> some View {
+    func inviteSheetContent(for peer: PlayerInfo) -> some View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
@@ -723,7 +723,7 @@ struct LobbyView_Previews: PreviewProvider {
     static var previews: some View {
         let container = AppContainer()
         LobbyView(
-            viewModel: container.makeLobbyViewModel(nickname: "코스믹어드벤처", characterType: "character1"),
+            viewModel: container.makeLobbyViewModel(playerId: UUID(), nickname: "코스믹어드벤처", characterType: "character1"),
             channelListViewModel: container.makeChannelListViewModel()
         )
     }

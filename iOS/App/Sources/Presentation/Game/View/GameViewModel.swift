@@ -13,15 +13,13 @@ import NetworkKit
 @MainActor
 @Observable
 final class GameViewModel {
-    public let me: LobbyExplorer
-    public let matchPeer: LobbyExplorer?
+    public let localPlayer: PlayerInfo
+    public let remotePlayer: PlayerInfo?
     
-    // TODO: 닉네임이나 id 둘중 하나로 관리되게 통일하기
-    var myNickname: String { me.displayName }
-    var matchNickname: String? { matchPeer?.displayName }
+    var remotePlayerId: UUID? { remotePlayer?.id }
 
     public let localPlayerID: UUID
-    public let otherPlayerIDs: [UUID]
+    public let remotePlayerIDs: [UUID]
     
     let gameplayManager: GameplayManager
     let gameConfig: GameConfigProviding
@@ -50,14 +48,14 @@ final class GameViewModel {
     }
     
     init(
-        me: LobbyExplorer,
-        matchPeer: LobbyExplorer?,
+        localPlayer: PlayerInfo,
+        remotePlayer: PlayerInfo?,
         endCondition: any GameEndCondition,
         connectionSessionManager: ConnectionSessionManaging,
         gameConfig: GameConfigProviding
     ) {
-        self.me = me
-        self.matchPeer = matchPeer
+        self.localPlayer = localPlayer
+        self.remotePlayer = remotePlayer
         self.connectionSessionManager = connectionSessionManager
         self.gameConfig = gameConfig
         self.inputProvider = FaceTrackingGameInputProvider(
@@ -65,23 +63,23 @@ final class GameViewModel {
             tiltSensitivity: gameConfig.tiltSensitivity
         )
         
-        self.localPlayerID = UUID()
+        self.localPlayerID = localPlayer.id
         
-        if matchPeer != nil {
-            self.otherPlayerIDs = [UUID()]
+        if let remotePlayer {
+            self.remotePlayerIDs = [remotePlayer.id]
         } else {
-            self.otherPlayerIDs = []
+            self.remotePlayerIDs = []
         }
         
         self.gameplayManager = GameplayManager(
             localPlayerID: localPlayerID,
-            otherPlayerIDs: otherPlayerIDs,
+            remotePlayerIDs: remotePlayerIDs,
             endCondition: endCondition
         )
         
         self.multiplayerIO = MultiplayerNetworkIO(
             localPlayerID: localPlayerID,
-            otherPlayerIDs: otherPlayerIDs,
+            remotePlayerIDs: remotePlayerIDs,
             gameplayManager: gameplayManager,
             inputProvider: inputProvider,
             networkSessionManager: connectionSessionManager
@@ -94,8 +92,8 @@ final class GameViewModel {
         gameplayManager.bind(input: inputProvider, for: localPlayerID)
         
         // 네트워크 송신/수신 바인딩 (멀티플레이일 때만)
-        if let matchNickname {
-            multiplayerIO?.bind(peerName: matchNickname)
+        if let remotePlayerId {
+            multiplayerIO?.bind(peerId: remotePlayerId)
         } else {
             multiplayerIO?.unbind()
         }

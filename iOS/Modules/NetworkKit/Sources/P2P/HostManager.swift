@@ -38,10 +38,14 @@ final class HostManager: HostManaging {
 
     // MARK: - Public Methods
 
-    func startHosting(nickName: String, status: PeerStatus) {
+    func startHosting(nickName: String, status: PeerStatus, sessionId: UUID) {
         logger.info("호스팅 시작 nickName: \(nickName), status: \(status.rawValue)")
 
-        let txtRecord = NWTXTRecord(["status": status.rawValue])
+        let txtRecord = NWTXTRecord([
+            "status": status.rawValue,
+            "nickname": nickName,
+            "sessionId": sessionId.uuidString
+        ])
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = true
         
