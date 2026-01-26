@@ -13,7 +13,7 @@ public protocol HostManaging {
     var onPermissionDeniedOrFailed: ((Error) -> Void)? { get set }
     var onDataReceived: ((Data, NWConnection) -> Void)? { get set }
 
-    func startHosting(nickName: String, status: PeerStatus)
+    func startHosting(nickName: String, status: PeerStatus, sessionId: UUID)
     func stopHosting()
     func sendData(_ data: Data, to connection: NWConnection)
 }
