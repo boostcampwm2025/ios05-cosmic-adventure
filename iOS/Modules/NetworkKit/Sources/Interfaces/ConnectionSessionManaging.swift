@@ -31,7 +31,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     func cancelInvite(to targetId: UUID)
     func sendInput<T: Codable>(_ data: T, to targetId: UUID?)
     func sendReadyStatus(to targetId: UUID)
-    func sendVideo(data: Data)
+    func sendVideo(_ data: Data, to targetId: UUID?)
 }
 
 extension ConnectionSessionManaging {
@@ -41,5 +41,9 @@ extension ConnectionSessionManaging {
 
     public func sendInput<T: Codable>(_ data: T) {
         self.sendInput(data, to: nil)
+    }
+
+    public func sendVideo(_ data: Data) {
+        self.sendVideo(data, to: nil)
     }
 }
