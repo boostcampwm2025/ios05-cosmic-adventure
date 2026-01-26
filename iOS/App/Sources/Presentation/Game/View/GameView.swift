@@ -49,8 +49,7 @@ struct GameView: View {
             VStack(alignment: .leading, spacing: 12) {
                 gameHUD
 
-                // TODO: 2인 모드 (상대가 있을 때만)
-//                if !otherPlayerIDs.isEmpty {
+                if !viewModel.otherPlayerIDs.isEmpty {
                     RemoteVideoView(layer: videoManager.remoteDisplayLayer)
                         .frame(width: size, height: size)
                         .overlay(
@@ -59,7 +58,7 @@ struct GameView: View {
                         )
                         .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
                         .zIndex(999)
-//                }
+                }
             }
             .padding(16)
 
@@ -74,9 +73,9 @@ struct GameView: View {
             viewModel.start()
             UIApplication.shared.isIdleTimerDisabled = true
 
+            videoManager.setTargetPlayer(nickName: viewModel.matchPeer?.displayName)
             videoManager.startLatencyMonitoring()
             inputProvider.onFrameUpdate = { pixelBuffer in
-                // TODO: 2인모드 체크
                 videoManager.processFrame(pixelBuffer: pixelBuffer)
             }
         }
