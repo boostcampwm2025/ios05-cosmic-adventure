@@ -71,12 +71,11 @@ final class ClientManager: ClientManaging {
     func connectToHost(endpoint: NWEndpoint) async throws {
         if let existingConnection = connections[endpoint] {
             switch existingConnection.state {
-            case .ready:     // 이미 연결이 완료된 상태면 재사용
+            case .ready:
                 return
-            case .preparing, .setup:    // 이미 연결 시도 중이면 상태가 변할 때까지 대기
-                try await waitForReady(connection: existingConnection)
-                return
-            default:        // 실패했거나 끊어진 상태면 새로 연결하기 위해 정리
+            case .preparing, .setup:
+                return  // 이미 연결 시도 중이면 그냥 반환 (기존 receiveData가 동작 중)
+            default:
                 existingConnection.cancel()
                 connections.removeValue(forKey: endpoint)
             }
@@ -84,36 +83,26 @@ final class ClientManager: ClientManaging {
 
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = true
-        
+
         let connection = NWConnection(to: endpoint, using: parameters)
         self.connections[endpoint] = connection
 
-        connection.start(queue: self.networkQueue)
-
-        try await waitForReady(connection: connection)
-        
-        self.logger.info("호스트에 연결 성공")
-        self.receiveData(from: connection)
-    }
-
-    private func waitForReady(connection: NWConnection) async throws {
-        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
-            connection.stateUpdateHandler = { state in
-                switch state {
-                case .ready:
-                    connection.stateUpdateHandler = nil
-                    continuation.resume()
-                case .failed(let error):
-                    connection.stateUpdateHandler = nil
-                    continuation.resume(throwing: error)
-                case .cancelled:
-                    connection.stateUpdateHandler = nil
-                    continuation.resume(throwing: NWError.posix(.ECANCELED))
-                default:
-                    break
-                }
+        connection.stateUpdateHandler = { [weak self] state in
+            guard let self else { return }
+            switch state {
+            case .ready:
+                self.receiveData(from: connection)
+            case .failed(let error):
+                self.logger.error("연결 실패: \(error.localizedDescription)")
+                self.removeConnection(connection)
+            case .cancelled:
+                self.removeConnection(connection)
+            default:
+                self.logger.info("연결 상태: \(String(describing: state))")
             }
         }
+
+        connection.start(queue: self.networkQueue)
     }
 
     func sendData(_ data: Data, to endpoint: NWEndpoint) {
