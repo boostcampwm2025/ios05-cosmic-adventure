@@ -42,7 +42,7 @@ platform :ios do
         signingStyle: "manual",
         teamID: "B3PWYBKFUK",
         provisioningProfiles: {
-          "kr.codesqued.boostcamp10.ios05.cosmic-adventure" => ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
+          "kr.codesquad.boostcamp10.ios05.cosmic-adventure" => ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
         }
       }
     )
