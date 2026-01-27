@@ -12,7 +12,17 @@ import NetworkKit
 @Observable
 final class GameReadyViewModel {
     let me: PlayerInfo
-    let peer: PlayerInfo
+    let peer: PlayerInfo?
+    let isNetwork: Bool
+
+    @ObservationIgnored
+    var connectivityMonitor: ConnectivityMonitoring
+    
+    @ObservationIgnored
+    var networkSessionManager: NetworkSessionManaging
+
+    @ObservationIgnored
+    let webSocketSessionManager: WebSocketSessionManaging?
 
     private(set) var isMeReady: Bool = false
     private(set) var isPeerReady: Bool = false
@@ -20,29 +30,23 @@ final class GameReadyViewModel {
     private(set) var message: String = ""
     private(set) var progress: Double = 0.0
 
-    private(set) var networkMode: NetworkMode = .local
-
-    @ObservationIgnored
-    var connectivityMonitor: ConnectivityMonitoring
-
-    @ObservationIgnored
-    var networkSessionManager: NetworkSessionManaging
-
-    @ObservationIgnored
-    let webSocketSessionManager: WebSocketSessionManaging?
+    private(set) var networkMode: NetworkMode
 
     init(
         me: PlayerInfo,
-        peer: PlayerInfo,
+        peer: PlayerInfo?,
+        isNetwork: Bool,
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?
     ) {
         self.me = me
         self.peer = peer
+        self.isNetwork = isNetwork
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
+        self.networkMode = isNetwork ? .remote : .local
 
         setupConnectivityMonitor()
         setupP2PCallbacks()
@@ -65,25 +69,17 @@ final class GameReadyViewModel {
     private func setupConnectivityMonitor() {
         connectivityMonitor.onStatusChanged = { [weak self] isConnected in
             Task { @MainActor in
-                self?.handleConnectivityChange(isConnected: isConnected)
+                if self?.isNetwork == true {
+                    self?.networkMode = isConnected ? .remote : .local
+                }
             }
         }
         connectivityMonitor.start()
-        networkMode = connectivityMonitor.isConnected ? .remote : .local
-    }
-
-    private func handleConnectivityChange(isConnected: Bool) {
-        if isConnected {
-            networkMode = .remote
-        } else {
-            networkMode = .local
-        }
     }
 
     private func setupP2PCallbacks() {
         networkSessionManager.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
-
             guard senderId == self.peer.id else { return }
 
             Task { @MainActor in
@@ -95,7 +91,6 @@ final class GameReadyViewModel {
     private func setupWebSocketCallbacks() {
         webSocketSessionManager?.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
-
             guard senderId == self.peer.id else { return }
 
             Task { @MainActor in
