@@ -12,6 +12,7 @@ enum GameMessageType: String {
     case inviteDecline
     case inviteCancel
 
+    case gameReady
     case input
 
     case ping
