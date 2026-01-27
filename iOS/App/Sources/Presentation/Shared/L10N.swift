@@ -93,9 +93,10 @@ enum L10N {
 
     enum GameReady {
         static let connectingMessage = "다른 탐험가와 연결중.."
-        static let peerWaitingMessage = "상대방이 기다리고 있습니다!"
         static let waitingForPeerMessage = "상대방의 준비를 기다리는 중..."
         static let allReadyMessage = "모든 탐험가 준비 완료! 곧 시작합니다."
+        static let soloPreparingMessage = "탐험 준비중..."
+        static let soloReadyMessage = "탐험 준비 완료! 곧 시작합니다."
     }
 
     enum Settings {

@@ -30,7 +30,7 @@ struct GameReadyView: View {
                         )
 
                     if let peer = viewModel.peer {
-                        characterView(explorer: peer, isMe: false)
+                        characterView(player: peer, isMe: false)
                             .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
                             .animation(
                                 .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5),

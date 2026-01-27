@@ -46,8 +46,8 @@ struct RootView: View {
             if let myPlayer = players.first {
                 LobbyView(viewModel:
                             container.makeLobbyViewModel(playerId: myPlayer.id,
-                                                                nickname: myPlayer.nickname,
-                                                                characterType: myPlayer.character),
+                                                         nickname: myPlayer.nickname,
+                                                         characterType: myPlayer.character),
                           channelListViewModel: container.makeChannelListViewModel()
                 )
             }
@@ -59,7 +59,9 @@ struct RootView: View {
                 SettingsView(viewModel: container.makeSettingsViewModel(player: player))
             }
         case .gameReady(let me, let peer, let isNetwork):
-            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me, peer: peer, isNetwork: isNetwork))
+            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me,
+                                                                      peer: peer,
+                                                                      isNetwork: isNetwork))
         case .game(let matchPeer, let isNetwork):
             if let myPlayer = players.first {
                 let me = PlayerInfo(
@@ -73,14 +75,21 @@ struct RootView: View {
                 
                 GameView(
                     viewModel: container
-                        .makeGameViewModel(localPlayer: me, remotePlayer: matchPeer, gameConfig: gameConfig, isNetwork: isNetwork),
+                        .makeGameViewModel(localPlayer: me,
+                                           remotePlayer: matchPeer,
+                                           gameConfig: gameConfig,
+                                           isNetwork: isNetwork),
                     videoManager: container.makeVideoManager()
                 )
             }
         case .operationGuide(let me, let peer, let isNetwork):
-            OperationGuideView(me: me, peer: peer, isNetwork: isNetwork)
+            OperationGuideView(me: me,
+                               peer: peer,
+                               isNetwork: isNetwork)
         case .victoryGuide(let me, let peer, let isNetwork):
-            VictoryGuideView(me: me, peer: peer, isNetwork: isNetwork)
+            VictoryGuideView(me: me,
+                             peer: peer,
+                             isNetwork: isNetwork)
         case .result:
             // TODO: ResultView 연결
             EmptyView()
