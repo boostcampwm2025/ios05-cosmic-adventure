@@ -21,4 +21,7 @@ enum AppRoute: Hashable {
     case operationGuide(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool)
     case victoryGuide(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool)
     case result
+    
+    // Test
+    case testGamePreview
 }

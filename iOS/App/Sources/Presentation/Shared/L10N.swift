@@ -111,6 +111,7 @@ enum L10N {
         static let sound: LocalizedStringKey = "사운드"
         static let haptic: LocalizedStringKey = "진동"
         static let preview: LocalizedStringKey = "얼굴 미리보기 크기"
+        static let gamePreview: LocalizedStringKey = "게임 미리보기"
         
         static let low: LocalizedStringKey = "적게"
         static let medium: LocalizedStringKey = "중간"
