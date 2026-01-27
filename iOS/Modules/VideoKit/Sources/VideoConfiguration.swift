@@ -26,6 +26,27 @@ public struct VideoConfiguration {
     public let frameRate: Int32
     public let keyFrameIntervalDuration: Double
 
+    // Latency 임계값
+    public struct LatencyThresholds {
+        public let high: Double
+        public let low: Double
+        public let defaultFallback: Double
+    }
+
+    // 원격(Remote) 모드용 임계값
+    public let remoteThresholds = LatencyThresholds(
+        high: 350.0,
+        low: 150.0,
+        defaultFallback: 150.0
+    )
+
+    // 로컬(Local/P2P) 모드용 임계값
+    public let localThresholds = LatencyThresholds(
+        high: 180.0,
+        low: 80.0,
+        defaultFallback: 50.0
+    )
+
     public init(
         resolutionWidth: Int32 = 192,
         resolutionHeight: Int32 = 192,

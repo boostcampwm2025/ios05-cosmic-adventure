@@ -101,11 +101,15 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         service.sendReadyStatus(to: sessionId)
     }
 
-    public func sendVideo(_ data: Data, to playerId: String?) {
-        guard let playerId,
-              let targetId = sessionId(forNickname: playerId) else { return }
+    public func sendVideo(_ data: Data, to targetId: UUID?) {
+        guard let targetId,
+              let sessionId = sessionId(forPlayerId: targetId) else { return }
 
-        service.sendVideo(data, to: targetId)
+        service.sendVideo(data, to: sessionId)
+    }
+
+    public func getLatency(for playerId: UUID) -> Double? {
+        return players.first { $0.id == playerId }?.latency
     }
 
     // MARK: - Private Methods
@@ -178,7 +182,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         case .videoFrame:
             if let payloadString = message.payload {
                 if let payloadData = Data(base64Encoded: payloadString) {
-                    onVideoReceived?(nickname(forSessionId: message.senderId) ?? "", payloadData)
+                    onVideoReceived?(playerId(forSenderId: message.senderId), payloadData)
                 }
             }
 

@@ -25,18 +25,20 @@ final public class VideoDecoder: VideoDecoding {
     public init() { }
 
     public func reset() {
-        packetAccumulator.removeAll()
-        self.formatDescription = nil
-        self.lastSps = nil
-        self.lastPps = nil
+        decodeQueue.async { [weak self] in
+            self?.packetAccumulator.removeAll()
+            self?.formatDescription = nil
+            self?.lastSps = nil
+            self?.lastPps = nil
 
-        DispatchQueue.main.async { [weak self] in
-            guard let layer = self?.displayLayer else { return }
+            DispatchQueue.main.async { [weak self] in
+                guard let layer = self?.displayLayer else { return }
 
-            if #available(iOS 18.0, *) {
-                layer.sampleBufferRenderer.flush()
-            } else {
-                layer.flushAndRemoveImage()
+                if #available(iOS 18.0, *) {
+                    layer.sampleBufferRenderer.flush()
+                } else {
+                    layer.flushAndRemoveImage()
+                }
             }
         }
     }

@@ -20,7 +20,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             await forwardToTarget(message: message, manager: manager)
 
         case .input, .videoFrame:
-            await handleForwarding(message: message, manager: manager)
+            await handleForwarding(message: message, from: session, manager: manager)
 
         case .ping:
             let pong = WSMessage(type: GameMessageType.pong.rawValue, senderId: "server")
@@ -104,12 +104,17 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         await manager.send(to: targetId, message: message)
     }
 
-    private func handleForwarding(message: WSMessage, manager: WSSessionManager) async {
+    private func handleForwarding(message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
+        guard let channelId = session.metadata["channelId"] else { return }
+
         guard let payload = message.payload,
               let data = payload.data(using: .utf8),
               let routed = try? JSONDecoder().decode(ForwardingPayload.self, from: data) else {
             return
         }
+
+        let sessions = await ChannelManager.shared.getSessionsInChannel(channelId)
+        guard sessions.contains(where: { $0.id == routed.to }) else { return }
 
         let forwarded = WSMessage(
             type: message.type,

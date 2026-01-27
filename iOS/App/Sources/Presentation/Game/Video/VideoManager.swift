@@ -29,26 +29,22 @@ public final class VideoManager {
         return layer
     }()
 
-    private(set) var peerName: String?
+    private(set) var remotePlayer: PlayerInfo?
     private(set) var networkMode: NetworkMode = .local
 
     private let networkSessionManager: ConnectionSessionManaging
     private let webSocketSessionManager: ConnectionSessionManaging?
-    var connectivityMonitor: ConnectivityMonitoring
 
     private let logger = Logger(subsystem: "com.cosmicadventure.Game", category: "VideoManager")
 
-    init(connectivityMonitor: ConnectivityMonitoring,
-         networkSessionManager: ConnectionSessionManaging,
+    init(networkSessionManager: ConnectionSessionManaging,
          webSocketSessionManager: ConnectionSessionManaging?,
          configuration: VideoConfiguration = VideoConfiguration()
     ) {
-        self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
         self.configuration = configuration
 
-        setupConnectivityMonitor()
         setupEncoder()
         setupDecoder()
         setupVideoDataCallbacks()
@@ -57,15 +53,6 @@ public final class VideoManager {
     deinit {
         stopLatencyMonitoring()
         videoEncoder?.invalidate()
-    }
-
-    private func setupConnectivityMonitor() {
-        connectivityMonitor.onStatusChanged = { [weak self] isConnected in
-            Task { @MainActor in
-                self?.handleConnectivityChange(isConnected: isConnected)
-            }
-        }
-        connectivityMonitor.start()
     }
 
     private func setupEncoder() {
@@ -83,7 +70,8 @@ public final class VideoManager {
         logger.debug("[전송] 크기: \(data.count) bytes | 헤더: \(sendLog)")
 
         let connectionSessionManager = (networkMode == .remote) ? webSocketSessionManager : networkSessionManager
-        connectionSessionManager?.sendVideo(data, to: peerName)
+        guard let target = remotePlayer else { return }
+        connectionSessionManager?.sendVideo(data, to: target.id)
     }
 
     private func setupDecoder() {
@@ -105,36 +93,24 @@ public final class VideoManager {
 
     // Network Adaptation
     private func checkNetworkHealth() {
-        guard let peerName = self.peerName else { return }
+        guard let target = self.remotePlayer else { return }
 
-        let currentLatency: Double = {
-            if networkMode == .remote {
-                return (webSocketSessionManager as? WebSocketSessionManager)?
-                    .players.first { $0.nickname == peerName }?.latency ?? 150.0
-            } else {
-                return (networkSessionManager as? NetworkSessionManager)?
-                    .nearbyPlayer.first { $0.name == peerName }?.latency ?? 50.0
-            }
-        }()
+        let thresholds = (networkMode == .remote) ? configuration.remoteThresholds : configuration.localThresholds
+        let sessionManager = (networkMode == .remote) ? webSocketSessionManager : networkSessionManager
 
-        // 모드에 따른 가변 기준점 설정
-        // P2P는 150ms만 넘어도 이상 상태로 볼 수 있고, 서버는 300ms까지 정상으로 볼 수 있음.
-        let highLatencyThreshold = (networkMode == .remote) ? 350.0 : 180.0
-        let lowLatencyThreshold = (networkMode == .remote) ? 150.0 : 80.0
+        let currentLatency = sessionManager?.getLatency(for: target.id) ?? thresholds.defaultFallback
 
-        if currentLatency > highLatencyThreshold {
+        if currentLatency > thresholds.high {
             if !isLowBitrateMode {
                 videoEncoder?.changeBitrate(to: configuration.lowBitrate)
                 isLowBitrateMode = true
-                logger.debug("[Latency] 지연 발생: 화질 낮춤")
+                logger.debug("[Latency] \(currentLatency)ms - 화질 낮춤")
             }
-        } else if currentLatency < lowLatencyThreshold {
+        } else if currentLatency < thresholds.low {
             if isLowBitrateMode {
                 videoEncoder?.changeBitrate(to: configuration.highBitrate)
                 isLowBitrateMode = false
-                logger.debug("[Latency] 안정적: 화질 복구")
-
-                reset(includePeer: false)
+                logger.debug("[Latency] \(currentLatency)ms - 화질 복구")
             }
         }
     }
@@ -156,8 +132,8 @@ public final class VideoManager {
         latencyTimer = nil
     }
 
-    public func setTargetPlayer(nickName: String?) {
-        self.peerName = nickName
+    func setTargetPlayer(_ remotePlayer: PlayerInfo?) {
+        self.remotePlayer = remotePlayer
     }
 
     func processFrame(pixelBuffer: CVPixelBuffer) {
@@ -175,16 +151,17 @@ public final class VideoManager {
         }
 
         videoDecoder?.reset()
-
+        isLowBitrateMode = false
+        
         if includePeer {
-            self.peerName = nil
+            self.remotePlayer = nil
         }
 
         setupEncoder()
     }
 
-    func handleConnectivityChange(isConnected: Bool) {
-        self.networkMode = isConnected ? .remote : .local
+    func setNetworkMode(isNetwork: Bool) {
+        self.networkMode = isNetwork ? .remote : .local
         logger.info("네트워크 모드 변경: \(self.networkMode == .remote ? "Remote" : "Local")")
 
         reset(includePeer: false)

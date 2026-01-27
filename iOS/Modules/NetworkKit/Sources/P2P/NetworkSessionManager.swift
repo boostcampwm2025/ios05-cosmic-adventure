@@ -158,7 +158,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     }
 
 
-    public func sendVideo(_ data: Data, to targetId: String?) {
+    public func sendVideo(_ data: Data, to targetId: UUID?) {
         let packet = NetworkPacket(
             type: .videoFrame,
             senderIdentifier: localSessionId.uuidString,
@@ -180,6 +180,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         if let activePeerId {
             sendVideoAfterConnect(data: encodedPacket, targetId: activePeerId)
         }
+    }
+
+    public func getLatency(for playerId: UUID) -> Double? {
+        return nearbyPlayer.first { $0.sessionId == playerId }?.latency
     }
 
     // MARK: - Private Methods

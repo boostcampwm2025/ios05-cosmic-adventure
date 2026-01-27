@@ -32,6 +32,8 @@ public protocol ConnectionSessionManaging: AnyObject {
     func sendInput<T: Codable>(_ data: T, to targetId: UUID?)
     func sendReadyStatus(to targetId: UUID)
     func sendVideo(_ data: Data, to targetId: UUID?)
+
+    func getLatency(for playerId: UUID) -> Double?
 }
 
 extension ConnectionSessionManaging {
