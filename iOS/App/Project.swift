@@ -6,6 +6,11 @@ let xconfigPath = URL(fileURLWithPath: #file)
     .appendingPathComponent("Environment.xcconfig")
 let xconfigExists = FileManager.default.fileExists(atPath: xconfigPath.path)
 
+let isCI: Bool = {
+    let v = ProcessInfo.processInfo.environment["CI"]?.lowercased()
+    return v == "true" || v == "1"
+}()
+
 let project = Project(
     name: "App",
     targets: [
@@ -74,7 +79,7 @@ let project = Project(
             settings: .settings(
                 base: [
                     "DEVELOPMENT_TEAM": "B3PWYBKFUK",
-                    "CODE_SIGN_STYLE": "Automatic",
+                    "CODE_SIGN_STYLE": .string(isCI ? "Manual" : "Automatic"),
                 ],
                 configurations: xconfigExists ? [
                     .debug(name: "Debug", xcconfig: "Environment.xcconfig"),
