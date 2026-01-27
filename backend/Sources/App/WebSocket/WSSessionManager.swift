@@ -71,22 +71,22 @@ actor WSSessionManager {
     }
 
     func removeSession(_ sessionId: String) async {
-        guard let channelId = sessions[sessionId]?.metadata["channelId"] else { return }
-        
-        await ChannelManager.shared.leave(channelId, sessionId: sessionId)
-        
-        let leftMessage = WSMessage(
-            type: GameMessageType.playerLeft.rawValue,
-            senderId: sessionId
-        )
-        
-        /// 채널 내 다른 플레이어들에게 특정 플레이어의 퇴장을 알림
-        await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: sessionId)
+        if let channelId = sessions[sessionId]?.metadata["channelId"] {
+            await ChannelManager.shared.leave(channelId, sessionId: sessionId)
+            
+            let leftMessage = WSMessage(
+                type: GameMessageType.playerLeft.rawValue,
+                senderId: sessionId
+            )
+            
+            /// 채널 내 다른 플레이어들에게 특정 플레이어의 퇴장을 알림
+            await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: sessionId)
 
-        sessions.removeValue(forKey: sessionId)
-        latencies.removeValue(forKey: sessionId)
-        pingTimestamps.removeValue(forKey: sessionId)
-        lastPongTimes.removeValue(forKey: sessionId)
+            sessions.removeValue(forKey: sessionId)
+            latencies.removeValue(forKey: sessionId)
+            pingTimestamps.removeValue(forKey: sessionId)
+            lastPongTimes.removeValue(forKey: sessionId)
+        }
     }
 
     func getSession(_ sessionId: String) -> WSSession? {
