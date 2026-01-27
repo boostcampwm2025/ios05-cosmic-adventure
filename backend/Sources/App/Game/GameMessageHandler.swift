@@ -14,7 +14,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         case .channelPlayerList:
             await sendPlayerList(to: session, manager: manager)
 
-        case .invite, .inviteAccept, .inviteDecline, .inviteCancel:
+        case .invite, .inviteAccept, .inviteDecline, .inviteCancel, .gameReady:
             await forwardToTarget(message: message, manager: manager)
 
         case .input:
