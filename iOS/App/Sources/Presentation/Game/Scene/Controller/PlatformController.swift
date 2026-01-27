@@ -121,7 +121,7 @@ final class PlatformController {
         
         let platform = createPlatform(
             index: allocateIndex(),
-            position: CGPoint(x: isGoal ? 0 :nextX, y: nextY),
+            position: CGPoint(x: isGoal ? 0 : nextX, y: nextY),
             size: size
         )
         register(platform: platform)
