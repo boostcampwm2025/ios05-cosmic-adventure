@@ -30,6 +30,7 @@ public enum WebSocketMessageType: String, Codable {
     
     case input
     case videoFrame
+    case gameEnded
     
     // MARK: - Connection
     

@@ -44,6 +44,8 @@ actor MultiplayerNetworkIO {
     /// 원격 스냅샷이 끊겼을 때 멈추기 위한 liveness
     private var lastRemoteReceivedAt: TimeInterval = 0
     private var didForceStopRemote: Bool = false
+
+    private var didSendGameEnd: Bool = false
     
     /// 지터를 줄이기 위한 smoothing 상수(작을수록 반응이 빠름)
     private let remoteSmoothingTimeConstant: TimeInterval = 0.08
@@ -75,6 +77,10 @@ actor MultiplayerNetworkIO {
         Task { await self.unbindAsync() }
     }
 
+    nonisolated func notifyGameEnded(_ reason: GameEndReason) {
+        Task { await self.notifyGameEndedAsync(reason) }
+    }
+
     /// gameplayManager.update(deltaTime:)와 동일 틱에 실행되는 네트워크 처리
     /// `SKScene.update`는 동기(sync)로 호출되기 때문에, 여기서 바로 `await`를 사용할 수 없어
     ///  실제 작업을 `Task`로 감싸 actor 큐에 등록(enqueue)하여 비동기로 처리합니다.
@@ -104,6 +110,7 @@ actor MultiplayerNetworkIO {
         remoteSmoothedMoveX = 0
         lastRemoteReceivedAt = Date().timeIntervalSince1970
         didForceStopRemote = false
+        didSendGameEnd = false
     }
 
     private func unbindAsync() async {
@@ -117,12 +124,21 @@ actor MultiplayerNetworkIO {
             self.gameplayManager.onRespawnConfirmed = nil
         }
         connectionSessionManager.onInputReceived = nil
+        connectionSessionManager.onGameEnded = nil
+    }
+
+    private func notifyGameEndedAsync(_ reason: GameEndReason) async {
+        guard didSendGameEnd == false else { return }
+        guard let peerId else { return }
+        didSendGameEnd = true
+        connectionSessionManager.sendGameEnded(reason: encodeGameEndReason(reason), to: peerId)
     }
 
     private func tickAsync(deltaTime: TimeInterval) async {
         guard peerId != nil else { return }
         await sendMovementSnapshotIfNeeded(deltaTime: deltaTime)
         await updateRemoteInterpolation(deltaTime: deltaTime)
+        await sendGameEndIfNeeded()
     }
 
     // MARK: - Receive
@@ -131,6 +147,10 @@ actor MultiplayerNetworkIO {
         connectionSessionManager.onInputReceived = { [weak self] sender, payload in
             guard let self else { return }
             Task { await self.handleReceivedInput(sender: sender, payload: payload) }
+        }
+        connectionSessionManager.onGameEnded = { [weak self] sender, reasonRaw in
+            guard let self else { return }
+            Task { await self.handleReceivedGameEnd(sender: sender, reasonRaw: reasonRaw) }
         }
     }
 
@@ -163,6 +183,15 @@ actor MultiplayerNetworkIO {
             await MainActor.run {
                 self.gameplayManager.applyRespawnRequested(reason, position: pos, for: remotePlayerID)
             }
+        }
+    }
+
+    private func handleReceivedGameEnd(sender: UUID, reasonRaw: Int) async {
+        didSendGameEnd = true
+
+        guard let reason = decodeGameEndReason(reasonRaw) else { return }
+        await MainActor.run {
+            self.gameplayManager.applyGameEnd(reason)
         }
     }
     
@@ -205,6 +234,39 @@ actor MultiplayerNetworkIO {
         default:
             return nil
         }
+    }
+
+    private func encodeGameEndReason(_ reason: GameEndReason) -> Int {
+        switch reason {
+        case .timeout:
+            return 0
+        case .reachedFinish:
+            return 1
+        }
+    }
+
+    private func decodeGameEndReason(_ raw: Int) -> GameEndReason? {
+        switch raw {
+        case 0:
+            return .timeout
+        case 1:
+            return .reachedFinish
+        default:
+            return nil
+        }
+    }
+
+    private func sendGameEndIfNeeded() async {
+        guard didSendGameEnd == false else { return }
+        guard let peerId = self.peerId else { return }
+
+        let endReason: GameEndReason? = await MainActor.run {
+            self.gameplayManager.gameEnd.endReason
+        }
+        guard let endReason else { return }
+
+        didSendGameEnd = true
+        connectionSessionManager.sendGameEnded(reason: encodeGameEndReason(endReason), to: peerId)
     }
 
     // MARK: - Send (input -> cache)

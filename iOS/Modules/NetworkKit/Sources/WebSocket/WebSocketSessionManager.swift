@@ -37,6 +37,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onConnectionStateChanged: ((Bool) -> Void)?
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
+    public var onGameEnded: ((UUID, Int) -> Void)?
 
     // MARK: - Initialization
     
@@ -110,6 +111,12 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
     public func getLatency(for playerId: UUID) -> Double? {
         return players.first { $0.id == playerId }?.latency
+    }
+
+    public func sendGameEnded(reason: Int, to targetId: UUID?) {
+        guard let targetId,
+              let sessionId = sessionId(forPlayerId: targetId) else { return }
+        service.sendGameEnded(reason: reason, to: sessionId)
     }
 
     // MARK: - Private Methods
@@ -188,6 +195,12 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
         case .gameReady:
             onReadyStatusReceived?(playerId(forSenderId: message.senderId))
+
+        case .gameEnded:
+            if let payload = message.payload,
+               let reason = Int(payload) {
+                onGameEnded?(playerId(forSenderId: message.senderId), reason)
+            }
 
         default:
             break

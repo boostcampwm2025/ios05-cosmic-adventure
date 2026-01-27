@@ -15,6 +15,7 @@ enum GameMessageType: String {
     case gameReady
     case input
     case videoFrame
+    case gameEnded
 
     case ping
     case pong

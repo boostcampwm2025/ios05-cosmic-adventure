@@ -91,9 +91,9 @@ struct GameView: View {
             videoManager.reset(includePeer: true)
         }
         .onChange(of: viewModel.endReason) { _, newValue in
-            if newValue != nil {
-                viewModel.stop()
-            }
+            guard let reason = newValue else { return }
+            viewModel.notifyGameEnded(reason)
+            viewModel.stop()
         }
     }
     

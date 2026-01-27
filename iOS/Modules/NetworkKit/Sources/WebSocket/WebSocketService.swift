@@ -147,6 +147,15 @@ public final class WebSocketService: NSObject {
         send(message)
     }
 
+    public func sendGameEnded(reason: Int, to targetId: String) {
+        let routed = ForwardingPayload(to: targetId, data: String(reason))
+
+        guard let routedData = try? encoder.encode(routed),
+              let payload = String(data: routedData, encoding: .utf8) else { return }
+
+        send(WebSocketMessage(type: .gameEnded, senderId: sessionId ?? "", payload: payload))
+    }
+
     private func receiveMessage() {
         webSocketTask?.receive { [weak self] result in
             switch result {

@@ -299,6 +299,10 @@ extension GameplayManager {
         gameEnd.setCondition(condition)
     }
 
+    public func applyGameEnd(_ reason: GameEndReason) {
+        gameEnd.forceEnd(reason)
+    }
+
     public func startNewGame() {
         state = GameState(localPlayerID: localPlayerID, remotePlayerIDs: remotePlayerIDs)
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
