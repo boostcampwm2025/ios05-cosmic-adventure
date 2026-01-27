@@ -6,13 +6,11 @@ actor ChannelManager {
     private let minChannels = 3
     private let maxPlayersPerChannel = 10
     private let scaleUpThreshold: Double = 0.8
-    private let cleanupInterval: TimeInterval = 15.0
 
     /// 채널 메타데이터 (REST API 응답용: id, name, maxPlayers, status)
     private var channels: [String: Channel] = [:]
     /// 채널별 WebSocket 세션 (실시간 메시지 브로드캐스트용) - [channelId: [sessionId: WSSession]]
     private var channelSessions: [String: [String: WSSession]] = [:]
-    private var cleanupTask: Task<Void, Never>?
 
     private init() {
         for i in 1...minChannels {
@@ -24,9 +22,6 @@ actor ChannelManager {
                 status: .available
             )
             channelSessions[id] = [:]
-        }
-        Task {
-            await startCleanupTimer()
         }
     }
 
@@ -135,55 +130,5 @@ actor ChannelManager {
                 channelSessions.removeValue(forKey: id)
             }
         }
-    }
-
-    // MARK: - Ghost Session Cleanup
-
-    private func startCleanupTimer() {
-        cleanupTask = Task {
-            while !Task.isCancelled {
-                try? await Task.sleep(for: .seconds(cleanupInterval))
-                await cleanupGhostSessions()
-            }
-        }
-    }
-
-    private func cleanupGhostSessions() async {
-        var ghostSessionIds: [(channelId: String, sessionId: String)] = []
-
-        for (channelId, sessions) in channelSessions {
-            for (sessionId, session) in sessions {
-                if session.isClosed {
-                    ghostSessionIds.append((channelId, sessionId))
-                }
-            }
-            
-            await Task.yield()
-        }
-        
-        if ghostSessionIds.isEmpty { return }
-
-        await withTaskGroup { group in
-            for ghost in ghostSessionIds {
-                group.addTask {
-                    await self.removeGhostSession(channelId: ghost.channelId, sessionId: ghost.sessionId)
-                    
-                    // TODO: channelLeave인지 playerLeft인지 확인 필요
-                    let leftMessage = WSMessage(
-                        type: GameMessageType.playerLeft.rawValue,
-                        senderId: ghost.sessionId)
-                    
-                    await self.broadcastToChannel(ghost.channelId, message: leftMessage, exclude: ghost.sessionId)
-                    
-                }
-            }
-        }
-        
-        checkAndScaleDown()
-    }
-    
-    private func removeGhostSession(channelId: String, sessionId: String) async {
-        print("[ChannelManager] 채널-\(channelId)의 ghost session 제거\(sessionId)")
-        channelSessions[channelId]?.removeValue(forKey: sessionId)
     }
 }
