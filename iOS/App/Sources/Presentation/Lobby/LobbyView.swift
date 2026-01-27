@@ -44,12 +44,14 @@ struct LobbyView: View {
         }
         .onChange(of: viewModel.matchStatus) { _, newValue in
             if case .gameReady(let peer) = newValue {
-                // TODO: 연결 로직 수정 필요
                 if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.game(peer, isNetwork: viewModel.networkMode == .remote))
+                    router.push(.gameReady(me: viewModel.myExplorer,
+                                           peer: peer,
+                                           isNetwork: viewModel.networkMode == .remote))
                 } else {
                     router.push(.operationGuide(me: viewModel.localPlayer,
-                                                peer: peer, isNetwork: viewModel.networkMode == .remote))
+                                                peer: peer,
+                                                isNetwork: viewModel.networkMode == .remote))
                 }
             }
         }
@@ -154,10 +156,15 @@ private extension LobbyView {
         VStack(spacing: 12) {
             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
                 viewModel.setSoloMode()
+
                 if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.game(nil))
+                    router.push(.gameReady(me: viewModel.myExplorer,
+                                           peer: nil,
+                                           isNetwork: viewModel.networkMode == .remote))
                 } else {
-                    router.push(.operationGuide(me: viewModel.localPlayer, peer: nil, isNetwork: viewModel.networkMode == .remote))
+                    router.push(.operationGuide(me: viewModel.localPlayer,
+                                                peer: nil,
+                                                isNetwork: viewModel.networkMode == .remote))
                 }
             }
             

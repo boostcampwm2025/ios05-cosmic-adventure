@@ -58,8 +58,8 @@ struct RootView: View {
             if let player = players.first {
                 SettingsView(viewModel: container.makeSettingsViewModel(player: player))
             }
-        case .gameReady(let me, let peer):
-            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me, peer: peer))
+        case .gameReady(let me, let peer, let isNetwork):
+            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me, peer: peer, isNetwork: isNetwork))
         case .game(let matchPeer, let isNetwork):
             if let myPlayer = players.first {
                 let me = PlayerInfo(

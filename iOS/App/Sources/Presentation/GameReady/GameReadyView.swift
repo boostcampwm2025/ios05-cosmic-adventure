@@ -29,12 +29,14 @@ struct GameReadyView: View {
                             value: isAnimating
                         )
 
-                    characterView(player: viewModel.peer, isMe: false)
-                        .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
-                        .animation(
-                            .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5),
-                            value: isAnimating
-                        )
+                    if let peer = viewModel.peer {
+                        characterView(explorer: peer, isMe: false)
+                            .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
+                            .animation(
+                                .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5),
+                                value: isAnimating
+                            )
+                    }
                 }
                 .padding(.bottom, 30)
 
@@ -62,7 +64,7 @@ struct GameReadyView: View {
     private func attemptStart() {
         if viewModel.checkAllReady() {
             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                router.push(.game(viewModel.peer))
+                router.push(.game(viewModel.peer, isNetwork: viewModel.isNetwork))
             }
         }
     }
@@ -115,7 +117,8 @@ struct GameReadyView_Previews: PreviewProvider {
         let container = AppContainer()
         GameReadyView(
             viewModel: container.makeGameReadyViewModel(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                                                        peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2))
+                                                        peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2),
+                                                        isNetwork: false)
         )
     }
 }

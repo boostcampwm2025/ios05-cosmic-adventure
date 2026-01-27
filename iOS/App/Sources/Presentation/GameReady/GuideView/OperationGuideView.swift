@@ -51,33 +51,13 @@ struct OperationGuideView: View {
                 Spacer()
                 
                 PrimaryGradientButton(
-                    title: isChecked ? L10N.Game.Guide.gameReady : L10N.Game.Guide.gotoVictoryCondition,
+                    title: L10N.Game.Guide.gotoVictoryCondition,
                     verticalPadding: 16
                 ) {
-                    if isChecked {
-                        if let peer = peer {
-                            router.push(.game(peer, isNetwork: isNetwork))
-                        } else { // 1인 모드
-                            router.push(.game(nil))
-                        }
-                    } else {
-                        router.push(.victoryGuide(me: me, peer: peer, isNetwork: isNetwork))
-                    }
+                    router.push(.victoryGuide(me: me, peer: peer, isNetwork: isNetwork))
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
-                
-                CheckButton(
-                    isChecked: Binding(
-                        get: { isChecked },
-                        set: { newValue in
-                            isChecked = newValue
-                            UserDefaultsList.Game.isGuideChecked = newValue
-                        }
-                    ),
-                    title: L10N.Game.Guide.neverShowAgain
-                )
-                .frame(maxWidth: .infinity)
                 
                 Spacer()
             }

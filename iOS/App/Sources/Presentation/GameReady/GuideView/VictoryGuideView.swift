@@ -54,11 +54,7 @@ struct VictoryGuideView: View {
                     title: L10N.Game.Guide.gameReady,
                     verticalPadding: 16
                 ) {
-                    if let peer = peer {
-                        router.push(.game(peer, isNetwork: isNetwork))
-                    } else { // 1인 모드
-                        router.push(.game(nil))
-                    }
+                    router.push(.gameReady(me: me, peer: peer, isNetwork: isNetwork))
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)
