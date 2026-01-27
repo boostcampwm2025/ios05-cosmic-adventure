@@ -30,6 +30,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
     private var pendingInviteConnections: [UUID: NWConnection] = [:]
     private var activeGameConnection: NWConnection?
+    private var activeVideoConnection: NWConnection?
+    private var activePeerId: UUID?
     private var lastPingTimestamps: [UUID: Date] = [:]
     private var pingTimer: Timer?
     private var peerById: [UUID: NetworkPeer] = [:]
@@ -94,6 +96,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
          nearbyPlayer.removeAll()
          peerById.removeAll()
          myNickname = nil
+         activeGameConnection = nil
+         activeVideoConnection = nil
+         activePeerId = nil
+         pendingInviteConnections.removeAll()
 
          hostGranted = nil
          clientGranted = nil
@@ -130,7 +136,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         let packet = NetworkPacket(
             type: .input,
             senderIdentifier: localSessionId.uuidString,
-            payload: payload
+            payload: payload,
+            channel: .game
         )
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
@@ -154,17 +161,23 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         let packet = NetworkPacket(
             type: .videoFrame,
             senderIdentifier: localSessionId.uuidString,
-            payload: data
+            payload: data,
+            channel: .video
         )
 
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
-        if let connection = self.activeGameConnection {
+        if let connection = self.activeVideoConnection {
             connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
                 if let error = error {
                     self.logger.error("비디오 전송 실패: \(error.localizedDescription)")
                 }
             })
+            return
+        }
+
+        if let activePeerId {
+            sendVideoAfterConnect(data: encodedPacket, targetId: activePeerId)
         }
     }
 
@@ -292,11 +305,17 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                     lastPingTimestamps.removeValue(forKey: senderId)
                 }
 
+            case .channelHello:
+                if packet.channel == .video {
+                    activeVideoConnection = connection
+                }
+
             case .invite:
                 onInviteReceived?(senderId)
 
             case .inviteAccept:
                 activeGameConnection = connection
+                activePeerId = senderId
                 pendingInviteConnections.removeValue(forKey: senderId)
                 onInviteAccepted?(senderId)
 
@@ -315,6 +334,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 onReadyStatusReceived?(senderId)
 
             case .videoFrame:
+                if activeVideoConnection == nil {
+                    activeVideoConnection = connection
+                }
                 if let payload = packet.payload {
                     onVideoReceived?(senderId, payload)
                 }
@@ -330,17 +352,56 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         }
     }
 
-    private func sendToPeer(to peer: NetworkPeer, packet: NetworkPacket) {
+    private func sendToPeer(to peer: NetworkPeer, packet: NetworkPacket, kind: ConnectionKind = .game) {
         guard let data = try? encoder.encode(packet) else { return }
 
         Task {
             do {
-                try await client.connectToHost(endpoint: peer.endpoint)
-                client.sendData(data, to: peer.endpoint)
+                _ = try await client.connectToHost(endpoint: peer.endpoint, kind: kind)
+                client.sendData(data, to: peer.endpoint, kind: kind)
             } catch {
                 logger.error("연결 실패: \(error.localizedDescription)")
             }
         }
+    }
+
+    private func ensureVideoConnection(to targetId: UUID) {
+        guard let targetPeer = peerById[targetId] else { return }
+        Task {
+            do {
+                let connection = try await client.connectToHost(endpoint: targetPeer.endpoint, kind: .video)
+                activeVideoConnection = connection
+                activePeerId = targetId
+                sendChannelHello(to: targetPeer)
+            } catch {
+                logger.error("비디오 연결 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func sendVideoAfterConnect(data: Data, targetId: UUID) {
+        guard let targetPeer = peerById[targetId] else { return }
+        Task {
+            do {
+                let connection = try await client.connectToHost(endpoint: targetPeer.endpoint, kind: .video)
+                activeVideoConnection = connection
+                activePeerId = targetId
+                sendChannelHello(to: targetPeer)
+                client.sendData(data, to: targetPeer.endpoint, kind: .video)
+            } catch {
+                logger.error("비디오 연결 실패: \(error.localizedDescription)")
+            }
+        }
+    }
+
+    private func sendChannelHello(to peer: NetworkPeer) {
+        let hello = NetworkPacket(
+            type: .channelHello,
+            senderIdentifier: localSessionId.uuidString,
+            channel: .video
+        )
+        guard let data = try? encoder.encode(hello) else { return }
+        client.sendData(data, to: peer.endpoint, kind: .video)
     }
 
     private func replyToPeer(to targetId: UUID, packet: NetworkPacket) {
@@ -353,6 +414,8 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             // 초대 수락 패킷 전송이 성공했을 때만 게임 연결 확정
             if packet.type == .inviteAccept {
                 self.activeGameConnection = connection
+                self.activePeerId = targetId
+                self.ensureVideoConnection(to: targetId)
             }
         }
 

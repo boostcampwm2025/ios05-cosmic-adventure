@@ -17,6 +17,7 @@ public enum NetworkPacketType: String, Codable {
 
     case ping
     case pong
+    case channelHello
 
     // // MARK: - Status
     

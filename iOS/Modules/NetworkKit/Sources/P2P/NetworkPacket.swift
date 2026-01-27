@@ -11,10 +11,17 @@ public struct NetworkPacket: Codable {
     public let type: NetworkPacketType
     public let senderIdentifier: String
     public let payload: Data?
+    public let channel: ConnectionKind?
 
-    public init(type: NetworkPacketType, senderIdentifier: String, payload: Data? = nil) {
+    public init(
+        type: NetworkPacketType,
+        senderIdentifier: String,
+        payload: Data? = nil,
+        channel: ConnectionKind? = nil
+    ) {
         self.type = type
         self.senderIdentifier = senderIdentifier
         self.payload = payload
+        self.channel = channel
     }
 }

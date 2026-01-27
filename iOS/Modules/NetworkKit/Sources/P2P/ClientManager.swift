@@ -17,7 +17,7 @@ final class ClientManager: ClientManaging {
     private let networkQueue = DispatchQueue(label: "com.cosmicadventure.client")
 
     private var browser: NWBrowser?
-    private var connections: [NWEndpoint: NWConnection] = [:]
+    private var connections: [NWEndpoint: [ConnectionKind: NWConnection]] = [:]
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "ClientManager")
 
@@ -61,23 +61,23 @@ final class ClientManager: ClientManaging {
     func stopBrowsing() {
         logger.info("탐색 종료")
 
-        connections.forEach{ $0.value.cancel() }
+        connections.values.flatMap { $0.values }.forEach { $0.cancel() }
         connections.removeAll()
 
         browser?.cancel()
         browser = nil
     }
 
-    func connectToHost(endpoint: NWEndpoint) async throws {
-        if let existingConnection = connections[endpoint] {
+    func connectToHost(endpoint: NWEndpoint, kind: ConnectionKind) async throws -> NWConnection {
+        if let existingConnection = connections[endpoint]?[kind] {
             switch existingConnection.state {
             case .ready:
-                return
+                return existingConnection
             case .preparing, .setup:
-                return  // 이미 연결 시도 중이면 그냥 반환 (기존 receiveData가 동작 중)
+                return existingConnection  // 이미 연결 시도 중이면 그냥 반환 (기존 receiveData가 동작 중)
             default:
                 existingConnection.cancel()
-                connections.removeValue(forKey: endpoint)
+                connections[endpoint]?[kind] = nil
             }
         }
 
@@ -85,7 +85,10 @@ final class ClientManager: ClientManaging {
         parameters.includePeerToPeer = true
 
         let connection = NWConnection(to: endpoint, using: parameters)
-        self.connections[endpoint] = connection
+        if connections[endpoint] == nil {
+            connections[endpoint] = [:]
+        }
+        connections[endpoint]?[kind] = connection
 
         connection.stateUpdateHandler = { [weak self] state in
             guard let self else { return }
@@ -103,10 +106,11 @@ final class ClientManager: ClientManaging {
         }
 
         connection.start(queue: self.networkQueue)
+        return connection
     }
 
-    func sendData(_ data: Data, to endpoint: NWEndpoint) {
-        guard let connection = connections[endpoint] else {
+    func sendData(_ data: Data, to endpoint: NWEndpoint, kind: ConnectionKind) {
+        guard let connection = connections[endpoint]?[kind] else {
             logger.error("connection이 존재하지 않습니다.")
             return
         }
@@ -209,7 +213,19 @@ final class ClientManager: ClientManaging {
     }
 
     private func removeConnection(_ connection: NWConnection) {
-        connections = connections.filter { $0.value !== connection }
+        let endpoints = Array(connections.keys)
+        for endpoint in endpoints {
+            guard let dict = connections[endpoint] else { continue }
+            let kinds = Array(dict.keys)
+            for kind in kinds {
+                if connections[endpoint]?[kind] === connection {
+                    connections[endpoint]?[kind] = nil
+                }
+            }
+            if connections[endpoint]?.isEmpty == true {
+                connections[endpoint] = nil
+            }
+        }
         connection.cancel()
     }
 }

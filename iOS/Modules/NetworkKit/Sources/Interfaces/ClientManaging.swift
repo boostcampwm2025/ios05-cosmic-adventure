@@ -8,6 +8,11 @@
 import Foundation
 import Network
 
+public enum ConnectionKind: String, Codable {
+    case game
+    case video
+}
+
 public protocol ClientManaging {
     var onPermissionGranted: (() -> Void)? { get set }
     var onPermissionDeniedOrFailed: ((Error) -> Void)? { get set }
@@ -16,6 +21,6 @@ public protocol ClientManaging {
 
     func startBrowsing()
     func stopBrowsing()
-    func connectToHost(endpoint: NWEndpoint) async throws
-    func sendData(_ data: Data, to endpoint: NWEndpoint)
+    func connectToHost(endpoint: NWEndpoint, kind: ConnectionKind) async throws -> NWConnection
+    func sendData(_ data: Data, to endpoint: NWEndpoint, kind: ConnectionKind)
 }
