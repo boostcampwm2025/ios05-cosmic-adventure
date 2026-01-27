@@ -43,7 +43,7 @@ public final class GameplayManager {
     public var state: GameState
     
     public let localPlayerID: UUID
-    public let remotePlayerIDs: [UUID]
+    public let otherPlayerIDs: [UUID]
     
     private var jumpRequestedPlayerIDs: Set<UUID> = []
 
@@ -82,12 +82,12 @@ public final class GameplayManager {
 
     public init(
         localPlayerID: UUID,
-        remotePlayerIDs: [UUID] = [],
+        otherPlayerIDs: [UUID] = [],
         endCondition: any GameEndCondition = TimeoutOrFinishEndCondition(limit: 60, targetPlatformIndex: 30)
     ) {
         self.localPlayerID = localPlayerID
-        self.remotePlayerIDs = remotePlayerIDs
-        self.state = GameState(localPlayerID: localPlayerID, remotePlayerIDs: remotePlayerIDs)
+        self.otherPlayerIDs = otherPlayerIDs
+        self.state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
                 
         self.gameEnd = GameEndTracker(condition: endCondition)
     }
@@ -300,7 +300,7 @@ extension GameplayManager {
     }
 
     public func startNewGame() {
-        state = GameState(localPlayerID: localPlayerID, remotePlayerIDs: remotePlayerIDs)
+        state = GameState(localPlayerID: localPlayerID, otherPlayerIDs: otherPlayerIDs)
         jumpRequestedPlayerIDs.removeAll(keepingCapacity: true)
         pendingRespawnPositionByPlayerID.removeAll(keepingCapacity: true)
 

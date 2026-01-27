@@ -13,7 +13,7 @@ public enum LocalNetworkError: Error {
 }
 
 public protocol NetworkSessionManaging: ConnectionSessionManaging {
-    var nearbyPlayer: [NetworkPeer] { get }
+    var nearbyPlayer: [Peer] { get }
     var onPermissionResult: ((Result<Void, LocalNetworkError>) -> Void)? { get set }
-    var onPeersUpdated: (([NetworkPeer]) -> Void)? { get set }
+    var onPeersUpdated: (([Peer]) -> Void)? { get set }
 }

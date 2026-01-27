@@ -15,11 +15,11 @@ public struct GameState: Equatable, Sendable {
 
     public init(
         localPlayerID: UUID,
-        remotePlayerIDs: [UUID] = [],
+        otherPlayerIDs: [UUID] = [],
     ) {
         self.localPlayerID = localPlayerID
         var dict: [UUID: CharacterState] = [localPlayerID: CharacterState()]
-        for id in remotePlayerIDs where id != localPlayerID {
+        for id in otherPlayerIDs where id != localPlayerID {
             dict[id] = CharacterState()
         }
         self.characters = dict

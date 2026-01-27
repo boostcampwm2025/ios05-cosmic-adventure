@@ -22,14 +22,14 @@ struct GameReadyView: View {
                 Spacer()
 
                 HStack(spacing: 10) {
-                    characterView(player: viewModel.me, isMe: true)
+                    characterView(explorer: viewModel.me, isMe: true)
                         .offset(y: isAnimating ? -15 : 0) // 위아래 둥둥 효과
                         .animation(
                             .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
                             value: isAnimating
                         )
 
-                    characterView(player: viewModel.peer, isMe: false)
+                    characterView(explorer: viewModel.peer, isMe: false)
                         .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
                         .animation(
                             .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5),
@@ -72,9 +72,9 @@ struct GameReadyView: View {
 
 private extension GameReadyView {
 
-    func characterView(player: PlayerInfo, isMe: Bool) -> some View {
+    func characterView(explorer: LobbyExplorer, isMe: Bool) -> some View {
         VStack(spacing: 10) {
-            player.avatar.image
+            explorer.avatar.image
                 .resizable()
                 .scaledToFit()
                 .frame(width: 130, height: 130)
@@ -114,8 +114,8 @@ struct GameReadyView_Previews: PreviewProvider {
     static var previews: some View {
         let container = AppContainer()
         GameReadyView(
-            viewModel: container.makeGameReadyViewModel(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                                                        peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2))
+            viewModel: container.makeGameReadyViewModel(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
+                                                        peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2))
         )
     }
 }

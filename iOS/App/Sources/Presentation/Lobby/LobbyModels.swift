@@ -7,6 +7,41 @@
 
 import SwiftUI
 
+// MARK: - Explorer Role
+
+enum ExplorerRole: Equatable {
+    case me
+    case peer
+}
+
+// MARK: - Lobby Explorer
+
+struct LobbyExplorer: Identifiable, Equatable, Hashable {
+    let id: String
+    let role: ExplorerRole
+    let displayName: String
+    let avatar: CharacterAvatar
+    
+    /// 수신 감도/근접도: 0.0~1.0, 값이 클수록 내 위치에 더 가까움
+    /// - nil이면 아직 미측정/알 수 없음
+    /// - peer만 의미 있음 (me는 항상 중앙 고정)
+    var proximity: Double?
+    
+    init(
+        id: String? = nil,
+        role: ExplorerRole,
+        displayName: String,
+        avatar: CharacterAvatar,
+        proximity: Double? = nil
+    ) {
+        self.id = id ?? displayName
+        self.role = role
+        self.displayName = displayName
+        self.avatar = avatar
+        self.proximity = proximity
+    }
+}
+
 // MARK: - Orbit Layout
 
 enum OrbitSlot: CaseIterable {
@@ -95,7 +130,7 @@ enum LobbyAlert {
         case .none: return ""
         }
     }
-
+    
     var hasCancelButton: Bool {
         return self == .permissionDenied
     }

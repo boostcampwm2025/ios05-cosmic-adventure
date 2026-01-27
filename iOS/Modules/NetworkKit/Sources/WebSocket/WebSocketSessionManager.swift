@@ -28,15 +28,15 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     public var onPlayersUpdated: (([WebSocketPlayer]) -> Void)?
     public var onPlayerJoined: ((WebSocketPlayer) -> Void)?
-    public var onPlayerLeft: ((UUID) -> Void)?
-    public var onInviteReceived: ((UUID) -> Void)?
-    public var onInviteAccepted: ((UUID) -> Void)?
-    public var onInviteDeclined: ((UUID) -> Void)?
-    public var onInviteCancelled: ((UUID) -> Void)?
-    public var onInputReceived: ((UUID, Data) -> Void)?
+    public var onPlayerLeft: ((String) -> Void)?
+    public var onInviteReceived: ((String) -> Void)?
+    public var onInviteAccepted: ((String) -> Void)?
+    public var onInviteDeclined: ((String) -> Void)?
+    public var onInviteCancelled: ((String) -> Void)?
+    public var onInputReceived: ((String, Data) -> Void)?
     public var onConnectionStateChanged: ((Bool) -> Void)?
-    public var onReadyStatusReceived: ((UUID) -> Void)?
-    public var onVideoReceived: ((UUID, Data) -> Void)?
+    public var onReadyStatusReceived: ((String) -> Void)?
+    public var onVideoReceived: ((String, Data) -> Void)?
 
     // MARK: - Initialization
     
@@ -69,36 +69,31 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         mySessionId = nil
     }
     
-    public func sendInvite(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.sendInvite(to: sessionId)
+    public func sendInvite(to playerId: String) {
+        service.sendInvite(to: playerId)
     }
     
-    public func acceptInvite(from targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.acceptInvite(from: sessionId)
+    public func acceptInvite(from playerId: String) {
+        service.acceptInvite(from: playerId)
     }
     
-    public func declineInvite(from targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.declineInvite(from: sessionId)
+    public func declineInvite(from playerId: String) {
+        service.declineInvite(from: playerId)
     }
     
-    public func cancelInvite(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.cancelInvite(to: sessionId)
+    public func cancelInvite(to playerId: String) {
+        service.cancelInvite(to: playerId)
     }
     
-    public func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {
-        guard let targetId,
-              let sessionId = sessionId(forPlayerId: targetId) else { return }
+    public func sendInput<T: Codable>(_ data: T, to playerId: String?) {
+        guard let playerId,
+              let targetId = sessionId(forNickname: playerId) else { return }
 
-        service.sendInput(data, to: sessionId)
+        service.sendInput(data, to: targetId)
     }
 
-    public func sendReadyStatus(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.sendReadyStatus(to: sessionId)
+    public func sendReadyStatus(to playerId: String) {
+        service.sendReadyStatus(to: playerId)
     }
 
     public func sendVideo(data: Data) {
@@ -154,26 +149,26 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
             handlePlayerLeft(message.senderId)
             
         case .invite:
-            onInviteReceived?(playerId(forSenderId: message.senderId))
+            onInviteReceived?(message.senderId)
             
         case .inviteAccept:
-            onInviteAccepted?(playerId(forSenderId: message.senderId))
+            onInviteAccepted?(message.senderId)
             
         case .inviteDecline:
-            onInviteDeclined?(playerId(forSenderId: message.senderId))
+            onInviteDeclined?(message.senderId)
             
         case .inviteCancel:
-            onInviteCancelled?(playerId(forSenderId: message.senderId))
+            onInviteCancelled?(message.senderId)
             
         case .input:
             if let payloadString = message.payload,
                let payloadData = payloadString.data(using: .utf8) {
 
-                onInputReceived?(playerId(forSenderId: message.senderId), payloadData)
+                onInputReceived?(nickname(forSessionId: message.senderId) ?? "", payloadData)
             }
 
         case .gameReady:
-            onReadyStatusReceived?(playerId(forSenderId: message.senderId))
+            onReadyStatusReceived?(message.senderId)
 
         default:
             break
@@ -197,8 +192,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
             if sessionId == mySessionId { continue }
 
-            let playerId = playerId(forSenderId: sessionId)
-            newPlayers.append(WebSocketPlayer(id: playerId, sessionId: sessionId, nickname: nickname, latency: latency))
+            newPlayers.append(WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency))
         }
 
         players = newPlayers
@@ -213,34 +207,30 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         let nickname = String(parts[1])
         let latency = parts.count > 2 ? Double(parts[2]) : nil
 
-        let playerId = playerId(forSenderId: sessionId)
-        guard !players.contains(where: { $0.sessionId == sessionId }) else {
+        guard !players.contains(where: { $0.id == sessionId }) else {
             return
         }
 
-        let player = WebSocketPlayer(id: playerId, sessionId: sessionId, nickname: nickname, latency: latency)
+        let player = WebSocketPlayer(id: sessionId, nickname: nickname, latency: latency)
         players.append(player)
         onPlayerJoined?(player)
     }
     
-    private func handlePlayerLeft(_ senderId: String) {
-        let playerId = playerId(forSenderId: senderId)
-        players.removeAll { $0.sessionId == senderId || $0.nickname == senderId }
-        onPlayerLeft?(playerId)
+    private func handlePlayerLeft(_ sessionId: String) {
+        players.removeAll { $0.id == sessionId }
+        onPlayerLeft?(sessionId)
     }
 }
 
 
-// TODO: players 목록 동기화 전 메시지 수신 처리 개선 (임시 UUID fallback 제거)
+// TODO: 모델 구조랑 통신구조 p2p/webSocket 통일하면서 로직개선
 extension WebSocketSessionManager {
-    private func playerId(forSenderId senderId: String) -> UUID {
-        if let cached = players.first(where: { $0.sessionId == senderId })?.id {
-            return cached
-        }
-        return DeterministicUUID.fromString(senderId, namespace: "ws-sender")
+    private func nickname(forSessionId sessionId: String) -> String? {
+        players.first(where: { $0.id == sessionId })?.nickname
     }
 
-    private func sessionId(forPlayerId playerId: UUID) -> String? {
-        players.first(where: { $0.id == playerId })?.sessionId
+    private func sessionId(forNickname nickname: String) -> String? {
+        players.first(where: { $0.nickname == nickname })?.id
     }
+
 }

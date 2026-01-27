@@ -13,7 +13,7 @@ final class CharacterController {
     private weak var scene: SKScene?
     private let cameraSystem: CameraSystem
     
-    let playerRole: GamePlayerRole
+    let playerRole: PlayerRole
 
     private(set) var playerNode: SKSpriteNode?
     private(set) var physicsCore: PhysicsCore?
@@ -32,7 +32,7 @@ final class CharacterController {
     }
     var velocityDY: CGFloat { playerNode?.physicsBody?.velocity.dy ?? 0 }
     
-    init(scene: SKScene, cameraSystem: CameraSystem, playerRole: GamePlayerRole = .local) {
+    init(scene: SKScene, cameraSystem: CameraSystem, playerRole: PlayerRole = .me) {
         self.scene = scene
         self.cameraSystem = cameraSystem
         self.playerRole = playerRole
@@ -51,7 +51,7 @@ final class CharacterController {
         player.size = size
         player.position = initialPosition
         
-        if playerRole == .remote {
+        if playerRole == .others {
             player.alpha = 0.4
         }
         
@@ -59,7 +59,7 @@ final class CharacterController {
         body.isDynamic = true
         body.allowsRotation = false
         
-        if playerRole == .local {
+        if playerRole == .me {
             body.categoryBitMask = PhysicsCategory.playerMe.rawValue
             
             let collidesWith: PhysicsCategory = [.groundMe, .wall]
@@ -183,7 +183,7 @@ extension CharacterController {
         guard let playerNode else { return }
 
         // 반투명(로컬만 투명도 적용)
-        if playerRole == .local {
+        if playerRole == .me {
             playerNode.alpha = 0.25
         }
         
@@ -207,7 +207,7 @@ extension CharacterController {
         guard let playerNode else { return }
 
         // 투명도 복구(로컬만 투명도 복구)
-        if playerRole == .local {
+        if playerRole == .me {
             playerNode.alpha = 1.0
         }
 

@@ -11,8 +11,8 @@ struct OperationGuideView: View {
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
 
-    let me: PlayerInfo
-    let peer: PlayerInfo?
+    let me: LobbyExplorer
+    let peer: LobbyExplorer?
     let isNetwork: Bool
     
     var body: some View {
@@ -118,8 +118,8 @@ private extension OperationGuideView {
 }
 
 #Preview {
-    OperationGuideView(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                       peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2),
+    OperationGuideView(me: LobbyExplorer(role: .me, displayName: "나", avatar: .character1),
+                       peer: LobbyExplorer(role: .peer, displayName: "상대", avatar: .character2),
                        isNetwork: false)
         .environment(AppRouter())
 }

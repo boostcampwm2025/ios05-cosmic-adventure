@@ -26,6 +26,7 @@ extension LobbyViewModel {
                 self?.isConnected = connected
                 if !connected {
                     self?.peers = []
+                    self?.playerIdMapping = [:]
                     self?.selectedPeerID = nil
                     self?.matchStatus = .idle
                 }
@@ -54,27 +55,27 @@ extension LobbyViewModel {
     }
 
     private func setupInvitationCallbacks() {
-        webSocketSessionManager?.onInviteReceived = { [weak self] senderId in
+        webSocketSessionManager?.onInviteReceived = { [weak self] senderName in
             Task { @MainActor in
-                self?.handleInviteReceived(from: senderId)
+                self?.handleInviteReceived(from: senderName)
             }
         }
 
-        webSocketSessionManager?.onInviteAccepted = { [weak self] senderId in
+        webSocketSessionManager?.onInviteAccepted = { [weak self] senderName in
             Task { @MainActor in
-                self?.handleInviteAccepted(from: senderId)
+                self?.handleInviteAccepted(from: senderName)
             }
         }
 
-        webSocketSessionManager?.onInviteDeclined = { [weak self] senderId in
+        webSocketSessionManager?.onInviteDeclined = { [weak self] senderName in
             Task { @MainActor in
-                self?.handleInviteDeclined(from: senderId)
+                self?.handleInviteDeclined(from: senderName)
             }
         }
 
-        webSocketSessionManager?.onInviteCancelled = { [weak self] senderId in
+        webSocketSessionManager?.onInviteCancelled = { [weak self] senderName in
             Task { @MainActor in
-                self?.handleInviteCancelled(from: senderId)
+                self?.handleInviteCancelled(from: senderName)
             }
         }
     }
@@ -85,9 +86,11 @@ extension LobbyViewModel {
 extension LobbyViewModel {
 
     func updatePeersFromPlayers(_ players: [WebSocketPlayer]) {
+        playerIdMapping.removeAll()
         peers = players.map { player in
+            playerIdMapping[player.id] = player.id
             let proximity = calculateProximity(latency: player.latency)
-            return PlayerInfo(
+            return LobbyExplorer(
                 id: player.id,
                 role: .peer,
                 displayName: player.nickname,
@@ -98,24 +101,28 @@ extension LobbyViewModel {
     }
 
     func addPeer(from player: WebSocketPlayer) {
-        guard peers.contains(where: { $0.id == player.id }) == false else { return }
+        guard playerIdMapping[player.id] == nil else { return }
+
+        playerIdMapping[player.id] = player.id
 
         let proximity = calculateProximity(latency: player.latency)
 
-        let player = PlayerInfo(
+        let explorer = LobbyExplorer(
             id: player.id,
             role: .peer,
             displayName: player.nickname,
             avatar: randomAvatar(),
             proximity: proximity
         )
-        peers.append(player)
+        peers.append(explorer)
     }
 
-    func removePeer(playerId: UUID) {
-        peers.removeAll { $0.id == playerId }
+    func removePeer(playerId: String) {
+        guard let id = playerIdMapping[playerId] else { return }
+        peers.removeAll { $0.id == id }
+        playerIdMapping.removeValue(forKey: playerId)
 
-        if selectedPeerID == playerId {
+        if selectedPeerID == id {
             selectedPeerID = nil
         }
     }

@@ -16,12 +16,12 @@ final class GameScene: SKScene {
     private var monsterController: MonsterController?
 
     // 플레이어 메타(아바타) - 전달이 없으면 기본값 사용
-    private let localPlayer: PlayerInfo?
-    private let remotePlayersByID: [UUID: PlayerInfo]
+    private let localExplorer: LobbyExplorer?
+    private let otherExplorersByID: [UUID: LobbyExplorer]
     
     // PlayerID 기반으로 캐릭터 컨트롤러를 관리
     private let localPlayerID: UUID
-    private let remotePlayerIDs: [UUID]
+    private let otherPlayerIDs: [UUID]
     private var characterControllers: [UUID: CharacterController] = [:]
     
     private let outOfBoundsMargin: CGFloat = 100
@@ -32,14 +32,14 @@ final class GameScene: SKScene {
     init(
         size: CGSize,
         gameplayManager: GameplayManager,
-        localPlayer: PlayerInfo? = nil,
-        remotePlayersByID: [UUID: PlayerInfo] = [:]
+        localExplorer: LobbyExplorer? = nil,
+        otherExplorersByID: [UUID: LobbyExplorer] = [:]
     ) {
         self.gameplayManager = gameplayManager
         self.localPlayerID = gameplayManager.localPlayerID
-        self.remotePlayerIDs = gameplayManager.remotePlayerIDs
-        self.localPlayer = localPlayer
-        self.remotePlayersByID = remotePlayersByID
+        self.otherPlayerIDs = gameplayManager.otherPlayerIDs
+        self.localExplorer = localExplorer
+        self.otherExplorersByID = otherExplorersByID
         self.goalPlatformIndex = gameplayManager.getGoalPlatformIndex()
         super.init(size: size)
         self.physicsWorld.gravity = CGVector(dx: 0, dy: PhysicsConstants.gravityDY)
@@ -48,9 +48,9 @@ final class GameScene: SKScene {
 
     required init?(coder: NSCoder) {
         self.localPlayerID = UUID()
-        self.remotePlayerIDs = []
-        self.localPlayer = nil
-        self.remotePlayersByID = [:]
+        self.otherPlayerIDs = []
+        self.localExplorer = nil
+        self.otherExplorersByID = [:]
         self.goalPlatformIndex = 1
         super.init(coder: coder)
     }
@@ -70,8 +70,8 @@ final class GameScene: SKScene {
         setupWalls()
 
         // 캐릭터 설정 (항상 로컬 플레이어는 생성)
-        let localController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .local)
-        let localAvatar = localPlayer?.avatar ?? .character1
+        let localController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .me)
+        let localAvatar = localExplorer?.avatar ?? .character1
         localController.setupPlayer(characterType: localAvatar)
         if let node = localController.playerNode {
             node.name = "\(L10N.Game.NodeName.player):\(localPlayerID.uuidString)"
@@ -79,9 +79,9 @@ final class GameScene: SKScene {
         characterControllers[localPlayerID] = localController
         
         // 상대 플레이어들 생성
-        for id in remotePlayerIDs where id != localPlayerID {
-            let opponentController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .remote)
-            let opponentAvatar = remotePlayersByID[id]?.avatar ?? .character1
+        for id in otherPlayerIDs where id != localPlayerID {
+            let opponentController = CharacterController(scene: self, cameraSystem: cameraSystem, playerRole: .others)
+            let opponentAvatar = otherExplorersByID[id]?.avatar ?? .character1
             opponentController.setupPlayer(characterType: opponentAvatar)
             if let node = opponentController.playerNode {
                 node.name = "\(L10N.Game.NodeName.player):\(id.uuidString)"
@@ -211,7 +211,7 @@ final class GameScene: SKScene {
         let localBottomY = characterControllers[localPlayerID]?.bottomY
         let localDY = characterControllers[localPlayerID]?.velocityDY
 
-        let otherID = remotePlayerIDs.first(where: { $0 != localPlayerID })
+        let otherID = otherPlayerIDs.first(where: { $0 != localPlayerID })
         let otherBottomY = otherID.flatMap { characterControllers[$0]?.bottomY }
         let otherDY = otherID.flatMap { characterControllers[$0]?.velocityDY }
 
