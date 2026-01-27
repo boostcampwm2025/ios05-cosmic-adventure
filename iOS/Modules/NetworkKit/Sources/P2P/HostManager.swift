@@ -92,6 +92,19 @@ final class HostManager: HostManaging {
         })
     }
 
+    func sendData(_ data: Data, to connection: NWConnection, completion: @escaping (NWError?) -> Void) {
+        logger.info("데이터 전송 시작: \(data.count) bytes")
+
+        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
+            if let error = error {
+                self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
+            } else {
+                self?.logger.info("데이터 전송 성공")
+            }
+            completion(error)
+        })
+    }
+
     // MARK: - Private Methods
 
     private func handleListenerStateUpdate(_ state: NWListener.State) {

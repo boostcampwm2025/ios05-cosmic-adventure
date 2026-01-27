@@ -347,16 +347,13 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let connection = self.pendingInviteConnections[targetId] else { return }
 
         guard let data = try? encoder.encode(packet) else { return }
-        host.sendData(data, to: connection)
-        
-        // TODO: 발신 보장되었을 때 동작하도록 수정하기
-        // 초대받은 쪽(Invitee)도 즉시 게임 연결을 확정
-        if packet.type == .inviteAccept {
-            self.activeGameConnection = connection
-        }
-
-        if packet.type == .inviteAccept {
-            self.activeGameConnection = connection
+        host.sendData(data, to: connection) { [weak self] error in
+            guard let self else { return }
+            guard error == nil else { return }
+            // 초대 수락 패킷 전송이 성공했을 때만 게임 연결 확정
+            if packet.type == .inviteAccept {
+                self.activeGameConnection = connection
+            }
         }
 
         self.pendingInviteConnections.removeValue(forKey: targetId)
