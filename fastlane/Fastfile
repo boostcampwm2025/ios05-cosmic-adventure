@@ -1,0 +1,55 @@
+default_platform(:ios)
+
+def tuist_generate
+  sh "tuist install"
+  sh "tuist generate --no-open"
+end
+
+platform :ios do
+  lane :upload_testflight do
+    tuist_generate
+
+    # Extract version from tag (ios-v1.2.3 -> 1.2.3)
+    ref = ENV.fetch("GITHUB_REF", "refs/tags/ios-v0.0.0")
+    m = ref.match(%r{^refs/tags/ios-v(\d+\.\d+\.\d+)})
+    UI.user_error!("Invalid tag format: #{ref}") unless m
+    marketing_version = m[1]
+
+    # Build number from CI
+    if ENV["GITHUB_RUN_NUMBER"]
+      run_number = ENV.fetch("GITHUB_RUN_NUMBER").to_i
+      run_attempt = ENV.fetch("GITHUB_RUN_ATTEMPT", "1").to_i
+      build_number = (run_number * 10) + run_attempt
+    else
+      build_number = Time.now.strftime("%y%m%d%H%M").to_i
+    end
+
+    UI.message("Building version #{marketing_version} (#{build_number})")
+
+    gym(
+      workspace: "cosmic-adventure.xcworkspace",
+      scheme: "App",
+      export_method: "app-store",
+      xcargs: [
+        "MARKETING_VERSION=#{marketing_version}",
+        "CURRENT_PROJECT_VERSION=#{build_number}",
+        "PROVISIONING_PROFILE_SPECIFIER=$APP_STORE_PROVISIONING_PROFILE_NAME",
+        "CODE_SIGN_IDENTITY=Apple Distribution",
+        "DEVELOPMENT_TEAM=B3PWYBKFUK"
+      ].join(" "),
+      export_options: {
+        method: "app-store",
+        signingStyle: "manual",
+        teamID: "B3PWYBKFUK",
+        provisioningProfiles: {
+          "kr.codesqued.boostcamp10.ios05.cosmic-adventure" => ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
+        }
+      }
+    )
+
+    pilot(
+      api_key_path: "fastlane/api_key.json",
+      skip_waiting_for_build_processing: true
+    )
+  end
+end
