@@ -12,6 +12,7 @@ import StorageKit
 struct SettingsView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(AppRouter.self) private var router: AppRouter
+    @Environment(AppEntryManager.self) private var appEntryManager: AppEntryManager
     @State private var viewModel: SettingsViewModel
     
     init(viewModel: SettingsViewModel) {
@@ -31,6 +32,8 @@ struct SettingsView: View {
                     hapticSection
                     
                     previewSection
+                    
+                    gamePreviewSection
                     
                     Spacer(minLength: 50)
                 }
@@ -129,6 +132,26 @@ private extension SettingsView {
             value: $viewModel.facePreviewSize,
             labels: [L10N.Settings.small, L10N.Settings.medium, L10N.Settings.large]
         )
+    }
+}
+
+// MARK: - Game Preview Section
+
+private extension SettingsView {
+    var gamePreviewSection: some View {
+        Button {
+            Task {
+                await router.pushTestGamePreviewIfAllowed(appEntryManager: appEntryManager)
+            }
+        } label: {
+            Text(L10N.Settings.gamePreview)
+                .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 16))
+                .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 12)
+                .background(AppAsset.Color.sheetSubBackground.swiftUIColor)
+                .cornerRadius(8)
+        }
     }
 }
 
