@@ -15,7 +15,7 @@ protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
     func makeLobbyViewModel(playerId: UUID, nickname: String, characterType: String) -> LobbyViewModel
-    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo, isNetwork: Bool) -> GameReadyViewModel
+    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
@@ -99,7 +99,7 @@ final class AppContainer: ViewModelFactory {
         )
     }
 
-    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo, isNetwork: Bool) -> GameReadyViewModel {
+    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel {
         GameReadyViewModel(
             me: me,
             peer: peer,

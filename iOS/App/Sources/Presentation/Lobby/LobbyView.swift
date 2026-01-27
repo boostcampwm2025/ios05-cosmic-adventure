@@ -45,7 +45,7 @@ struct LobbyView: View {
         .onChange(of: viewModel.matchStatus) { _, newValue in
             if case .gameReady(let peer) = newValue {
                 if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.gameReady(me: viewModel.myExplorer,
+                    router.push(.gameReady(me: viewModel.localPlayer,
                                            peer: peer,
                                            isNetwork: viewModel.networkMode == .remote))
                 } else {
@@ -158,7 +158,7 @@ private extension LobbyView {
                 viewModel.setSoloMode()
 
                 if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.gameReady(me: viewModel.myExplorer,
+                    router.push(.gameReady(me: viewModel.localPlayer,
                                            peer: nil,
                                            isNetwork: viewModel.networkMode == .remote))
                 } else {
