@@ -25,6 +25,8 @@ struct SettingsView: View {
                 VStack(spacing: 32) {
                     profileSection
                     
+                    gamePreviewSection
+                    
                     sensitivitySection
                     
                     soundSection
@@ -32,8 +34,6 @@ struct SettingsView: View {
                     hapticSection
                     
                     previewSection
-                    
-                    gamePreviewSection
                     
                     Spacer(minLength: 50)
                 }

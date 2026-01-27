@@ -117,7 +117,7 @@ struct RootView: View {
             // TODO: ResultView 연결
             EmptyView()
         case .testGamePreview:
-            Text("Test Game Preview - Coming Soon")
+            TestGamePreviewView(gameConfig: UserDefaultsList.Settings())
         }
     }
 }
