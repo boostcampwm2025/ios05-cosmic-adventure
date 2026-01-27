@@ -1,0 +1,77 @@
+name: Deploy to TestFlight
+
+on:
+  push:
+    tags:
+      - 'ios-v*'
+
+jobs:
+  deploy:
+    name: Build and Upload to TestFlight
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v3
+        with:
+          install: true
+          cache: true
+
+      - name: Install Tuist
+        run: mise install tuist
+
+      - name: Verify Tuist Version
+        run: mise exec -- tuist version
+
+      - name: Create Environment.xcconfig
+        run: echo "${{ secrets.XCCONFIG_CONTENT }}" > iOS/App/Environment.xcconfig
+
+      - name: Install Ruby Dependencies
+        run: bundle install
+
+      - name: Import Signing Certificate
+        run: |
+          echo "${{ secrets.CERTIFICATE_P12_BASE64 }}" | base64 --decode > cert.p12
+          security create-keychain -p actions temp.keychain
+          security default-keychain -s temp.keychain
+          security set-keychain-settings -lut 21600 temp.keychain
+          security unlock-keychain -p actions temp.keychain
+          security import cert.p12 -k temp.keychain -P "${{ secrets.CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions temp.keychain
+          security list-keychains -d user -s temp.keychain
+
+      - name: Verify Certificate Import
+        run: security find-identity -v -p codesigning temp.keychain
+
+      - name: Install Provisioning Profile
+        run: |
+          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
+          echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
+          uuid=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
+          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
+
+      - name: Decode App Store Connect API Key
+        run: |
+          echo "${{ secrets.APP_STORE_CONNECT_API_KEY_P8_BASE64 }}" | base64 --decode > fastlane/AuthKey.p8
+          chmod 600 fastlane/AuthKey.p8
+          cat > fastlane/api_key.json << EOF
+          {
+            "key_id": "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}",
+            "issuer_id": "${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}",
+            "key_filepath": "fastlane/AuthKey.p8"
+          }
+          EOF
+        env:
+          APP_STORE_PROVISIONING_PROFILE_NAME: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_NAME }}
+
+      - name: Build and Upload to TestFlight
+        run: bundle exec fastlane upload_testflight
+        env:
+          APP_STORE_PROVISIONING_PROFILE_NAME: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_NAME }}
+
+      - name: Cleanup
+        if: always()
+        run: |
+          security delete-keychain temp.keychain || true
+          rm -f cert.p12 profile.mobileprovision fastlane/AuthKey.p8 fastlane/api_key.json || true
