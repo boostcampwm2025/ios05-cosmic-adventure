@@ -22,7 +22,7 @@ struct GameReadyView: View {
                 Spacer()
 
                 HStack(spacing: 10) {
-                    characterView(player: viewModel.me, isMe: true)
+                    characterView(player: viewModel.me)
                         .offset(y: isAnimating ? -15 : 0) // 위아래 둥둥 효과
                         .animation(
                             .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
@@ -30,7 +30,7 @@ struct GameReadyView: View {
                         )
 
                     if let peer = viewModel.peer {
-                        characterView(player: peer, isMe: false)
+                        characterView(player: peer)
                             .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
                             .animation(
                                 .easeInOut(duration: 1.0).repeatForever(autoreverses: true).delay(0.5),
@@ -74,7 +74,7 @@ struct GameReadyView: View {
 
 private extension GameReadyView {
 
-    func characterView(player: PlayerInfo, isMe: Bool) -> some View {
+    func characterView(player: PlayerInfo) -> some View {
         VStack(spacing: 10) {
             player.avatar.image
                 .resizable()

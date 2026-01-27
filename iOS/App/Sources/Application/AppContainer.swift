@@ -35,7 +35,6 @@ final class AppContainer: ViewModelFactory {
 
     private lazy var videoManager: VideoManager = {
         VideoManager(
-            connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager
         )
@@ -133,8 +132,7 @@ final class AppContainer: ViewModelFactory {
     }
 
     func makeVideoManager(isNetwork: Bool) -> VideoManager {
-        videoManager.reset()
-        videoManager.handleConnectivityChange(isConnected: isNetwork)
+        videoManager.setNetworkMode(isNetwork: isNetwork)
 
         return videoManager
     }

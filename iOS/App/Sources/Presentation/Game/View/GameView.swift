@@ -49,7 +49,7 @@ struct GameView: View {
             VStack(alignment: .leading, spacing: 12) {
                 gameHUD
 
-                if !viewModel.otherPlayerIDs.isEmpty {
+                if !viewModel.remotePlayerIDs.isEmpty {
                     RemoteVideoView(layer: videoManager.remoteDisplayLayer)
                         .frame(width: size, height: size)
                         .overlay(
@@ -73,7 +73,7 @@ struct GameView: View {
             viewModel.start()
             UIApplication.shared.isIdleTimerDisabled = true
 
-            videoManager.setTargetPlayer(nickName: viewModel.matchPeer?.displayName)
+            videoManager.setTargetPlayer(viewModel.remotePlayer)
             videoManager.startLatencyMonitoring()
             inputProvider.onFrameUpdate = { pixelBuffer in
                 videoManager.processFrame(pixelBuffer: pixelBuffer)
