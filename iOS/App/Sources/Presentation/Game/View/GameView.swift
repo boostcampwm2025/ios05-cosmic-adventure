@@ -44,6 +44,7 @@ struct GameView: View {
             if let scene = gameScene {
                 SpriteView(scene: scene, options: [.allowsTransparency])
                     .edgesIgnoringSafeArea(.all)
+                    .allowsHitTesting(true)
             }
 
             VStack(alignment: .leading, spacing: 12) {

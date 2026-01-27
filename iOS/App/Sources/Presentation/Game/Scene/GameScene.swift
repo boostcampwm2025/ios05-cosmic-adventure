@@ -26,6 +26,7 @@ final class GameScene: SKScene {
     
     private let outOfBoundsMargin: CGFloat = 100
     private var lastUpdateTime: TimeInterval = 0
+    private var respawnController: RespawnController?
 
     private var goalPlatformIndex: Int
     
@@ -63,6 +64,11 @@ final class GameScene: SKScene {
         // 카메라 설정
         let cameraSystem = CameraSystem(scene: self)
         self.cameraSystem = cameraSystem
+
+        // 리스폰 버튼 설정
+        let respawnController = RespawnController()
+        respawnController.setup(in: self, cameraNode: cameraSystem.cameraNode)
+        self.respawnController = respawnController
         
         // 맵 설정
         platformController = PlatformController(scene: self)
@@ -163,6 +169,10 @@ final class GameScene: SKScene {
         
         // 리스폰 적용 여부 판단
         handleRespawnRequest(gameplayManager: gameplayManager)
+        
+        // 리스폰 버튼 위치조정
+        guard let respawnController else { return }
+        respawnController.update(sceneSize: size)
     }
 
     private func setupWalls() {
@@ -243,6 +253,18 @@ final class GameScene: SKScene {
         guard name.hasPrefix(prefix) else { return nil }
         let uuidString = String(name.dropFirst(prefix.count))
         return UUID(uuidString: uuidString)
+    }
+
+}
+
+extension GameScene {
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        guard let respawnController else { return }
+        if respawnController.handleTouch(touch, in: self) {
+            gameplayManager?.requestRespawn(.fell, for: localPlayerID)
+            respawnController.resetAfterAction(sceneSize: size)
+        }
     }
 }
 

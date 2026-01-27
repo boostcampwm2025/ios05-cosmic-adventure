@@ -118,12 +118,15 @@ enum L10N {
     }
     
     enum Game {
+
         enum NodeName {
             static let platform = "platform"
             static let player = "player"
             static let leftWall = "leftWall"
             static let rightWall = "rightWall"
             static let monster = "monster"
+            static let respawnButton = "respawnButton"
+            static let respawnButtonLabel = "respawnButtonLabel"
         }
         
         enum Guide {
