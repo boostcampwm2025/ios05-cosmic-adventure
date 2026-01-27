@@ -226,14 +226,18 @@ final class PlatformController {
 
             if let localBottomY {
                 let buffer = fallBuffer(dy: localDY, dt: deltaTime)
-                if topY <= localBottomY + buffer {
+                let isFalling = (localDY ?? 0) <= 0
+                let aboveOrAligned = localBottomY >= topY - 3
+                if isFalling, aboveOrAligned, topY <= localBottomY + buffer {
                     category.insert(.groundMe)
                 }
             }
 
             if let otherBottomY {
                 let buffer = fallBuffer(dy: otherDY, dt: deltaTime)
-                if topY <= otherBottomY + buffer {
+                let isFalling = (otherDY ?? 0) <= 0
+                let aboveOrAligned = otherBottomY >= topY - 2
+                if isFalling, aboveOrAligned, topY <= otherBottomY + buffer {
                     category.insert(.groundOther)
                 }
             }
