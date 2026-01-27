@@ -9,6 +9,7 @@ import SwiftUI
 
 struct VictoryGuideView: View {
     @Environment(AppRouter.self) private var router: AppRouter
+    @Environment(AppEntryManager.self) private var appEntryManager: AppEntryManager
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
 
     let me: PlayerInfo
@@ -54,7 +55,10 @@ struct VictoryGuideView: View {
                     title: L10N.Game.Guide.gameReady,
                     verticalPadding: 16
                 ) {
-                    router.push(.gameReady(me: me, peer: peer, isNetwork: isNetwork))
+                    Task {
+                        guard await appEntryManager.canEnterGame() else { return }
+                        router.push(.game(peer, isNetwork: isNetwork))
+                    }
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 24)

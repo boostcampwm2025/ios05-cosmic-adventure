@@ -7,6 +7,7 @@
 
 enum UserDefaultKeys: String {
     case isPermissionChecked
+    case isProfileCompleted
     case isGuideChecked
     
     // MARK: - Settings (SSOT)
@@ -34,6 +35,11 @@ public struct UserDefaultsList {
     public struct Permission {
         @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isPermissionChecked.rawValue, defaultValue: false)
         public static var hasCompletedPermissionSetup
+    }
+    
+    public struct Profile {
+        @UserDefaultWrapper<Bool>(key: UserDefaultKeys.isProfileCompleted.rawValue, defaultValue: false)
+        public static var hasCompletedProfileSetup
     }
     
     public struct Game {

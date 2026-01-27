@@ -28,13 +28,6 @@ final class LobbyViewModel {
     var peers: [PlayerInfo] = []
     var selectedPeerID: UUID?
 
-    // UI State
-    var activeAlert: LobbyAlert = .none
-    var showPermissionAlert: Bool {
-        get { activeAlert != .none }
-        set { if !newValue { activeAlert = .none } }
-    }
-
     // Network State
     var isConnected = false
     private(set) var networkMode: NetworkMode = .local
@@ -55,6 +48,8 @@ final class LobbyViewModel {
     @ObservationIgnored
     let webSocketSessionManager: WebSocketSessionManaging?
 
+    @ObservationIgnored
+    let appEntryManager: AppEntryManager
 
     // MARK: - Computed Properties
 
@@ -80,6 +75,7 @@ final class LobbyViewModel {
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
+        appEntryManager: AppEntryManager,
         playerId: UUID,
         nickname: String,
         characterRawValue: String
@@ -88,6 +84,7 @@ final class LobbyViewModel {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
+        self.appEntryManager = appEntryManager
         self.selectedPeerID = nil
         
         self.localPlayer = PlayerInfo(
@@ -155,12 +152,21 @@ extension LobbyViewModel {
     func setupExploration() {
         switch networkMode {
         case .local:
-            setupSessionManager()
-            explorationCoordinator.updateExploration(
-                mode: .local,
-                channelId: nil,
-                nickname: localPlayer.displayName
-            )
+            Task {
+                let isPermissionGranted = await appEntryManager.isLocalNetworkPermissionGranted()
+                if !isPermissionGranted {
+                    appEntryManager.presentAlert(.localNetworkDenied)
+                    matchStatus.reset()
+                    return
+                }
+                
+                setupSessionManager()
+                explorationCoordinator.updateExploration(
+                    mode: .local,
+                    channelId: nil,
+                    nickname: localPlayer.displayName
+                )
+            }
         case .remote:
             guard let channelId = selectedChannelId else { return }
             explorationCoordinator.updateExploration(
@@ -227,15 +233,6 @@ extension LobbyViewModel {
     func resetToIdle() {
         matchStatus.reset()
         selectedPeerID = nil
-    }
-}
-
-// MARK: - System
-
-extension LobbyViewModel {
-    func openAppSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
     }
 }
 

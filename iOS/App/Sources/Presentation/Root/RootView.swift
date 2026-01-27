@@ -27,7 +27,28 @@ struct RootView: View {
                 }
         }
         .environment(router)
+        .environment(container.appEntryManager)
+        .alert(
+            L10N.Common.permissionAlertTitle,
+            isPresented: Binding(
+                get: { container.appEntryManager.activePermissionAlert != nil },
+                set: { if !$0 { container.appEntryManager.dismissAlert() } }
+            )
+        ) {
+            Button(L10N.Common.goToSettings) { container.appEntryManager.openAppSettings() }
+            Button(L10N.Common.cancel, role: .cancel) { container.appEntryManager.dismissAlert() }
+        } message: {
+            if let alert = container.appEntryManager.activePermissionAlert {
+                switch alert {
+                case .localNetworkDenied:
+                    Text(L10N.Alert.localNetworkSubTitle)
+                case .cameraDenied:
+                    Text(L10N.Alert.cameraSubTitle)
+                }
+            }
+        }
         .task {
+            checkUserStatus()
             await handleScenePhase(.active)
         }
         .onChange(of: scenePhase) { _, newPhase in
@@ -103,13 +124,6 @@ extension RootView {
     private func handleScenePhase(_ phase: ScenePhase) async {
         switch phase {
         case .active:
-            let canEnter = await container.appEntryManager.canEnterApp()
-            guard canEnter else {
-                router.setRoot(.permissionSetup)
-                container.explorationCoordinator.setAppActive(false)
-                return
-            }
-            checkUserStatus()
             container.explorationCoordinator.setAppActive(true)
         case .inactive, .background:
             container.explorationCoordinator.setAppActive(false)
@@ -119,13 +133,17 @@ extension RootView {
     }
 
     private func checkUserStatus() {
+        guard router.path.isEmpty else { return }
+        
         let hasCompletedPermission = UserDefaultsList.Permission.hasCompletedPermissionSetup
-        let hasPlayerInfo = !players.isEmpty
-
-        if hasPlayerInfo {
+        let hasCompletedProfile = UserDefaultsList.Profile.hasCompletedProfileSetup
+        
+        if hasCompletedProfile {
             router.setRoot(.lobby)
-        } else {
+        } else if hasCompletedPermission {
             router.setRoot(.profileSetup)
+        } else {
+            router.setRoot(.permissionSetup)
         }
     }
 }
