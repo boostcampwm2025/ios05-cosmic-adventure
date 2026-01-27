@@ -33,31 +33,35 @@ let project = Project(
                 "NSAppTransportSecurity": .dictionary([
                     "NSAllowsArbitraryLoads": .boolean(true)
                 ]),
-                "API_BASE_URL": "$(API_BASE_URL)",
-                "UIAppFonts": [
-                  "Fonts/Pretendard-Thin.otf",
-                  "Fonts/Pretendard-ExtraLight.otf",
-                  "Fonts/Pretendard-Light.otf",
-                  "Fonts/Pretendard-Regular.otf",
-                  "Fonts/Pretendard-Medium.otf",
-                  "Fonts/Pretendard-SemiBold.otf",
-                  "Fonts/Pretendard-Bold.otf",
-                  "Fonts/Pretendard-ExtraBold.otf",
-                  "Fonts/Pretendard-Black.otf",
-                ],
-                "CFBundleDisplayName": "CosmicAdventure",
-                "UISupportedInterfaceOrientations": [
-                  "UIInterfaceOrientationPortrait"
-                ],
-                "UISupportedInterfaceOrientations~ipad": [
-                  "UIInterfaceOrientationPortrait"
-                ]
+                "API_BASE_URL": .string("$(API_BASE_URL)"),
+
+                "UIAppFonts": .array([
+                    .string("Pretendard-Thin.otf"),
+                    .string("Pretendard-ExtraLight.otf"),
+                    .string("Pretendard-Light.otf"),
+                    .string("Pretendard-Regular.otf"),
+                    .string("Pretendard-Medium.otf"),
+                    .string("Pretendard-SemiBold.otf"),
+                    .string("Pretendard-Bold.otf"),
+                    .string("Pretendard-ExtraBold.otf"),
+                    .string("Pretendard-Black.otf"),
+                ]),
+
+                "CFBundleDisplayName": .string("CosmicAdventure"),
+
+                "UISupportedInterfaceOrientations": .array([
+                    .string("UIInterfaceOrientationPortrait"),
+                ]),
+
+                "UISupportedInterfaceOrientations~ipad": .array([
+                    .string("UIInterfaceOrientationPortrait"),
+                ])
             ]),
             sources: [
                 "Sources/**"
             ],
             resources: [
-                "Resources/**"
+                "Resources/**",
             ],
             dependencies: [
                 .project(target: "Games", path: "../Modules/Games"),
