@@ -90,7 +90,7 @@ final class GameViewModel {
         )
     }
     
-    public func start() {
+    func start() {
         gameplayManager.startNewGame()
         // 로컬 입력 바인드
         gameplayManager.bind(input: inputProvider, for: localPlayerID)
@@ -111,7 +111,7 @@ final class GameViewModel {
         inputProvider.start()
     }
 
-    public func stop() {
+    func stop() {
         multiplayerIO?.unbind()
         gameplayManager.onDidUpdate = nil
         gameplayManager.onJumpTriggered = nil
@@ -127,5 +127,10 @@ final class GameViewModel {
                 self?.isRemotePlayerVisible = isVisible
             }
         }
+    }
+
+    func notifyGameEnded(_ reason: GameEndReason) {
+        guard remotePlayerId != nil else { return }
+        multiplayerIO?.notifyGameEnded(reason)
     }
 }

@@ -27,4 +27,5 @@ public enum NetworkPacketType: String, Codable {
 
     case input
     case videoFrame
+    case gameEnded
 }

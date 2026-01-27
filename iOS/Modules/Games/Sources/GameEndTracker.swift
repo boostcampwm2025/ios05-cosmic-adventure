@@ -43,6 +43,11 @@ public final class GameEndTracker {
         lastLandedPlatformIndex = 0
     }
 
+    public func forceEnd(_ reason: GameEndReason) {
+        guard endReason == nil else { return }
+        endReason = reason
+    }
+
     public func tick(deltaTime: TimeInterval) {
         guard endReason == nil else { return }
         elapsedTime += deltaTime

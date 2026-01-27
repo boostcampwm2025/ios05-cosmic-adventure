@@ -49,6 +49,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onPeersUpdated: (([NetworkPeer]) -> Void)?
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
+    public var onGameEnded: ((UUID, Int) -> Void)?
 
     // MARK: - Initialization
 
@@ -184,6 +185,26 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
     public func getLatency(for playerId: UUID) -> Double? {
         return nearbyPlayer.first { $0.sessionId == playerId }?.latency
+    }
+
+    public func sendGameEnded(reason: Int, to targetId: UUID?) {
+        let dto = NetworkGameEndDTO(reason: reason)
+        guard let payload = try? encoder.encode(dto) else { return }
+        let packet = NetworkPacket(
+            type: .gameEnded,
+            senderIdentifier: localSessionId.uuidString,
+            payload: payload,
+            channel: .game
+        )
+        guard let encodedPacket = try? encoder.encode(packet) else { return }
+
+        if let connection = self.activeGameConnection {
+            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
+                if let error = error {
+                    self.logger.error("게임 종료 전송 실패: \(error.localizedDescription)")
+                }
+            })
+        }
     }
 
     // MARK: - Private Methods
@@ -344,6 +365,12 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 }
                 if let payload = packet.payload {
                     onVideoReceived?(senderId, payload)
+                }
+
+            case .gameEnded:
+                if let payload = packet.payload,
+                   let dto = try? self.decoder.decode(NetworkGameEndDTO.self, from: payload) {
+                    onGameEnded?(senderId, dto.reason)
                 }
             }
         }
