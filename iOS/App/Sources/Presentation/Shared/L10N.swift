@@ -82,6 +82,7 @@ enum L10N {
     enum Alert {
         static let defaultTitle: LocalizedStringKey = "오류 발생"
         static let localNetworkSubTitle: LocalizedStringKey = "근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요. 설정에서 권한을 허용해주세요."
+        static let cameraSubTitle: LocalizedStringKey = "카메라 권한이 필요해요. 설정에서 권한을 허용해주세요."
         static let unknownSubTitle: LocalizedStringKey = "알 수 없는 네트워크 오류가 발생했습니다."
     }
     

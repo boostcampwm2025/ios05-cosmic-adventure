@@ -41,6 +41,7 @@ final class ProfileSetupViewModel {
         )
         
         modelContext.insert(newPlayer)
+        UserDefaultsList.Profile.hasCompletedProfileSetup = true
         
         // TODO: LobbyView로 이동
     }

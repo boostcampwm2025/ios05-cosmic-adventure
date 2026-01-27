@@ -9,6 +9,7 @@ import SwiftUI
 
 struct LobbyView: View {
     @Environment(AppRouter.self) private var router: AppRouter
+    @Environment(AppEntryManager.self) private var appEntryManager
     @State private var viewModel: LobbyViewModel
     @State private var channelListViewModel: ChannelListViewModel
     @State private var isAppearing = false
@@ -42,31 +43,21 @@ struct LobbyView: View {
                 Task { await channelListViewModel.fetchChannels() }
             }
         }
-        .onChange(of: viewModel.matchStatus) { _, newValue in
-            if case .gameReady(let peer) = newValue {
-                if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.gameReady(me: viewModel.localPlayer,
-                                           peer: peer,
-                                           isNetwork: viewModel.networkMode == .remote))
+         .onChange(of: viewModel.matchStatus) { _, newValue in
+             if case .gameReady(let peer) = newValue {
+                 if UserDefaultsList.Game.isGuideChecked {
+                     Task {
+                         guard await appEntryManager.canEnterGame() else { return }
+                         router.push(.gameReady(me: viewModel.localPlayer,
+                                                peer: peer,
+                                                isNetwork: viewModel.networkMode == .remote))
+                     }
                 } else {
                     router.push(.operationGuide(me: viewModel.localPlayer,
                                                 peer: peer,
                                                 isNetwork: viewModel.networkMode == .remote))
                 }
             }
-        }
-        .alert(viewModel.activeAlert.title, isPresented: $viewModel.showPermissionAlert) {
-            Button(viewModel.activeAlert.primaryButtonTitle) {
-                if viewModel.activeAlert == .permissionDenied {
-                    viewModel.openAppSettings()
-                }
-            }
-
-            if viewModel.activeAlert.hasCancelButton {
-                Button(L10N.Common.cancel, role: .cancel) { }
-            }
-        } message: {
-            Text(viewModel.activeAlert.message)
         }
         .overlay {
             if isModalPresented {
@@ -158,13 +149,16 @@ private extension LobbyView {
         showSecondary: Bool = true
     ) -> some View {
         VStack(spacing: 12) {
-            PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
-                viewModel.setSoloMode()
+             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
+                 viewModel.setSoloMode()
 
-                if UserDefaultsList.Game.isGuideChecked {
-                    router.push(.gameReady(me: viewModel.localPlayer,
-                                           peer: nil,
-                                           isNetwork: viewModel.networkMode == .remote))
+                 if UserDefaultsList.Game.isGuideChecked {
+                     Task {
+                         guard await appEntryManager.canEnterGame() else { return }
+                         router.push(.gameReady(me: viewModel.localPlayer,
+                                                peer: nil,
+                                                isNetwork: viewModel.networkMode == .remote))
+                     }
                 } else {
                     router.push(.operationGuide(me: viewModel.localPlayer,
                                                 peer: nil,

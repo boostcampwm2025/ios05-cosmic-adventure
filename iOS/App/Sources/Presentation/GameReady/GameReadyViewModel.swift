@@ -34,6 +34,8 @@ final class GameReadyViewModel {
     private(set) var progress: Double = 0.0
 
     private(set) var networkMode: NetworkMode
+    
+    let appEntryManager: AppEntryManager
 
     init(
         me: PlayerInfo,
@@ -41,7 +43,8 @@ final class GameReadyViewModel {
         isNetwork: Bool,
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
-        webSocketSessionManager: WebSocketSessionManaging?
+        webSocketSessionManager: WebSocketSessionManaging?,
+        appEntryManager: AppEntryManager
     ) {
         self.me = me
         self.peer = peer
@@ -49,6 +52,7 @@ final class GameReadyViewModel {
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
+        self.appEntryManager = appEntryManager
         self.networkMode = isNetwork ? .remote : .local
 
         setupConnectivityMonitor()

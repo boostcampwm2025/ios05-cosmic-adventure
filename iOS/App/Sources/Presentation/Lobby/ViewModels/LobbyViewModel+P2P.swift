@@ -13,12 +13,14 @@ import NetworkKit
 extension LobbyViewModel {
 
     func setupSessionManager() {
-        activeAlert = .none
         networkSessionManager.onPermissionResult = { [weak self] result in
             guard case .failure(let error) = result else { return }
             
-            Task { @MainActor in 
-                self?.activeAlert = (error == .denied) ? .permissionDenied : .unknownNetworkError
+            Task { @MainActor in
+                guard error == .denied else { return }
+                self?.appEntryManager.presentAlert(.localNetworkDenied)
+                self?.matchStatus.reset()
+                self?.explorationCoordinator.stopExploration()
             }
         }
     }

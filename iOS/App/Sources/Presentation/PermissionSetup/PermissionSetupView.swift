@@ -44,12 +44,6 @@ struct PermissionSetupView: View {
             }
             .padding(.horizontal, 20)
         }
-        .alert(L10N.Common.permissionAlertTitle, isPresented: $viewModel.showSettingsAlert) {
-            Button(L10N.Common.goToSettings) { viewModel.openAppSettings() }
-            Button(L10N.Common.cancel, role: .cancel) { }
-        } message: {
-            Text(viewModel.settingsAlertMessage)
-        }
         .onAppear {
             viewModel.refreshPermissionStates()
         }

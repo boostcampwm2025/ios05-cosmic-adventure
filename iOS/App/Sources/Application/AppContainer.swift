@@ -66,6 +66,8 @@ final class AppContainer: ViewModelFactory {
             baseURL: baseURL
         )
         
+        // 권한 확인용 별도 인스턴스 사용: LocalNetworkPermissionRequester가 권한 확인 후
+        // deactivate()를 호출하므로, 공유 networkSessionManager를 사용하면 진행 중인 P2P 세션이 중단됨
         let permissionCheckSessionManager = NetworkSessionManager()
         let resolvedPermissionService = permissionService
             ?? DefaultPermissionService(
@@ -87,7 +89,7 @@ final class AppContainer: ViewModelFactory {
     }
     
     func makePermissionSetupViewModel() -> PermissionSetupViewModel {
-        PermissionSetupViewModel(service: permissionService)
+        PermissionSetupViewModel(service: permissionService, appEntryManager: appEntryManager)
     }
     
     func makeProfileSetupViewModel() -> ProfileSetupViewModel {
@@ -100,6 +102,7 @@ final class AppContainer: ViewModelFactory {
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,
+            appEntryManager: appEntryManager,
             playerId: playerId,
             nickname: nickname,
             characterRawValue: characterType
@@ -113,7 +116,8 @@ final class AppContainer: ViewModelFactory {
             isNetwork: isNetwork,
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
-            webSocketSessionManager: webSocketSessionManager
+            webSocketSessionManager: webSocketSessionManager,
+            appEntryManager: appEntryManager
         )
     }
 

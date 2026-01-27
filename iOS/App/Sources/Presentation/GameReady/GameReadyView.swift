@@ -9,6 +9,7 @@ import SwiftUI
 
 struct GameReadyView: View {
     @Environment(AppRouter.self) private var router: AppRouter
+    @Environment(AppEntryManager.self) private var appEntryManager
     @State private var viewModel: GameReadyViewModel
     @State private var isAnimating = false
 
@@ -61,13 +62,16 @@ struct GameReadyView: View {
         .onChange(of: viewModel.isPeerReady) { _, _ in attemptStart() }
     }
 
-    private func attemptStart() {
-        if viewModel.checkAllReady() {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                router.push(.game(viewModel.peer, isNetwork: viewModel.isNetwork))
-            }
-        }
-    }
+     private func attemptStart() {
+         if viewModel.checkAllReady() {
+             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
+                 Task {
+                     guard await appEntryManager.canEnterGame() else { return }
+                     router.push(.game(viewModel.peer, isNetwork: viewModel.isNetwork))
+                 }
+             }
+         }
+     }
 }
 
 // MARK: - Subviews
