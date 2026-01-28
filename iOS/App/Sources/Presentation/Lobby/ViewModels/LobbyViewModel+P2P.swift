@@ -27,8 +27,14 @@ extension LobbyViewModel {
 
     func setupP2PCallbacks() {
         networkSessionManager.onPeersUpdated = { [weak self] peers in
+            guard let self = self else { return }
+
+            let activePeerIds = Set(peers.map { $0.sessionId })
+
+            // 알림 리스트 중 접속 중이지 않은 유저의 알림 제거
             Task { @MainActor in
-                self?.updateLocalPeers(peers)
+                self.updateLocalPeers(peers)
+                self.inviteNotifications.removeAll { !activePeerIds.contains($0.sender.id) }
             }
         }
 

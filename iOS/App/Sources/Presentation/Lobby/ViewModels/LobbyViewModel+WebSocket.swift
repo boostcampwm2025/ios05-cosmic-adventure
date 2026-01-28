@@ -35,8 +35,13 @@ extension LobbyViewModel {
 
     private func setupPlayerManagementCallbacks() {
         webSocketSessionManager?.onPlayersUpdated = { [weak self] players in
+            guard let self = self else { return }
+
+            let activePlayerIds = Set(players.map { $0.id })
+
             Task { @MainActor in
-                self?.updatePeersFromPlayers(players)
+                self.updatePeersFromPlayers(players)
+                self.inviteNotifications.removeAll { !activePlayerIds.contains($0.sender.id) }
             }
         }
 
