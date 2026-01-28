@@ -92,6 +92,7 @@ struct GameView: View {
         }
         .onChange(of: viewModel.endReason) { _, newValue in
             guard let reason = newValue else { return }
+            viewModel.updateLocalGameEndDisplay(reason)
             viewModel.notifyGameEnded(reason)
             viewModel.stop()
         }
@@ -168,13 +169,12 @@ struct GameView: View {
     }
 
     private func gameEndOverlay(reason: GameEndReason) -> some View {
-        let title: String
-        switch reason {
-        case .timeout:
-            title = "시간 종료"
-        case .reachedFinish:
-            title = "결승 도착!"
-        }
+        let title = viewModel.gameEndReasonText ?? {
+            switch reason {
+            case .timeout: return "시간 종료"
+            case .reachedFinish: return "결승 도착!"
+            }
+        }()
 
         return ZStack {
             Color.black.opacity(0.55)
@@ -185,9 +185,29 @@ struct GameView: View {
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 32))
                     .foregroundStyle(.white)
 
-                Text("경과 시간: \(viewModel.elapsedSeconds)s")
-                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
-                    .foregroundStyle(.white)
+                if let winnerText = viewModel.gameEndWinnerText {
+                    Text(winnerText)
+                        .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
+                        .foregroundStyle(.white)
+                }
+
+                if let opponentText = viewModel.gameEndOpponentText {
+                    Text(opponentText)
+                        .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
+
+                if let localElapsed = viewModel.gameEndLocalElapsedText {
+                    Text(localElapsed)
+                        .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
+                        .foregroundStyle(.white)
+                }
+
+                if let opponentElapsed = viewModel.gameEndOpponentElapsedText {
+                    Text(opponentElapsed)
+                        .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
+                        .foregroundStyle(.white.opacity(0.85))
+                }
             }
             .padding(20)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))

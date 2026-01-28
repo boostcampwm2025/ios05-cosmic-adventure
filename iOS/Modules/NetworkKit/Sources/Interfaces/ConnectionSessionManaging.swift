@@ -22,7 +22,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     var onInputReceived: ((UUID, Data) -> Void)? { get set }
     var onReadyStatusReceived: ((UUID) -> Void)? { get set }
     var onVideoReceived: ((UUID, Data) -> Void)? { get set }
-    var onGameEnded: ((UUID, Int) -> Void)? { get set }
+    var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)? { get set }
 
     // MARK: - action
 
@@ -35,7 +35,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     func sendVideo(_ data: Data, to targetId: UUID?)
 
     func getLatency(for playerId: UUID) -> Double?
-    func sendGameEnded(reason: Int, to targetId: UUID?)
+    func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?)
 }
 
 extension ConnectionSessionManaging {
@@ -51,7 +51,7 @@ extension ConnectionSessionManaging {
         self.sendVideo(data, to: nil)
     }
 
-    public func sendGameEnded(reason: Int) {
-        self.sendGameEnded(reason: reason, to: nil)
+    public func sendGameEnded(_ dto: NetworkGameEndDTO) {
+        self.sendGameEnded(dto, to: nil)
     }
 }

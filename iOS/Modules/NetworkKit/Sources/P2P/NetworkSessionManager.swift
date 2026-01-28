@@ -49,7 +49,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onPeersUpdated: (([NetworkPeer]) -> Void)?
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
-    public var onGameEnded: ((UUID, Int) -> Void)?
+    public var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
 
     // MARK: - Initialization
 
@@ -187,8 +187,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         return nearbyPlayer.first { $0.sessionId == playerId }?.latency
     }
 
-    public func sendGameEnded(reason: Int, to targetId: UUID?) {
-        let dto = NetworkGameEndDTO(reason: reason)
+    public func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {
         guard let payload = try? encoder.encode(dto) else { return }
         let packet = NetworkPacket(
             type: .gameEnded,
@@ -370,7 +369,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             case .gameEnded:
                 if let payload = packet.payload,
                    let dto = try? self.decoder.decode(NetworkGameEndDTO.self, from: payload) {
-                    onGameEnded?(senderId, dto.reason)
+                    onGameEnded?(senderId, dto)
                 }
             }
         }

@@ -147,8 +147,10 @@ public final class WebSocketService: NSObject {
         send(message)
     }
 
-    public func sendGameEnded(reason: Int, to targetId: String) {
-        let routed = ForwardingPayload(to: targetId, data: String(reason))
+    public func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: String) {
+        guard let dtoData = try? encoder.encode(dto),
+              let dtoString = String(data: dtoData, encoding: .utf8) else { return }
+        let routed = ForwardingPayload(to: targetId, data: dtoString)
 
         guard let routedData = try? encoder.encode(routed),
               let payload = String(data: routedData, encoding: .utf8) else { return }

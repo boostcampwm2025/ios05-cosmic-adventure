@@ -42,6 +42,17 @@ final class GameViewModel {
     var endReason: GameEndReason? {
         gameplayManager.gameEnd.endReason
     }
+
+    struct GameEndDisplay: Equatable {
+        let reason: GameEndReason
+        let winnerId: UUID?
+        let localElapsedSeconds: Int?
+        let winnerElapsedSeconds: Int?
+        let winnerName: String?
+        let opponentName: String?
+    }
+
+    var gameEndDisplay: GameEndDisplay?
     
     var remainingSeconds: Int? {
         gameplayManager.gameEnd.remainingSeconds
@@ -84,6 +95,8 @@ final class GameViewModel {
         self.multiplayerIO = MultiplayerNetworkIO(
             localPlayerID: localPlayerID,
             remotePlayerIDs: remotePlayerIDs,
+            localDisplayName: localPlayer.displayName,
+            remoteDisplayName: remotePlayer?.displayName,
             gameplayManager: gameplayManager,
             inputProvider: inputProvider,
             networkSessionManager: connectionSessionManager
@@ -98,6 +111,11 @@ final class GameViewModel {
         // 네트워크 송신/수신 바인딩 (멀티플레이일 때만)
         if let remotePlayerId {
             multiplayerIO?.bind(peerId: remotePlayerId)
+            multiplayerIO?.setOnGameEndReceived { [weak self] dto in
+                Task { @MainActor in
+                    self?.applyRemoteGameEnd(dto)
+                }
+            }
         } else {
             multiplayerIO?.unbind()
         }
@@ -133,4 +151,89 @@ final class GameViewModel {
         guard remotePlayerId != nil else { return }
         multiplayerIO?.notifyGameEnded(reason)
     }
+
+    func updateLocalGameEndDisplay(_ reason: GameEndReason) {
+        guard gameEndDisplay == nil else { return }
+        let opponentId = remotePlayerId
+        let winnerId: UUID?
+        switch reason {
+        case .reachedFinish:
+            winnerId = localPlayerID
+        case .timeout:
+            winnerId = opponentId
+        }
+        gameEndDisplay = GameEndDisplay(
+            reason: reason,
+            winnerId: winnerId,
+            localElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
+            winnerElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
+            winnerName: winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName,
+            opponentName: winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
+        )
+    }
+
+    func applyRemoteGameEnd(_ dto: NetworkGameEndDTO) {
+        guard let reason = decodeGameEndReason(dto.reason) else { return }
+        gameEndDisplay = GameEndDisplay(
+            reason: reason,
+            winnerId: dto.winnerId,
+            localElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
+            winnerElapsedSeconds: dto.winnerElapsedSeconds,
+            winnerName: dto.winnerName,
+            opponentName: dto.opponentName
+        )
+    }
+
+    var gameEndReasonText: String? {
+        guard let display = gameEndDisplay else { return nil }
+        switch display.reason {
+        case .timeout:
+            return "시간 종료"
+        case .reachedFinish:
+            if display.winnerId == localPlayerID {
+                return "승리"
+            }
+            if let winnerId = display.winnerId, winnerId != localPlayerID {
+                return "패배"
+            }
+            return "결승 도착"
+        }
+    }
+
+    var gameEndWinnerText: String? {
+        guard let display = gameEndDisplay else { return nil }
+        if display.reason == .timeout { return nil }
+        guard let winnerName = display.winnerName else { return nil }
+        return "승자: \(winnerName)"
+    }
+
+    var gameEndOpponentText: String? {
+        guard let display = gameEndDisplay else { return nil }
+        if display.reason == .timeout { return nil }
+        guard let opponentName = display.opponentName else { return nil }
+        return "상대: \(opponentName)"
+    }
+
+    var gameEndLocalElapsedText: String? {
+        return nil
+    }
+
+    var gameEndOpponentElapsedText: String? {
+        guard let display = gameEndDisplay,
+              let winnerElapsed = display.winnerElapsedSeconds else { return nil }
+        if display.reason == .timeout { return nil }
+        return "승자 소요시간: \(winnerElapsed)s"
+    }
+
+    private func decodeGameEndReason(_ raw: Int) -> GameEndReason? {
+        switch raw {
+        case 0:
+            return .timeout
+        case 1:
+            return .reachedFinish
+        default:
+            return nil
+        }
+    }
+
 }

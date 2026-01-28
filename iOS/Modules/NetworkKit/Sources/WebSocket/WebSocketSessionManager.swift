@@ -17,6 +17,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "WebSocketSessionManager")
     private let service: WebSocketService
     private let serverURL: String
+    private let decoder = JSONDecoder()
     
     private var isActive = false
 
@@ -37,7 +38,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onConnectionStateChanged: ((Bool) -> Void)?
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
-    public var onGameEnded: ((UUID, Int) -> Void)?
+    public var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
 
     // MARK: - Initialization
     
@@ -113,10 +114,10 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         return players.first { $0.id == playerId }?.latency
     }
 
-    public func sendGameEnded(reason: Int, to targetId: UUID?) {
+    public func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {
         guard let targetId,
               let sessionId = sessionId(forPlayerId: targetId) else { return }
-        service.sendGameEnded(reason: reason, to: sessionId)
+        service.sendGameEnded(dto, to: sessionId)
     }
 
     // MARK: - Private Methods
@@ -198,8 +199,9 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
 
         case .gameEnded:
             if let payload = message.payload,
-               let reason = Int(payload) {
-                onGameEnded?(playerId(forSenderId: message.senderId), reason)
+               let data = payload.data(using: .utf8),
+               let dto = try? decoder.decode(NetworkGameEndDTO.self, from: data) {
+                onGameEnded?(playerId(forSenderId: message.senderId), dto)
             }
 
         default:
