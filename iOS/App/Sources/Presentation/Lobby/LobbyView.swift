@@ -46,7 +46,7 @@ struct LobbyView: View {
          .onChange(of: viewModel.matchStatus) { _, newValue in
              if case .gameReady(let peer) = newValue {
                  if UserDefaultsList.Game.isGuideChecked {
-                     Task {
+                     Task { @MainActor in
                          guard await appEntryManager.canEnterGame() else { return }
                          router.push(.gameReady(me: viewModel.localPlayer,
                                                 peer: peer,
@@ -153,7 +153,7 @@ private extension LobbyView {
                  viewModel.setSoloMode()
 
                  if UserDefaultsList.Game.isGuideChecked {
-                     Task {
+                     Task { @MainActor in
                          guard await appEntryManager.canEnterGame() else { return }
                          router.push(.gameReady(me: viewModel.localPlayer,
                                                 peer: nil,
