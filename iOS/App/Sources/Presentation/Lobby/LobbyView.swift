@@ -820,7 +820,9 @@ private extension LobbyView {
 
     // 수락/거절 버튼
     func notificationActionButtons(for notification: InviteNotification) -> some View {
-        HStack(spacing: 8) {
+        let wasSoloGame = viewModel.matchStatus == .soloGame
+
+        return HStack(spacing: 8) {
             // 수락 버튼
             PrimaryGradientButton(
                 title: L10N.Lobby.NotificationListPopover.accept,
@@ -829,10 +831,7 @@ private extension LobbyView {
                 fontSize: 16
             ) {
                 withAnimation(.spring(response: 0.35, dampingFraction: 0.8)) {
-                    viewModel.matchStatus = .receivedInvite(peer: notification.sender)
-                    viewModel.acceptInvite()
-                    viewModel.inviteNotifications.removeAll { $0.id == notification.id }
-                    viewModel.isShowingNotification = false
+                    viewModel.acceptInviteFromNotification(notification)
                 }
             }
             .frame(maxWidth: .infinity)
@@ -840,9 +839,7 @@ private extension LobbyView {
             // 거절 버튼
             Button(action: {
                 withAnimation(.easeInOut(duration: 0.2)) {
-                    viewModel.matchStatus = .receivedInvite(peer: notification.sender)
-                    viewModel.declineInvite()
-                    viewModel.inviteNotifications.removeAll { $0.id == notification.id }
+                    viewModel.declineInviteFromNotification(notification)
                 }
             }) {
                 Text(L10N.Lobby.NotificationListPopover.decline)

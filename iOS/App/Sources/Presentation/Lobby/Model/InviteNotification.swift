@@ -13,15 +13,9 @@ struct InviteNotification: Identifiable, Equatable {
     let receivedAt: Date = Date()
 
     var timeAgo: String {
-        let now = Date()
-        let components = Calendar.current.dateComponents([.minute, .hour], from: receivedAt, to: now)
-
-        if let hour = components.hour, hour > 0 {
-            return "\(hour)시간 전"
-        } else if let minute = components.minute, minute > 0 {
-            return "\(minute)분 전"
-        } else {
-            return "방금 전"
-        }
+        let formatter = RelativeDateTimeFormatter()
+        formatter.unitsStyle = .full
+        formatter.locale = Locale(identifier: "ko_KR")
+        return formatter.localizedString(for: receivedAt, relativeTo: Date())
     }
 }
