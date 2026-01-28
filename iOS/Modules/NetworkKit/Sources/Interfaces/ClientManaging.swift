@@ -8,7 +8,7 @@
 import Foundation
 import Network
 
-public enum ConnectionKind: String, Codable {
+public enum ConnectionKind: String, Codable, Sendable {
     case game
     case video
 }
