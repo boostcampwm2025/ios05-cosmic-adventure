@@ -8,10 +8,12 @@
 import SwiftUI
 import AVFoundation
 
-class VideoContainerView: UIView {
+final class VideoContainerView: UIView {
     
     var videoLayer: AVSampleBufferDisplayLayer?
 
+    // MARK: - Initialization
+    
     override init(frame: CGRect) {
         super.init(frame: frame)
         setupView()
@@ -21,11 +23,7 @@ class VideoContainerView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
-    private func setupView() {
-        self.backgroundColor = .black
-        self.layer.cornerRadius = 14
-        self.clipsToBounds = true
-    }
+    // MARK: - Override fuction
 
     override func layoutSubviews() {
         super.layoutSubviews()
@@ -39,6 +37,14 @@ class VideoContainerView: UIView {
         videoLayer.bounds = self.bounds
 
         CATransaction.commit()
+    }
+    
+    // MARK: - Private function
+    
+    private func setupView() {
+        self.backgroundColor = .black
+        self.layer.cornerRadius = 14
+        self.clipsToBounds = true
     }
 }
 
