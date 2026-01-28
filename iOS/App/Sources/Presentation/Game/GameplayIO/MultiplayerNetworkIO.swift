@@ -14,6 +14,8 @@ import NetworkKit
 actor MultiplayerNetworkIO {
     private let localPlayerID: UUID
     private let remotePlayerIDs: [UUID]
+    private let localDisplayName: String
+    private let remoteDisplayName: String?
     private let gameplayManager: GameplayManager
     private let inputProvider: FaceTrackingGameInputProvider
     private var connectionSessionManager: ConnectionSessionManaging
@@ -46,6 +48,8 @@ actor MultiplayerNetworkIO {
     private var didForceStopRemote: Bool = false
 
     private var didSendGameEnd: Bool = false
+
+    private var onGameEndReceived: (@Sendable (NetworkGameEndDTO) -> Void)?
     
     /// 지터를 줄이기 위한 smoothing 상수(작을수록 반응이 빠름)
     private let remoteSmoothingTimeConstant: TimeInterval = 0.08
@@ -56,12 +60,16 @@ actor MultiplayerNetworkIO {
     init(
         localPlayerID: UUID,
         remotePlayerIDs: [UUID],
+        localDisplayName: String,
+        remoteDisplayName: String?,
         gameplayManager: GameplayManager,
         inputProvider: FaceTrackingGameInputProvider,
         networkSessionManager: ConnectionSessionManaging
     ) {
         self.localPlayerID = localPlayerID
         self.remotePlayerIDs = remotePlayerIDs
+        self.localDisplayName = localDisplayName
+        self.remoteDisplayName = remoteDisplayName
         self.gameplayManager = gameplayManager
         self.inputProvider = inputProvider
         self.connectionSessionManager = networkSessionManager
@@ -79,6 +87,10 @@ actor MultiplayerNetworkIO {
 
     nonisolated func notifyGameEnded(_ reason: GameEndReason) {
         Task { await self.notifyGameEndedAsync(reason) }
+    }
+
+    nonisolated func setOnGameEndReceived(_ handler: @escaping @Sendable (NetworkGameEndDTO) -> Void) {
+        Task { await self.setOnGameEndReceivedAsync(handler) }
     }
 
     /// gameplayManager.update(deltaTime:)와 동일 틱에 실행되는 네트워크 처리
@@ -113,6 +125,10 @@ actor MultiplayerNetworkIO {
         didSendGameEnd = false
     }
 
+    private func setOnGameEndReceivedAsync(_ handler: @escaping @Sendable (NetworkGameEndDTO) -> Void) async {
+        onGameEndReceived = handler
+    }
+
     private func unbindAsync() async {
         peerId = nil
 
@@ -131,7 +147,8 @@ actor MultiplayerNetworkIO {
         guard didSendGameEnd == false else { return }
         guard let peerId else { return }
         didSendGameEnd = true
-        connectionSessionManager.sendGameEnded(reason: encodeGameEndReason(reason), to: peerId)
+        let dto = await makeGameEndDTO(reason: reason)
+        connectionSessionManager.sendGameEnded(dto, to: peerId)
     }
 
     private func tickAsync(deltaTime: TimeInterval) async {
@@ -148,9 +165,9 @@ actor MultiplayerNetworkIO {
             guard let self else { return }
             Task { await self.handleReceivedInput(sender: sender, payload: payload) }
         }
-        connectionSessionManager.onGameEnded = { [weak self] sender, reasonRaw in
+        connectionSessionManager.onGameEnded = { [weak self] sender, dto in
             guard let self else { return }
-            Task { await self.handleReceivedGameEnd(sender: sender, reasonRaw: reasonRaw) }
+            Task { await self.handleReceivedGameEnd(sender: sender, dto: dto) }
         }
     }
 
@@ -186,10 +203,14 @@ actor MultiplayerNetworkIO {
         }
     }
 
-    private func handleReceivedGameEnd(sender: UUID, reasonRaw: Int) async {
+    private func handleReceivedGameEnd(sender: UUID, dto: NetworkGameEndDTO) async {
         didSendGameEnd = true
 
-        guard let reason = decodeGameEndReason(reasonRaw) else { return }
+        if let onGameEndReceived {
+            onGameEndReceived(dto)
+        }
+
+        guard let reason = decodeGameEndReason(dto.reason) else { return }
         await MainActor.run {
             self.gameplayManager.applyGameEnd(reason)
         }
@@ -266,7 +287,29 @@ actor MultiplayerNetworkIO {
         guard let endReason else { return }
 
         didSendGameEnd = true
-        connectionSessionManager.sendGameEnded(reason: encodeGameEndReason(endReason), to: peerId)
+        let dto = await makeGameEndDTO(reason: endReason)
+        connectionSessionManager.sendGameEnded(dto, to: peerId)
+    }
+
+    private func makeGameEndDTO(reason: GameEndReason) async -> NetworkGameEndDTO {
+        let opponentId = remotePlayerIDs.first
+        let elapsed = await MainActor.run { gameplayManager.gameEnd.elapsedSeconds }
+        let winnerId: UUID?
+        switch reason {
+        case .reachedFinish:
+            winnerId = localPlayerID
+        case .timeout:
+            winnerId = opponentId
+        }
+        let winnerName = (winnerId == localPlayerID) ? localDisplayName : remoteDisplayName
+        let opponentName = (winnerId == localPlayerID) ? remoteDisplayName : localDisplayName
+        return NetworkGameEndDTO(
+            reason: encodeGameEndReason(reason),
+            winnerId: winnerId,
+            winnerElapsedSeconds: elapsed,
+            winnerName: winnerName,
+            opponentName: opponentName
+        )
     }
 
     // MARK: - Send (input -> cache)
