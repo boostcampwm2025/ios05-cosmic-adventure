@@ -43,30 +43,48 @@ public final class PhysicsCore {
     private func applyMovement(moveX: Double, isGrounded: Bool) {
         guard let body = body else { return }
 
-        let targetVelocityX = CGFloat(moveX) * PhysicsConstants.moveSpeed
+        let curvedInput = applyCurve(to: moveX)
+        let targetVelocityX = CGFloat(curvedInput) * PhysicsConstants.moveSpeed
         let currentDx = body.velocity.dx
         let hasInput = abs(moveX) > PhysicsConstants.inputThreshold // 입력이 아주 조금이라도 있는지 확인
+        let isTurning = (moveX > 0 && currentDx < -10) || (moveX < 0 && currentDx > 10)
 
-        // 땅에 있고(isGrounded), 입력이 없으면(!hasInput) -> 강제 정지
         if isGrounded && !hasInput {
-            // 미끄러짐 방지: X축 속도를 아예 0으로 고정
-            body.velocity = CGVector(dx: 0, dy: body.velocity.dy)
+            // 부드러운 감속: 즉시 정지 시 입력 노이즈로 인한 미세 떨림 방지
+            let newDx = CGFloat.lerp(start: currentDx, end: 0, t: PhysicsConstants.groundDeceleration)
+            // 속도가 충분히 낮으면 완전 정지
+            body.velocity = CGVector(dx: abs(newDx) < 5 ? 0 : newDx, dy: body.velocity.dy)
         } else {
             // 공중이거나 입력이 있을 때
             let acceleration: CGFloat
             if isGrounded {
-                acceleration = hasInput
-                ? PhysicsConstants.groundAcceleration
-                : PhysicsConstants.groundDeceleration
+                if isTurning {
+                    acceleration = PhysicsConstants.groundTurnAcceleration
+                } else {
+                    acceleration = hasInput
+                        ? PhysicsConstants.groundAcceleration
+                        : PhysicsConstants.groundDeceleration
+                }
             } else {
-                acceleration = hasInput
-                ? PhysicsConstants.airAcceleration
-                : PhysicsConstants.airDeceleration
+                if isTurning {
+                    acceleration = PhysicsConstants.airTurnAcceleration
+                } else {
+                    acceleration = hasInput
+                        ? PhysicsConstants.airAcceleration
+                        : PhysicsConstants.airDeceleration
+                }
             }
 
             let newDx = CGFloat.lerp(start: currentDx, end: targetVelocityX, t: acceleration)
             body.velocity = CGVector(dx: newDx, dy: body.velocity.dy)
         }
+    }
+    
+    private func applyCurve(to input: Double) -> Double {
+        let sign = input >= 0 ? 1.0 : -1.0
+        let absInput = abs(input)
+        let curved = pow(absInput, Double(PhysicsConstants.inputCurveExponent))
+        return sign * curved
     }
 
     private func applyGravityCorrection(deltaTime: TimeInterval, isGrounded: Bool) {

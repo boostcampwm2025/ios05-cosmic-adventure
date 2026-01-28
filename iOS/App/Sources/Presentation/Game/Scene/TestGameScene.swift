@@ -134,7 +134,7 @@ final class TestGameScene: SKScene {
         let controller = CharacterController(
             scene: self,
             cameraSystem: camSystem,
-            playerRole: .me
+            playerRole: .local
         )
         controller.setupPlayer(
             initialPosition: CGPoint(x: 0, y: groundY + 80),
