@@ -140,7 +140,7 @@ private extension SettingsView {
 private extension SettingsView {
     var gamePreviewSection: some View {
         Button {
-            Task {
+            Task { @MainActor in
                 guard await appEntryManager.canEnterGame() else { return }
                 router.push(.testGamePreview)
             }

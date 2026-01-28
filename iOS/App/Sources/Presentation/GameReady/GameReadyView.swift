@@ -65,7 +65,7 @@ struct GameReadyView: View {
      private func attemptStart() {
          if viewModel.checkAllReady() {
              DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                 Task {
+                 Task { @MainActor in
                      guard await appEntryManager.canEnterGame() else { return }
                      router.push(.game(viewModel.peer, isNetwork: viewModel.isNetwork))
                  }
