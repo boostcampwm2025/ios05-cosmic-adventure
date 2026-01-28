@@ -30,26 +30,14 @@ jobs:
       - name: Install Ruby Dependencies
         run: bundle install
 
-      - name: Import Signing Certificate
+      - name: Setup Keychain for Match
         run: |
-          echo "${{ secrets.CERTIFICATE_P12_BASE64 }}" | base64 --decode > cert.p12
           security create-keychain -p actions temp.keychain
           security default-keychain -s temp.keychain
           security set-keychain-settings -lut 21600 temp.keychain
           security unlock-keychain -p actions temp.keychain
-          security import cert.p12 -k temp.keychain -P "${{ secrets.CERTIFICATE_PASSWORD }}" -T /usr/bin/codesign
           security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions temp.keychain
           security list-keychains -d user -s temp.keychain
-
-      - name: Verify Certificate Import
-        run: security find-identity -v -p codesigning temp.keychain
-
-      - name: Install Provisioning Profile
-        run: |
-          mkdir -p "$HOME/Library/MobileDevice/Provisioning Profiles"
-          echo "${{ secrets.PROVISIONING_PROFILE_BASE64 }}" | base64 --decode > profile.mobileprovision
-          uuid=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(security cms -D -i profile.mobileprovision))
-          cp profile.mobileprovision "$HOME/Library/MobileDevice/Provisioning Profiles/$uuid.mobileprovision"
 
       - name: Decode App Store Connect API Key
         run: |
@@ -62,16 +50,21 @@ jobs:
             "key_filepath": "fastlane/AuthKey.p8"
           }
           EOF
-        env:
-          APP_STORE_PROVISIONING_PROFILE_NAME: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_NAME }}
 
       - name: Build and Upload to TestFlight
         run: bundle exec fastlane upload_testflight
         env:
-          APP_STORE_PROVISIONING_PROFILE_NAME: ${{ secrets.APP_STORE_PROVISIONING_PROFILE_NAME }}
+          # Match 관련 환경변수
+          AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
+          MATCH_KEYCHAIN_NAME: temp.keychain
+          MATCH_KEYCHAIN_PASSWORD: actions
+          # Team ID
+          COSMIC_TEAM_ID: ${{ secrets.COSMIC_TEAM_ID }}
 
       - name: Cleanup
         if: always()
         run: |
           security delete-keychain temp.keychain || true
-          rm -f cert.p12 profile.mobileprovision fastlane/AuthKey.p8 fastlane/api_key.json || true
+          rm -f fastlane/AuthKey.p8 fastlane/api_key.json || true

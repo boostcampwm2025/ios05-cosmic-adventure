@@ -1,0 +1,16 @@
+# fastlane/Matchfile
+
+# AWS S3 Storage
+storage_mode("s3")
+
+s3_region("ap-northeast-2")
+s3_bucket("ios-certificates-cosmic")
+
+# 앱 정보
+type("appstore")
+app_identifier("kr.boostcamp10.ios05.cosmic-adventure")
+# TODO: Team ID 확인 후 업데이트 필요 (Apple Developer Portal → Membership → Team ID)
+team_id(ENV["COSMIC_TEAM_ID"] || "YOUR_TEAM_ID")
+
+# Apple Developer 계정
+username("rjwlehlwk@naver.com")
