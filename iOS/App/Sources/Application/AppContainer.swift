@@ -75,6 +75,8 @@ final class AppContainer: ViewModelFactory {
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager
         )
+
+        _ = NotificationManager.shared
     }
     
     func makePermissionSetupViewModel() -> PermissionSetupViewModel {
