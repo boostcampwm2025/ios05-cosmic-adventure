@@ -1,2 +1,3 @@
-app_identifier("kr.codesquad.boostcamp10.ios05.cosmic-adventure")
-team_id("B3PWYBKFUK")
+app_identifier("kr.boostcamp10.ios05.cosmic-adventure")
+# TODO: Team ID 확인 후 업데이트 (Apple Developer Portal → Membership → Team ID)
+team_id(ENV["COSMIC_TEAM_ID"] || "YOUR_TEAM_ID")

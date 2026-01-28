@@ -12,6 +12,169 @@
 
 ---
 
+## Fastlane Match 설정 (팀 권장)
+
+### Match란?
+
+Fastlane Match는 인증서와 프로비저닝 프로파일을 AWS S3에 암호화하여 저장하고, 팀원들이 안전하게 공유하는 방식입니다.
+
+**장점:**
+- 인증서/프로파일을 팀 전체가 공유
+- 새 팀원 온보딩 시 간단한 명령어 하나로 설정 완료
+- CI/CD에서도 동일한 방식으로 사용
+
+### 배포 담당자 정보
+
+| 항목 | 값 |
+|------|-----|
+| Apple ID | `rjwlehlwk@naver.com` |
+| 역할 | Account Holder (개인 유료 계정) |
+| Team ID | **확인 필요** (아래 가이드 참조) |
+
+### 사전 준비 상태
+
+| 항목 | 상태 | 값 |
+|------|------|-----|
+| AWS S3 버킷 | ✅ 완료 | `ios-certificates-cosmic` (ap-northeast-2) |
+| Matchfile | ✅ 완료 | `fastlane/Matchfile` |
+| Fastfile | ✅ 완료 | Match 연동 코드 추가됨 |
+| 인증서 생성 | ⏳ 대기 | 아래 가이드 실행 필요 |
+
+---
+
+### 배포 담당자 (rjwlehlwk@naver.com) 실행 가이드
+
+#### Step 1: Team ID 확인
+
+1. [Apple Developer Portal](https://developer.apple.com/account) 접속
+2. 로그인 후 **Membership** 메뉴 클릭
+3. **Team ID** 확인 (10자리 영문+숫자)
+
+```
+예시: ABCD1234EF
+```
+
+#### Step 2: App ID (Bundle ID) 등록
+
+1. [Certificates, Identifiers & Profiles](https://developer.apple.com/account/resources/identifiers/list) 접속
+2. **Identifiers** → **+** 버튼 클릭
+3. **App IDs** 선택 → **Continue**
+4. **App** 선택 → **Continue**
+5. 정보 입력:
+   - **Description**: `Cosmic Adventure`
+   - **Bundle ID**: `Explicit` 선택
+   - **Bundle ID 값**: `kr.boostcamp10.ios05.cosmic-adventure`
+6. **Continue** → **Register**
+
+> ⚠️ Bundle ID가 이미 다른 계정에 등록되어 있으면 사용 불가. 이 경우 새 Bundle ID 필요.
+
+#### Step 3: 환경변수 설정
+
+터미널에서 실행 (Team ID를 Step 1에서 확인한 값으로 변경):
+
+```bash
+# AWS S3 접근용
+export AWS_ACCESS_KEY_ID="[팀에서 공유받은 AWS Access Key]"
+export AWS_SECRET_ACCESS_KEY="[팀에서 공유받은 AWS Secret Key]"
+
+# Match 암호화 비밀번호 (팀 공유용으로 기억하기 쉬운 것 설정)
+export MATCH_PASSWORD="[새로 설정할 암호화 비밀번호]"
+
+# Team ID (Step 1에서 확인한 값)
+export COSMIC_TEAM_ID="[YOUR_TEAM_ID]"
+```
+
+#### Step 4: Match 실행
+
+프로젝트 폴더에서 실행:
+
+```bash
+cd /path/to/ios05-cosmic-adventure
+/opt/homebrew/opt/ruby/bin/bundle exec fastlane match appstore
+```
+
+#### Step 5: Apple 인증
+
+- Apple ID (`rjwlehlwk@naver.com`) 로그인
+- 2FA 인증 코드 입력
+
+#### Step 6: 완료 확인
+
+다음 메시지가 나오면 성공:
+
+```
+All required keys, certificates and provisioning profiles are installed
+```
+
+#### Step 7: Team ID 코드에 반영 (선택)
+
+Match 실행 후, Matchfile과 Appfile의 `YOUR_TEAM_ID`를 실제 값으로 변경:
+
+```bash
+# fastlane/Matchfile, fastlane/Appfile 수정
+# team_id(ENV["COSMIC_TEAM_ID"] || "YOUR_TEAM_ID")
+# → team_id(ENV["COSMIC_TEAM_ID"] || "ABCD1234EF")  # 실제 Team ID로 변경
+```
+
+---
+
+### Match 실행 후 (다른 팀원용)
+
+배포 담당자가 Match를 실행한 후, 다른 팀원들은 `--readonly` 모드로 사용:
+
+```bash
+# 환경변수 설정 (배포 담당자에게 공유받기)
+export AWS_ACCESS_KEY_ID="[팀 공유 AWS Access Key]"
+export AWS_SECRET_ACCESS_KEY="[팀 공유 AWS Secret Key]"
+export MATCH_PASSWORD="[팀 공유 비밀번호]"
+export COSMIC_TEAM_ID="[팀 공유 Team ID]"
+
+# readonly 모드로 실행 (인증서 생성 권한 불필요)
+/opt/homebrew/opt/ruby/bin/bundle exec fastlane match appstore --readonly
+```
+
+---
+
+### GitHub Actions Secrets 설정
+
+Match 방식 사용 시 필요한 GitHub Secrets:
+
+**경로**: Repository → Settings → Secrets and variables → Actions
+
+| Secret 이름 | 설명 | 누가 제공? |
+|------------|------|-----------|
+| `COSMIC_TEAM_ID` | Apple Developer Team ID | 배포 담당자 |
+| `AWS_ACCESS_KEY_ID` | AWS Access Key | 기존 설정됨 |
+| `AWS_SECRET_ACCESS_KEY` | AWS Secret Key | 기존 설정됨 |
+| `MATCH_PASSWORD` | Match 암호화 비밀번호 | 배포 담당자 |
+| `APP_STORE_CONNECT_API_KEY_KEY_ID` | API Key ID (10자) | 배포 담당자 |
+| `APP_STORE_CONNECT_API_KEY_ISSUER_ID` | Issuer ID (UUID) | 배포 담당자 |
+| `APP_STORE_CONNECT_API_KEY_P8_BASE64` | .p8 파일 Base64 | 배포 담당자 |
+
+> App Store Connect API Key는 배포 담당자의 App Store Connect에서 생성 필요
+
+---
+
+### 현재 상태 체크리스트
+
+```
+[✅] AWS S3 버킷 생성 완료
+[✅] Matchfile 설정 완료 (username: rjwlehlwk@naver.com)
+[✅] Fastfile Match 연동 완료
+[⏳] 배포 담당자 Team ID 확인 ← 여기!
+[⏳] 배포 담당자 App ID 등록
+[⏳] 배포 담당자 Match 실행
+[ ] Team ID 코드 반영
+[ ] GitHub Secrets 업데이트
+[ ] CI/CD 테스트
+```
+
+---
+
+## 수동 설정 방식 (GitHub Secrets)
+
+> 아래는 Match를 사용하지 않고 수동으로 인증서를 관리하는 방식입니다.
+
 ## 필수 GitHub Secrets
 
 GitHub 저장소 설정에서 다음 8개의 Secrets를 추가해야 합니다.
@@ -167,7 +330,7 @@ security import test.p12 -P "$CERTIFICATE_PASSWORD"
 
 **해결 방법**:
 1. App Store 배포용 프로파일인지 확인 (Development 아님)
-2. Bundle ID가 일치하는지 확인: `kr.codesqued.boostcamp10.ios05.cosmic-adventure`
+2. Bundle ID가 일치하는지 확인: `kr.boostcamp10.ios05.cosmic-adventure`
 3. 프로파일이 만료되지 않았는지 확인
 4. `APP_STORE_PROVISIONING_PROFILE_NAME`이 정확한지 확인
 
@@ -207,8 +370,9 @@ security import test.p12 -P "$CERTIFICATE_PASSWORD"
 
 | 파일 | 설명 |
 |-----|------|
-| `fastlane/Fastfile` | Fastlane 레인 정의 (`upload_testflight` 레인) |
+| `fastlane/Fastfile` | Fastlane 레인 정의 (`upload_testflight`, `sync_certificates` 레인) |
 | `fastlane/Appfile` | 앱 식별 정보 (Bundle ID, Team ID) |
+| `fastlane/Matchfile` | Fastlane Match 설정 (AWS S3 저장소, Apple ID) |
 | `.github/workflows/deploy-testflight.yml` | GitHub Actions 워크플로우 |
 | `iOS/App/Project.swift` | Tuist 프로젝트 설정 (CI 코드 서명 설정 포함) |
 
@@ -218,8 +382,9 @@ security import test.p12 -P "$CERTIFICATE_PASSWORD"
 
 | 항목 | 값 |
 |-----|---|
-| Bundle ID | `kr.codesqued.boostcamp10.ios05.cosmic-adventure` |
-| Team ID | `B3PWYBKFUK` |
+| Bundle ID | `kr.boostcamp10.ios05.cosmic-adventure` |
+| Team ID | 환경변수 `COSMIC_TEAM_ID`로 설정 (배포 담당자 계정) |
+| Apple ID | `rjwlehlwk@naver.com` (배포 담당자) |
 | Workspace | `cosmic-adventure.xcworkspace` |
 | Scheme | `App` |
 | 배포 방식 | `app-store` |

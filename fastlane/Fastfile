@@ -6,8 +6,27 @@ def tuist_generate
 end
 
 platform :ios do
+  # Team ID 환경변수에서 가져오기
+  team_id = ENV.fetch("COSMIC_TEAM_ID", "YOUR_TEAM_ID")
+  app_identifier = "kr.boostcamp10.ios05.cosmic-adventure"
+
+  desc "Match로 인증서/프로파일 동기화 (readonly)"
+  lane :sync_certificates do
+    match(
+      type: "appstore",
+      readonly: true,
+      app_identifier: app_identifier
+    )
+  end
+
+  desc "TestFlight에 업로드"
   lane :upload_testflight do
     tuist_generate
+
+    # Match로 인증서 동기화 (CI 환경에서)
+    if ENV["CI"]
+      sync_certificates
+    end
 
     # Extract version from tag (ios-v1.2.3 -> 1.2.3)
     ref = ENV.fetch("GITHUB_REF", "refs/tags/ios-v0.0.0")
@@ -26,6 +45,9 @@ platform :ios do
 
     UI.message("Building version #{marketing_version} (#{build_number})")
 
+    # Match 사용 시 프로파일 이름 가져오기
+    profile_name = ENV["sigh_#{app_identifier}_appstore_profile-name"] || ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
+
     gym(
       workspace: "cosmic-adventure.xcworkspace",
       scheme: "App",
@@ -33,16 +55,15 @@ platform :ios do
       xcargs: [
         "MARKETING_VERSION=#{marketing_version}",
         "CURRENT_PROJECT_VERSION=#{build_number}",
-        "PROVISIONING_PROFILE_SPECIFIER=$APP_STORE_PROVISIONING_PROFILE_NAME",
         "CODE_SIGN_IDENTITY=Apple Distribution",
-        "DEVELOPMENT_TEAM=B3PWYBKFUK"
+        "DEVELOPMENT_TEAM=#{team_id}"
       ].join(" "),
       export_options: {
         method: "app-store",
         signingStyle: "manual",
-        teamID: "B3PWYBKFUK",
+        teamID: team_id,
         provisioningProfiles: {
-          "kr.codesquad.boostcamp10.ios05.cosmic-adventure" => ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
+          app_identifier => profile_name
         }
       }
     )
