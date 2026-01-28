@@ -77,6 +77,14 @@ enum L10N {
             static let acceptButton: LocalizedStringKey = "수락하기"
             static let declineButton: LocalizedStringKey = "거절하기"
         }
+
+        enum NotificationListPopover {
+            static let title: LocalizedStringKey = "Invites"
+            static let notificationEmptyMessage: LocalizedStringKey = "함께 떠날 탐험가가 없어요"
+            static let notificationEmptySubMessage: LocalizedStringKey = "잠시 후 다시 찾아주세요"
+            static let accept: LocalizedStringKey = "수락"
+            static let decline: LocalizedStringKey = "거절"
+        }
     }
     
     enum Alert {
