@@ -141,7 +141,8 @@ private extension SettingsView {
     var gamePreviewSection: some View {
         Button {
             Task {
-                await router.pushTestGamePreviewIfAllowed(appEntryManager: appEntryManager)
+                guard await appEntryManager.canEnterGame() else { return }
+                router.push(.testGamePreview)
             }
         } label: {
             Text(L10N.Settings.gamePreview)
