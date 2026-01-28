@@ -9,8 +9,8 @@ import Foundation
 import Network
 import os
 
-final class ClientManager: ClientManaging {
-    
+final class ClientManager: ClientManaging, @unchecked Sendable {
+
     // MARK: - Properties
     
     private let serviceType = "_cosmicadventure._tcp"
@@ -40,90 +40,132 @@ final class ClientManager: ClientManaging {
     // MARK: - Public Methods
 
     func startBrowsing() {
-        logger.info("탐색 시작: \(self.serviceType)")
+        networkQueue.async { [weak self] in
+            guard let self = self else { return }
+            logger.info("탐색 시작: \(self.serviceType)")
 
-        let parameters = NWParameters()
-        parameters.includePeerToPeer = true
+            let parameters = NWParameters()
+            parameters.includePeerToPeer = true
 
-        browser = NWBrowser(for: .bonjourWithTXTRecord(type: serviceType, domain: nil), using: parameters)
-        
-        browser?.browseResultsChangedHandler = { [weak self] results, changes in
-            self?.handleBrowseResultsChanged(results: results, changes: changes)
+            browser = NWBrowser(for: .bonjourWithTXTRecord(type: serviceType, domain: nil),
+                                using: parameters)
+
+            browser?.browseResultsChangedHandler = { [weak self] results, changes in
+                self?.handleBrowseResultsChanged(results: results, changes: changes)
+            }
+
+            browser?.stateUpdateHandler = { [weak self] state in
+                self?.handleBrowserStateUpdate(state)
+            }
+
+            browser?.start(queue: networkQueue)
         }
-
-        browser?.stateUpdateHandler = { [weak self] state in
-            self?.handleBrowserStateUpdate(state)
-        }
-
-        browser?.start(queue: networkQueue)
     }
 
     func stopBrowsing() {
-        logger.info("탐색 종료")
+        networkQueue.async { [weak self] in
+            guard let self = self else { return }
+            logger.info("탐색 종료")
 
-        connections.values.flatMap { $0.values }.forEach { $0.cancel() }
-        connections.removeAll()
+            connections.values.flatMap { $0.values }.forEach { $0.cancel() }
+            connections.removeAll()
 
-        browser?.cancel()
-        browser = nil
+            browser?.cancel()
+            browser = nil
+        }
     }
 
     func connectToHost(endpoint: NWEndpoint, kind: ConnectionKind) async throws -> NWConnection {
-        if let existingConnection = connections[endpoint]?[kind] {
-            switch existingConnection.state {
-            case .ready:
-                return existingConnection
-            case .preparing, .setup:
-                return existingConnection  // 이미 연결 시도 중이면 그냥 반환 (기존 receiveData가 동작 중)
-            default:
-                existingConnection.cancel()
-                connections[endpoint]?[kind] = nil
+        return try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<NWConnection, Error>) in
+
+            networkQueue.async { [weak self] in
+                guard let self = self else {
+                    continuation.resume(throwing: CancellationError())
+                    return
+                }
+
+                var hasResumed = false
+
+                if let existingConnection = self.connections[endpoint]?[kind] {
+                    switch existingConnection.state {
+                    case .ready:
+                        continuation.resume(returning: existingConnection)
+                        return
+                    case .preparing, .setup:
+                        continuation.resume(returning: existingConnection)
+                        return
+                    default:
+                        existingConnection.cancel()
+                        self.connections[endpoint]?[kind] = nil
+                    }
+                }
+
+                let parameters = NWParameters.tcp
+                parameters.includePeerToPeer = true
+                let connection = NWConnection(to: endpoint, using: parameters)
+
+                if self.connections[endpoint] == nil {
+                    self.connections[endpoint] = [:]
+                }
+                self.connections[endpoint]?[kind] = connection
+
+                connection.stateUpdateHandler = { [weak self] state in
+                    guard let self = self else {
+                        if !hasResumed {
+                            hasResumed = true
+                            continuation.resume(throwing: CancellationError())
+                        }
+                        return
+                    }
+
+                    switch state {
+                    case .ready:
+                        self.receiveData(from: connection)
+                        if !hasResumed {
+                            hasResumed = true
+                            continuation.resume(returning: connection)
+                        }
+                    case .failed(let error):
+                        self.logger.error("연결 실패: \(error.localizedDescription)")
+                        self.removeConnection(connection)
+                        if !hasResumed {
+                            hasResumed = true
+                            continuation.resume(throwing: error)
+                        }
+                    case .cancelled:
+                        self.removeConnection(connection)
+                        if !hasResumed {
+                            hasResumed = true
+                            continuation.resume(throwing: CancellationError())
+                        }
+                    default:
+                        self.logger.info("연결 상태: \(String(describing: state))")
+                    }
+                }
+
+                connection.start(queue: self.networkQueue) 
             }
         }
-
-        let parameters = NWParameters.tcp
-        parameters.includePeerToPeer = true
-
-        let connection = NWConnection(to: endpoint, using: parameters)
-        if connections[endpoint] == nil {
-            connections[endpoint] = [:]
-        }
-        connections[endpoint]?[kind] = connection
-
-        connection.stateUpdateHandler = { [weak self] state in
-            guard let self else { return }
-            switch state {
-            case .ready:
-                self.receiveData(from: connection)
-            case .failed(let error):
-                self.logger.error("연결 실패: \(error.localizedDescription)")
-                self.removeConnection(connection)
-            case .cancelled:
-                self.removeConnection(connection)
-            default:
-                self.logger.info("연결 상태: \(String(describing: state))")
-            }
-        }
-
-        connection.start(queue: self.networkQueue)
-        return connection
     }
 
     func sendData(_ data: Data, to endpoint: NWEndpoint, kind: ConnectionKind) {
-        guard let connection = connections[endpoint]?[kind] else {
-            logger.error("connection이 존재하지 않습니다.")
-            return
-        }
-
-        logger.info("데이터 전송: \(data.count) bytes")
-
-        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
-            if let error = error {
-                self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
-            } else {
-                self?.logger.info("데이터 전송 성공")
+        networkQueue.async { [weak self] in
+            guard let self,
+                  let connection = self.connections[endpoint]?[kind] else {
+                self?.logger.error("connection이 존재하지 않습니다.")
+                return
             }
-        })
+
+            logger.info("데이터 전송: \(data.count) bytes")
+            
+            connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
+                if let error = error {
+                    self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
+                } else {
+                    self?.logger.info("데이터 전송 성공")
+                }
+            })
+        }
     }
 
     // MARK: - Private Methods
@@ -213,19 +255,22 @@ final class ClientManager: ClientManaging {
     }
 
     private func removeConnection(_ connection: NWConnection) {
-        let endpoints = Array(connections.keys)
-        for endpoint in endpoints {
-            guard let dict = connections[endpoint] else { continue }
-            let kinds = Array(dict.keys)
-            for kind in kinds {
-                if connections[endpoint]?[kind] === connection {
-                    connections[endpoint]?[kind] = nil
+        networkQueue.async { [weak self] in
+            guard let self else { return }
+            let endpoints = Array(connections.keys)
+            for endpoint in endpoints {
+                guard let dict = connections[endpoint] else { continue }
+                let kinds = Array(dict.keys)
+                for kind in kinds {
+                    if connections[endpoint]?[kind] === connection {
+                        connections[endpoint]?[kind] = nil
+                    }
+                }
+                if connections[endpoint]?.isEmpty == true {
+                    connections[endpoint] = nil
                 }
             }
-            if connections[endpoint]?.isEmpty == true {
-                connections[endpoint] = nil
-            }
+            connection.cancel()
         }
-        connection.cancel()
     }
 }
