@@ -36,6 +36,10 @@ final class LobbyViewModel {
     // Match State
     var matchStatus: GameMatchStatus = .idle
 
+    // notification
+    var inviteNotifications: [InviteNotification] = []
+    var isShowingNotification: Bool = false
+
     @ObservationIgnored
     let explorationCoordinator: NetworkExplorationCoordinator
 
@@ -244,7 +248,12 @@ extension LobbyViewModel {
             logger.warning("초대한 피어를 찾을 수 없음: \(senderId.uuidString)")
             return
         }
-        
+        self.isShowingNotification = false
+
+        if !inviteNotifications.contains(where: { $0.sender.id == senderId }) {
+            inviteNotifications.insert(InviteNotification(sender: peer), at: 0)
+        }
+
         switch matchStatus {
         case .idle:
             matchStatus.receiveInvite(from: peer, wasSoloGame: false)
@@ -274,14 +283,13 @@ extension LobbyViewModel {
     }
 
     func handleInviteCancelled(from senderId: UUID) {
-        if case .receivedInvite = matchStatus {
-            resetToIdle()
-            if case .receivedInvite(_, let wasSoloGame) = matchStatus {
-                if wasSoloGame {
-                    setSoloMode()
-                } else {
-                    resetToIdle()
-                }
+        inviteNotifications.removeAll { $0.sender.id == senderId }
+
+        if case .receivedInvite(let peer, let wasSoloGame) = matchStatus, peer.id == senderId {
+            if wasSoloGame {
+                setSoloMode()
+            } else {
+                resetToIdle()
             }
         }
     }
