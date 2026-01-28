@@ -13,7 +13,7 @@ let project = Project(
             name: "App",
             destinations: .iOS,
             product: .app,
-            bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure",
+            bundleId: "kr.codesquad.boostcamp10.ios05.cosmic-adventure",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(with: [
                 "UILaunchScreen": .array([
@@ -89,7 +89,7 @@ let project = Project(
             name: "AppTests",
             destinations: .iOS,
             product: .unitTests,
-            bundleId: "kr.codesqued.boostcamp10.ios05.cosmic-adventure-tests",
+            bundleId: "kr.codesquad.boostcamp10.ios05.cosmic-adventure-tests",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .default,
             sources: [
