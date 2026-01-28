@@ -53,6 +53,8 @@ enum L10N {
         static let soloAdventureButtonTitle: LocalizedStringKey = "혼자 모험 떠나기"
         static let remoteGalaxyButtonTitle: LocalizedStringKey = "더 먼 은하로 가기"
         static let localGalaxyButtonTitle: LocalizedStringKey = "근처의 은하 탐색하기"
+        static let emptyGalaxyTitle: LocalizedStringKey = "떠날 수 있는 은하가 없어요"
+        static let emptyGalaxySubtitle: LocalizedStringKey = "잠시 후 다시 찾아주세요"
 
         enum RequestModal {
             static let title: LocalizedStringKey = "함께 모험을 떠나요"

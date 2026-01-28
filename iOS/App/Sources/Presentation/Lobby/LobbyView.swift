@@ -126,17 +126,21 @@ private extension LobbyView {
             .frame(height: 100)
             .padding(.top, 20)
         
-        ScrollView {
-            LazyVStack(spacing: 12) {
-                ForEach(channelListViewModel.channels) { channel in
-                    // TODO: 채널 입장 후 연결 실패 시 분기 처리
-                    ChannelRowView(channel: channel) {
-                        viewModel.selectChannel(channel.id)
+        if channelListViewModel.channels.isEmpty {
+            ChannelEmptyView()
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 12) {
+                    ForEach(channelListViewModel.channels) { channel in
+                        // TODO: 채널 입장 후 연결 실패 시 분기 처리
+                        ChannelRowView(channel: channel) {
+                            viewModel.selectChannel(channel.id)
+                        }
                     }
                 }
+                .padding(.horizontal, 20)
+                .padding(.top, 20)
             }
-            .padding(.horizontal, 20)
-            .padding(.top, 20)
         }
         
         Spacer()
