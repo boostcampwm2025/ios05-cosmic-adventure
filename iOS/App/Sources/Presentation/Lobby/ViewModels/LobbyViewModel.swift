@@ -361,3 +361,22 @@ extension LobbyViewModel {
         resetToIdle()
     }
 }
+
+// MARK: - notification Actions
+
+extension LobbyViewModel {
+    func acceptInviteFromNotification(_ notification: InviteNotification) {
+        let wasSoloGame = matchStatus == .soloGame
+        matchStatus = .receivedInvite(peer: notification.sender, wasSoloGame: wasSoloGame)
+        acceptInvite()
+        inviteNotifications.removeAll { $0.id == notification.id }
+        isShowingNotification = false
+    }
+    
+    func declineInviteFromNotification(_ notification: InviteNotification) {
+        let wasSoloGame = matchStatus == .soloGame
+        matchStatus = .receivedInvite(peer: notification.sender, wasSoloGame: wasSoloGame)
+        declineInvite()
+        inviteNotifications.removeAll { $0.id == notification.id }
+    }
+}
