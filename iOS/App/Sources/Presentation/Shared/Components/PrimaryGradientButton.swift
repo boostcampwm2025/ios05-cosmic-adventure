@@ -13,6 +13,7 @@ struct PrimaryGradientButton: View {
     let endColor: Color
     var cornerRadius: CGFloat = 18
     var verticalPadding: CGFloat = 20
+    var fontSize: CGFloat = 20
     let action: () -> Void
 
     init(
@@ -20,6 +21,7 @@ struct PrimaryGradientButton: View {
         isSubtle: Bool = false,
         cornerRadius: CGFloat = 18,
         verticalPadding: CGFloat = 20,
+        fontSize: CGFloat = 20,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -31,13 +33,14 @@ struct PrimaryGradientButton: View {
         : AppAsset.Color.buttonGradientEnd.swiftUIColor
         self.cornerRadius = cornerRadius
         self.verticalPadding = verticalPadding
+        self.fontSize = fontSize
         self.action = action
     }
 
     var body: some View {
         Button(action: action) {
             Text(title)
-                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: fontSize))
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, verticalPadding)
                 .background(
