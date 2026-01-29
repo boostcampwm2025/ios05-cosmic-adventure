@@ -24,12 +24,16 @@ struct LobbyView: View {
         @Bindable var viewModel = viewModel
 
         BackgroundContainerView {
-            VStack(spacing: 0) {
-                topBar
-                    .padding(.top, 60)
-                    .padding(.horizontal, 20)
-                
-                if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
+             VStack(spacing: 0) {
+                 topBar
+                     .padding(.top, 60)
+                     .padding(.horizontal, 20)
+
+                 // ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 networkMode가 확정되지 않으므로,
+                 // resolved 전에는 중립적 placeholder를 표시하여 local↔remote 전환 깜빡임을 방지.
+                 if !viewModel.isConnectivityResolved {
+                    loadingContent
+                } else if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
                     channelListContent
                 } else {
                     lobbyContent
@@ -38,6 +42,12 @@ struct LobbyView: View {
         }
         .onAppear {
             viewModel.setup()
+
+            // onChange는 값이 '변경'될 때만 트리거되므로, 이미 remote 모드로 진입한 경우
+            // 채널 목록을 불러오지 못함. onAppear에서도 fetch를 호출하여 이를 보완.
+            if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
+                Task { await channelListViewModel.fetchChannels() }
+            }
         }
         .onChange(of: router.path) { oldPath, newPath in
             handleRouteChange(from: oldPath, to: newPath)
@@ -125,28 +135,37 @@ private extension LobbyView {
     }
 
     // TODO: 채널 목록 로드 실패 시 분기 처리 (네트워크 끊김 등)
-    @ViewBuilder
-    var channelListContent: some View {
-        AppAsset.Image.titleLogo.swiftUIImage
-            .resizable()
-            .scaledToFit()
-            .frame(height: 100)
-            .padding(.top, 20)
-        
-        if channelListViewModel.channels.isEmpty {
-            ChannelEmptyView()
-        } else {
-            ScrollView {
-                LazyVStack(spacing: 12) {
-                    ForEach(channelListViewModel.channels) { channel in
-                        // TODO: 채널 입장 후 연결 실패 시 분기 처리
-                        ChannelRowView(channel: channel) {
-                            viewModel.selectChannel(channel.id)
+     @ViewBuilder
+     var channelListContent: some View {
+         AppAsset.Image.titleLogo.swiftUIImage
+             .resizable()
+             .scaledToFit()
+             .frame(height: 100)
+             .padding(.top, 20)
+
+         // channels 배열이 비어있는 것이 '로딩 중'인지 '정말 없는 것'인지 구분하기 위해
+         // LoadState 기반으로 분기. idle/loading 시 placeholder, loaded 시에만 실제 목록 표시.
+         switch channelListViewModel.loadState {
+         case .idle, .loading:
+             loadingContent
+        case .failed:
+            channelLoadFailedContent
+        case .loaded:
+            if channelListViewModel.channels.isEmpty {
+                ChannelEmptyView()
+            } else {
+                ScrollView {
+                    LazyVStack(spacing: 12) {
+                        ForEach(channelListViewModel.channels) { channel in
+                            // TODO: 채널 입장 후 연결 실패 시 분기 처리
+                            ChannelRowView(channel: channel) {
+                                viewModel.selectChannel(channel.id)
+                            }
                         }
                     }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 20)
                 }
-                .padding(.horizontal, 20)
-                .padding(.top, 20)
             }
         }
         
@@ -156,6 +175,25 @@ private extension LobbyView {
             secondaryTitle: L10N.Lobby.localGalaxyButtonTitle,
             secondaryAction: { viewModel.switchNetworkMode(to: .local) }
         )
+    }
+
+    /// 비동기 상태가 확정되기 전에 표시되는 공통 로딩 placeholder.
+    /// ConnectivityMonitor 콜백 대기, 채널 목록 네트워크 요청 등에서 사용한다.
+    var loadingContent: some View {
+        LoadingPlaceholderView()
+    }
+
+     /// 채널 목록 로드 실패 시 표시되는 뷰. 재시도 버튼을 포함한다.
+     @ViewBuilder
+     var channelLoadFailedContent: some View {
+        Spacer()
+        ChannelEmptyView()
+        Spacer()
+        PrimaryGradientButton(title: "다시 시도", isSubtle: true) {
+            Task { await channelListViewModel.fetchChannels() }
+        }
+        .padding(.horizontal, 20)
+        .padding(.bottom, 12)
     }
     
     @ViewBuilder
