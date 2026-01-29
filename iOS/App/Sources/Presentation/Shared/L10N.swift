@@ -130,6 +130,15 @@ enum L10N {
     }
     
     enum Game {
+        enum End {
+            static let timeoutTitle: String = "시간 종료"
+            static let winTitle: String = "승리"
+            static let loseTitle: String = "패배"
+            static let finishTitle: String = "결승 도착"
+            static let winnerPrefix: String = "승자"
+            static let opponentPrefix: String = "상대"
+            static let winnerElapsedFormat: String = "승자 소요시간: %ds"
+        }
 
         enum NodeName {
             static let platform = "platform"

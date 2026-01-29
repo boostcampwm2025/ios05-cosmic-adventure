@@ -93,10 +93,8 @@ final class GameViewModel {
         )
         
         self.multiplayerIO = MultiplayerNetworkIO(
-            localPlayerID: localPlayerID,
-            remotePlayerIDs: remotePlayerIDs,
-            localDisplayName: localPlayer.displayName,
-            remoteDisplayName: remotePlayer?.displayName,
+            localPlayer: localPlayer,
+            remotePlayers: remotePlayer.map { [$0] } ?? [],
             gameplayManager: gameplayManager,
             inputProvider: inputProvider,
             networkSessionManager: connectionSessionManager
@@ -188,15 +186,15 @@ final class GameViewModel {
         guard let display = gameEndDisplay else { return nil }
         switch display.reason {
         case .timeout:
-            return "시간 종료"
+            return L10N.Game.End.timeoutTitle
         case .reachedFinish:
             if display.winnerId == localPlayerID {
-                return "승리"
+                return L10N.Game.End.winTitle
             }
             if let winnerId = display.winnerId, winnerId != localPlayerID {
-                return "패배"
+                return L10N.Game.End.loseTitle
             }
-            return "결승 도착"
+            return L10N.Game.End.finishTitle
         }
     }
 
@@ -204,35 +202,29 @@ final class GameViewModel {
         guard let display = gameEndDisplay else { return nil }
         if display.reason == .timeout { return nil }
         guard let winnerName = display.winnerName else { return nil }
-        return "승자: \(winnerName)"
+        return "\(L10N.Game.End.winnerPrefix): \(winnerName)"
     }
 
     var gameEndOpponentText: String? {
         guard let display = gameEndDisplay else { return nil }
         if display.reason == .timeout { return nil }
         guard let opponentName = display.opponentName else { return nil }
-        return "상대: \(opponentName)"
-    }
-
-    var gameEndLocalElapsedText: String? {
-        return nil
+        return "\(L10N.Game.End.opponentPrefix): \(opponentName)"
     }
 
     var gameEndOpponentElapsedText: String? {
         guard let display = gameEndDisplay,
               let winnerElapsed = display.winnerElapsedSeconds else { return nil }
         if display.reason == .timeout { return nil }
-        return "승자 소요시간: \(winnerElapsed)s"
+        return String(format: L10N.Game.End.winnerElapsedFormat, winnerElapsed)
     }
 
-    private func decodeGameEndReason(_ raw: Int) -> GameEndReason? {
-        switch raw {
-        case 0:
+    private func decodeGameEndReason(_ code: GameEndReasonCode) -> GameEndReason? {
+        switch code {
+        case .timeout:
             return .timeout
-        case 1:
+        case .reachedFinish:
             return .reachedFinish
-        default:
-            return nil
         }
     }
 

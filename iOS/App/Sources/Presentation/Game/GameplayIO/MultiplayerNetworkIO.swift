@@ -12,10 +12,8 @@ import NetworkKit
 // MARK: - Multiplayer Network IO
 
 actor MultiplayerNetworkIO {
-    private let localPlayerID: UUID
-    private let remotePlayerIDs: [UUID]
-    private let localDisplayName: String
-    private let remoteDisplayName: String?
+    private let localPlayer: PlayerInfo
+    private let remotePlayers: [PlayerInfo]
     private let gameplayManager: GameplayManager
     private let inputProvider: FaceTrackingGameInputProvider
     private var connectionSessionManager: ConnectionSessionManaging
@@ -50,6 +48,11 @@ actor MultiplayerNetworkIO {
     private var didSendGameEnd: Bool = false
 
     private var onGameEndReceived: (@Sendable (NetworkGameEndDTO) -> Void)?
+
+    private var localPlayerID: UUID { localPlayer.id }
+    private var remotePlayerIDs: [UUID] { remotePlayers.map(\.id) }
+    private var localDisplayName: String { localPlayer.displayName }
+    private var remoteDisplayName: String? { remotePlayers.first?.displayName }
     
     /// 지터를 줄이기 위한 smoothing 상수(작을수록 반응이 빠름)
     private let remoteSmoothingTimeConstant: TimeInterval = 0.08
@@ -58,18 +61,14 @@ actor MultiplayerNetworkIO {
     private let remoteFreezeAfter: TimeInterval = 0.8
 
     init(
-        localPlayerID: UUID,
-        remotePlayerIDs: [UUID],
-        localDisplayName: String,
-        remoteDisplayName: String?,
+        localPlayer: PlayerInfo,
+        remotePlayers: [PlayerInfo],
         gameplayManager: GameplayManager,
         inputProvider: FaceTrackingGameInputProvider,
         networkSessionManager: ConnectionSessionManaging
     ) {
-        self.localPlayerID = localPlayerID
-        self.remotePlayerIDs = remotePlayerIDs
-        self.localDisplayName = localDisplayName
-        self.remoteDisplayName = remoteDisplayName
+        self.localPlayer = localPlayer
+        self.remotePlayers = remotePlayers
         self.gameplayManager = gameplayManager
         self.inputProvider = inputProvider
         self.connectionSessionManager = networkSessionManager
@@ -204,13 +203,13 @@ actor MultiplayerNetworkIO {
     }
 
     private func handleReceivedGameEnd(sender: UUID, dto: NetworkGameEndDTO) async {
+        guard let peerId = self.peerId, sender == peerId else { return }
+        guard let reason = decodeGameEndReason(dto.reason) else { return }
         didSendGameEnd = true
 
         if let onGameEndReceived {
             onGameEndReceived(dto)
         }
-
-        guard let reason = decodeGameEndReason(dto.reason) else { return }
         await MainActor.run {
             self.gameplayManager.applyGameEnd(reason)
         }
@@ -257,23 +256,21 @@ actor MultiplayerNetworkIO {
         }
     }
 
-    private func encodeGameEndReason(_ reason: GameEndReason) -> Int {
+    private func encodeGameEndReason(_ reason: GameEndReason) -> GameEndReasonCode {
         switch reason {
         case .timeout:
-            return 0
+            return .timeout
         case .reachedFinish:
-            return 1
+            return .reachedFinish
         }
     }
 
-    private func decodeGameEndReason(_ raw: Int) -> GameEndReason? {
-        switch raw {
-        case 0:
+    private func decodeGameEndReason(_ code: GameEndReasonCode) -> GameEndReason? {
+        switch code {
+        case .timeout:
             return .timeout
-        case 1:
+        case .reachedFinish:
             return .reachedFinish
-        default:
-            return nil
         }
     }
 
@@ -292,21 +289,24 @@ actor MultiplayerNetworkIO {
     }
 
     private func makeGameEndDTO(reason: GameEndReason) async -> NetworkGameEndDTO {
-        let opponentId = remotePlayerIDs.first
+        let remotePlayerId = remotePlayerIDs.first
         let elapsed = await MainActor.run { gameplayManager.gameEnd.elapsedSeconds }
         let winnerId: UUID?
+        let winnerElapsed: Int?
         switch reason {
         case .reachedFinish:
             winnerId = localPlayerID
+            winnerElapsed = elapsed
         case .timeout:
-            winnerId = opponentId
+            winnerId = remotePlayerId
+            winnerElapsed = nil
         }
         let winnerName = (winnerId == localPlayerID) ? localDisplayName : remoteDisplayName
         let opponentName = (winnerId == localPlayerID) ? remoteDisplayName : localDisplayName
         return NetworkGameEndDTO(
             reason: encodeGameEndReason(reason),
             winnerId: winnerId,
-            winnerElapsedSeconds: elapsed,
+            winnerElapsedSeconds: winnerElapsed,
             winnerName: winnerName,
             opponentName: opponentName
         )
@@ -366,8 +366,9 @@ actor MultiplayerNetworkIO {
 
         // 스냅샷 소스는 "현재 캐릭터 상태" 기반이 더 일관적(입력 지터 방지)
         let fallback = pendingLocalMoveX
+        let localID = localPlayerID
         let currentMoveX = await MainActor.run {
-            gameplayManager.state.characters[localPlayerID]?.moveX ?? fallback
+            gameplayManager.state.characters[localID]?.moveX ?? fallback
         }
 
         // 간단 quantize(페이로드 안정화)
