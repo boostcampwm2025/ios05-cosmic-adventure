@@ -44,6 +44,8 @@ struct RootView: View {
                     Text(L10N.Alert.localNetworkSubTitle)
                 case .cameraDenied:
                     Text(L10N.Alert.cameraSubTitle)
+                case .notificationDenied:
+                    Text(L10N.Alert.localNetworkSubTitle)
                 }
             }
         }

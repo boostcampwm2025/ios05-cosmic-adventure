@@ -10,6 +10,7 @@ import Observation
 enum PermissionAlertKind {
     case localNetworkDenied
     case cameraDenied
+    case notificationDenied
 }
 
 @MainActor

@@ -51,12 +51,12 @@ final class PermissionSetupViewModel {
         let localNetworkGranted = await service.requestLocalNetworkPermissionIfNeeded()
         localNetworkState = localNetworkGranted ? .allowed : .denied
         
-        // 3) 알림 (request but don't block)
+        // 3) 알림
         let notificationGranted = await service.requestNotificationPermission()
         notificationState = notificationGranted ? .allowed : .denied
         
-        // 4) 둘 다 허용되면 설정 완료 표시
-        if cameraGranted && localNetworkGranted {
+        // 4) 셋 다 허용되면 설정 완료 표시
+        if cameraGranted && localNetworkGranted && notificationGranted {
             UserDefaultsList.Permission.hasCompletedPermissionSetup = true
         }
         
@@ -65,6 +65,8 @@ final class PermissionSetupViewModel {
             appEntryManager.presentAlert(.cameraDenied)
         } else if !localNetworkGranted {
             appEntryManager.presentAlert(.localNetworkDenied)
+        } else if !notificationGranted {
+            appEntryManager.presentAlert(.notificationDenied)
         }
         
         // 6) 항상 프로필 설정으로 이동 허용
