@@ -5,10 +5,12 @@
 //  Created by 영빈 on 1/7/26.
 //
 
+import UIKit
 import Observation
 import os
-import UIKit
+
 import NetworkKit
+import StorageKit
 
 enum NetworkMode {
     case local
@@ -24,7 +26,15 @@ final class LobbyViewModel {
     private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "LobbyViewModel")
 
     // Player
-    private(set) var localPlayer: PlayerInfo
+    private let player: Player
+    var localPlayer: PlayerInfo {
+        PlayerInfo(
+            id: player.id,
+            role: .local,
+            displayName: player.nickname,
+            avatar: CharacterAvatar(rawValue: player.character) ?? .character1)
+    }
+
     var peers: [PlayerInfo] = []
     var selectedPeerID: UUID?
 
@@ -84,23 +94,15 @@ final class LobbyViewModel {
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
         appEntryManager: AppEntryManager,
-        playerId: UUID,
-        nickname: String,
-        characterRawValue: String
+        player: Player
     ) {
         self.explorationCoordinator = explorationCoordinator
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
         self.webSocketSessionManager = webSocketSessionManager
         self.appEntryManager = appEntryManager
+        self.player = player
         self.selectedPeerID = nil
-        
-        self.localPlayer = PlayerInfo(
-            id: playerId,
-            role: .me,
-            displayName: nickname,
-            avatar: CharacterAvatar(rawValue: characterRawValue) ?? .character1
-        )
     }
 
     func setup() {

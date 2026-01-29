@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import StorageKit
 
 struct LobbyView: View {
     @Environment(AppRouter.self) private var router: AppRouter
@@ -37,6 +38,9 @@ struct LobbyView: View {
         }
         .onAppear {
             viewModel.setup()
+        }
+        .onChange(of: router.path) { oldPath, newPath in
+            handleRouteChange(from: oldPath, to: newPath)
         }
         .onChange(of: viewModel.networkMode) { _, newMode in
             if newMode == .remote && viewModel.selectedChannelId == nil {
@@ -79,6 +83,14 @@ struct LobbyView: View {
             return !wasSoloGame
         default:
             return false
+        }
+    }
+
+    private func handleRouteChange(from oldPath: [AppRoute], to newPath: [AppRoute]) {
+        let wasInSettings = oldPath.contains(.settings)
+        let isInSettings = newPath.contains(.settings)
+        if wasInSettings && !isInSettings {
+            viewModel.setupExploration()
         }
     }
 }
@@ -861,8 +873,9 @@ private extension LobbyView {
 struct LobbyView_Previews: PreviewProvider {
     static var previews: some View {
         let container = AppContainer()
+        let mockPlayer = Player(id: UUID(), nickname: "코스믹어드벤처", character: "character1")
         LobbyView(
-            viewModel: container.makeLobbyViewModel(playerId: UUID(), nickname: "코스믹어드벤처", characterType: "character1"),
+            viewModel: container.makeLobbyViewModel(player: mockPlayer),
             channelListViewModel: container.makeChannelListViewModel()
         )
     }

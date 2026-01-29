@@ -68,8 +68,8 @@ struct RootView: View {
         case .profileSetup:
             ProfileSetupView(viewModel: container.makeProfileSetupViewModel())
         case .lobby:
-            if let myPlayer = players.first {
-                LobbyView(viewModel:
+            if let localPlayer = players.first {
+                LobbyView(viewModel: container.makeLobbyViewModel(player: localPlayer),
                             container.makeLobbyViewModel(playerId: myPlayer.id,
                                                          nickname: myPlayer.nickname,
                                                          characterType: myPlayer.character),
