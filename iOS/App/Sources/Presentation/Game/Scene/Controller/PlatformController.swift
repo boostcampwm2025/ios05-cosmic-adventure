@@ -184,7 +184,7 @@ final class PlatformController {
 
     /// 각 플레이어의 위치(bottomY)와 낙하 속도(dy)를 이용해 플랫폼 충돌 카테고리를 갱신
     /// - NOTE: 빠른 낙하 시 한 프레임 사이에 bottomY가 크게 변할 수 있어 dy*dt 기반 버퍼를 둔다.
-    ///         buffer = min(120, 10 + |dy| * dt)  (dy < 0일 때만 유의미하게 커짐)
+    ///         buffer = min(200, 20 + |dy| * dt * 1.5)  (dy < 0일 때만 유의미하게 커짐)
     func updateCollisions(
         localBottomY: CGFloat?,
         localDY: CGFloat?,
@@ -203,11 +203,11 @@ final class PlatformController {
     }
     
     private func fallBuffer(dy: CGFloat?, dt: TimeInterval) -> CGFloat {
-        let base: CGFloat = 10
+        let base: CGFloat = 20
         guard let dy else { return base }
         // dy < 0(낙하)일 때만 버퍼를 크게(빠른 낙하 랜딩 누락 방지)
-        let extra = dy < 0 ? (-dy) * CGFloat(dt) : 0
-        return min(120, base + extra)
+        let extra = dy < 0 ? (-dy) * CGFloat(dt) * 1.5 : 0
+        return min(200, base + extra)
     }
     
     private func applyCollisionCategories(
@@ -227,7 +227,7 @@ final class PlatformController {
             if let localBottomY {
                 let buffer = fallBuffer(dy: localDY, dt: deltaTime)
                 let isFalling = (localDY ?? 0) <= 0
-                let aboveOrAligned = localBottomY >= topY - 3
+                let aboveOrAligned = localBottomY >= topY - 10
                 if isFalling, aboveOrAligned, topY <= localBottomY + buffer {
                     category.insert(.groundMe)
                 }
@@ -236,7 +236,7 @@ final class PlatformController {
             if let otherBottomY {
                 let buffer = fallBuffer(dy: otherDY, dt: deltaTime)
                 let isFalling = (otherDY ?? 0) <= 0
-                let aboveOrAligned = otherBottomY >= topY - 2
+                let aboveOrAligned = otherBottomY >= topY - 8
                 if isFalling, aboveOrAligned, topY <= otherBottomY + buffer {
                     category.insert(.groundOther)
                 }
@@ -322,5 +322,4 @@ extension PlatformController {
         return names.map { atlas.textureNamed($0) }
     }
 }
-
 
