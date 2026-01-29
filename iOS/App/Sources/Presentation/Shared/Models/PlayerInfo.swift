@@ -10,8 +10,8 @@ import Foundation
 // MARK: - Player Role
 
 enum PlayerRole: Equatable {
-    case me
-    case peer
+    case local
+    case remote
 }
 
 // MARK: - Player Info
@@ -24,7 +24,7 @@ struct PlayerInfo: Identifiable, Equatable, Hashable {
 
     /// 수신 감도/근접도: 0.0~1.0, 값이 클수록 내 위치에 더 가까움
     /// - nil이면 아직 미측정/알 수 없음
-    /// - peer만 의미 있음 (me는 항상 중앙 고정)
+    /// - remote만 의미 있음 (local는 항상 중앙 고정)
     var proximity: Double?
 
     init(

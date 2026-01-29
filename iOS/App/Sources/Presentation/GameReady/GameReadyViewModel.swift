@@ -11,8 +11,8 @@ import NetworkKit
 @MainActor
 @Observable
 final class GameReadyViewModel {
-    let me: PlayerInfo
-    let peer: PlayerInfo?
+    let localPlayer: PlayerInfo
+    let remotePlayer: PlayerInfo?
     let isNetwork: Bool
 
     @ObservationIgnored
@@ -38,16 +38,16 @@ final class GameReadyViewModel {
     let appEntryManager: AppEntryManager
 
     init(
-        me: PlayerInfo,
-        peer: PlayerInfo?,
+        localPlayer: PlayerInfo,
+        remotePlayer: PlayerInfo?,
         isNetwork: Bool,
         connectivityMonitor: ConnectivityMonitoring,
         networkSessionManager: NetworkSessionManaging,
         webSocketSessionManager: WebSocketSessionManaging?,
         appEntryManager: AppEntryManager
     ) {
-        self.me = me
-        self.peer = peer
+        self.localPlayer = localPlayer
+        self.remotePlayer = remotePlayer
         self.isNetwork = isNetwork
         self.connectivityMonitor = connectivityMonitor
         self.networkSessionManager = networkSessionManager
@@ -72,7 +72,7 @@ final class GameReadyViewModel {
         // 본인의 Ready를 UI에 즉시 반영
         updateProgressUI()
 
-        if peer == nil {
+        if remotePlayer == nil {
             Task {
                 // TODO: game map load 되는 시점으로 변경
                 try? await Task.sleep(for: .seconds(3))
@@ -125,7 +125,8 @@ final class GameReadyViewModel {
     private func setupP2PCallbacks() {
         networkSessionManager.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
-            guard let peerId = peer?.id, senderId == peerId else { return }
+            guard let remoteId = remotePlayer?.id,
+                    senderId == remoteId else { return }
 
             Task { @MainActor in
                 self.handlePeerReady()
@@ -136,7 +137,8 @@ final class GameReadyViewModel {
     private func setupWebSocketCallbacks() {
         webSocketSessionManager?.onReadyStatusReceived = { [weak self] senderId in
             guard let self else { return }
-            guard let peerId = self.peer?.id, senderId == peerId else { return }
+            guard let remoteId = self.remotePlayer?.id,
+                    senderId == remoteId else { return }
 
             Task { @MainActor in
                 self.handlePeerReady()
@@ -145,14 +147,14 @@ final class GameReadyViewModel {
     }
 
     private func sendReadySignal() {
-        guard let peerId = peer?.id else { return }
+        guard let remoteId = remotePlayer?.id else { return }
 
         switch networkMode {
         case .local:
-            networkSessionManager.sendReadyStatus(to: peerId)
+            networkSessionManager.sendReadyStatus(to: remoteId)
 
         case .remote:
-            webSocketSessionManager?.sendReadyStatus(to: peerId)
+            webSocketSessionManager?.sendReadyStatus(to: remoteId)
         }
     }
 
@@ -165,7 +167,7 @@ final class GameReadyViewModel {
 
     private func updateProgressUI() {
         // 1인 모드
-        if peer == nil {
+        if remotePlayer == nil {
             if isMeReady && isPeerReady {
                 progress = 1.0
                 message = L10N.GameReady.soloReadyMessage

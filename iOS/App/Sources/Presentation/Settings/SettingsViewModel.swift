@@ -17,7 +17,7 @@ final class SettingsViewModel {
     
     // MARK: - Properties
     
-    private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "LobbyViewModel")
+    private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "SettingsViewModel")
     
     var nickname: String
     var selectedAvatar: CharacterAvatar

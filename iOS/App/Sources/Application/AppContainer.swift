@@ -14,8 +14,8 @@ import StorageKit
 protocol ViewModelFactory {
     func makePermissionSetupViewModel() -> PermissionSetupViewModel
     func makeProfileSetupViewModel() -> ProfileSetupViewModel
-    func makeLobbyViewModel(playerId: UUID, nickname: String, characterType: String) -> LobbyViewModel
-    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel
+    func makeLobbyViewModel(player: Player) -> LobbyViewModel
+    func makeGameReadyViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel
     func makeChannelListViewModel() -> ChannelListViewModel
     func makeSettingsViewModel(player: Player) -> SettingsViewModel
     func makeWebSocketSessionManager(serverURL: String) -> WebSocketSessionManager
@@ -95,23 +95,21 @@ final class AppContainer: ViewModelFactory {
         ProfileSetupViewModel()
     }
     
-    func makeLobbyViewModel(playerId: UUID, nickname: String, characterType: String) -> LobbyViewModel {
+    func makeLobbyViewModel(player: Player) -> LobbyViewModel {
         LobbyViewModel(
             explorationCoordinator: explorationCoordinator,
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
             webSocketSessionManager: webSocketSessionManager,
             appEntryManager: appEntryManager,
-            playerId: playerId,
-            nickname: nickname,
-            characterRawValue: characterType
+            player: player
         )
     }
 
-    func makeGameReadyViewModel(me: PlayerInfo, peer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel {
+    func makeGameReadyViewModel(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool) -> GameReadyViewModel {
         GameReadyViewModel(
-            me: me,
-            peer: peer,
+            localPlayer: localPlayer,
+            remotePlayer: remotePlayer,
             isNetwork: isNetwork,
             connectivityMonitor: connectivityMonitor,
             networkSessionManager: networkSessionManager,
