@@ -29,6 +29,8 @@ final class GameScene: SKScene {
     private var respawnController: RespawnController?
 
     private var goalPlatformIndex: Int
+
+    var onRemotePlayerPositionUpdate: ((CGPoint, Bool) -> Void)?
     
     init(
         size: CGSize,
@@ -171,8 +173,51 @@ final class GameScene: SKScene {
         handleRespawnRequest(gameplayManager: gameplayManager)
         
         // 리스폰 버튼 위치조정
-        guard let respawnController else { return }
-        respawnController.update(sceneSize: size)
+        respawnController?.update(sceneSize: size)
+        
+        // 상대 플레이어 화면 좌표 업데이트
+        updateRemotePlayerScreenPosition()
+    }
+    
+    private func updateRemotePlayerScreenPosition() {
+        guard let remoteID = remotePlayerIDs.first,
+              let remoteController = characterControllers[remoteID],
+              let remoteNode = remoteController.playerNode,
+              let cameraSystem = cameraSystem else {
+            onRemotePlayerPositionUpdate?(.zero, false)
+            return
+        }
+
+        let (screenPosition, isVisible) = convertToScreenPosition(
+            worldPosition: remoteNode.position,
+            characterHeight: remoteNode.size.height,
+            cameraPosition: cameraSystem.cameraNode.position
+        )
+
+        onRemotePlayerPositionUpdate?(screenPosition, isVisible)
+    }
+
+    /// SpriteKit 월드 좌표를 SwiftUI 화면 좌표로 변환
+    private func convertToScreenPosition(
+        worldPosition: CGPoint,
+        characterHeight: CGFloat,
+        cameraPosition: CGPoint
+    ) -> (screenPosition: CGPoint, isVisible: Bool) {
+        guard let view = self.view else { return (.zero, false) }
+        
+        // 캐릭터 머리 위 지점의 월드 좌표 (SpriteKit은 위쪽이 +Y)
+        let headWorldPos = CGPoint(x: worldPosition.x, y: worldPosition.y + characterHeight + 60)
+        
+        // 월드 좌표 -> SwiftUI 좌표로 자동 변환
+        let screenPos = view.convert(headWorldPos, from: self)
+
+        let margin: CGFloat = 50
+        let isVisible = screenPos.x > -margin &&
+                        screenPos.x < size.width + margin &&
+                        screenPos.y > -margin &&
+                        screenPos.y < size.height + margin
+
+        return (screenPos, isVisible)
     }
 
     private func setupWalls() {

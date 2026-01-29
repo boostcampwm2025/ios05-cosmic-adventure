@@ -47,21 +47,23 @@ struct GameView: View {
                     .allowsHitTesting(true)
             }
 
-            VStack(alignment: .leading, spacing: 12) {
-                gameHUD
+            gameHUD
+                .padding(16)
 
-                if !viewModel.remotePlayerIDs.isEmpty {
-                    RemoteVideoView(layer: videoManager.remoteDisplayLayer)
-                        .frame(width: size, height: size)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(.white.opacity(0.35), lineWidth: 1)
-                        )
-                        .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
-                        .zIndex(999)
-                }
+            if !viewModel.remotePlayerIDs.isEmpty {
+                RemoteVideoView(layer: videoManager.remoteDisplayLayer)
+                    .frame(width: size, height: size)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(.white.opacity(0.35), lineWidth: 1)
+                    )
+                    .shadow(color: .black.opacity(0.25), radius: 4, x: 0, y: 2)
+                    .position(
+                        x: clampX(viewModel.remotePlayerScreenPosition.x),
+                        y: clampY(viewModel.remotePlayerScreenPosition.y - size)
+                    )
+                    .zIndex(999)
             }
-            .padding(16)
 
             if let reason = viewModel.endReason {
                 gameEndOverlay(reason: reason)
@@ -126,6 +128,23 @@ struct GameView: View {
         scene.scaleMode = .aspectFill
         scene.backgroundColor = .clear
         gameScene = scene
+
+        // 상대 플레이어 위치 콜백 바인딩
+        viewModel.bindRemotePlayerPosition(scene: scene)
+    }
+
+    /// X 좌표를 화면 경계 내로 제한
+    private func clampX(_ x: CGFloat) -> CGFloat {
+        let screenWidth = UIScreen.main.bounds.width
+        let halfSize = size / 2
+        return min(max(x, halfSize), screenWidth - halfSize)
+    }
+
+    /// Y 좌표를 화면 경계 내로 제한
+    private func clampY(_ y: CGFloat) -> CGFloat {
+        let screenHeight = UIScreen.main.bounds.height
+        let halfSize = size / 2
+        return min(max(y, halfSize), screenHeight - halfSize)
     }
     
     private var gameHUD: some View {
