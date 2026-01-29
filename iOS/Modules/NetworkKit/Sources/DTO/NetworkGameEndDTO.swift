@@ -7,15 +7,20 @@
 
 import Foundation
 
+public enum GameEndReasonCode: Int, Codable, Sendable {
+    case timeout = 0
+    case reachedFinish = 1
+}
+
 public struct NetworkGameEndDTO: Codable, Sendable {
-    public let reason: Int
+    public let reason: GameEndReasonCode
     public let winnerId: UUID?
     public let winnerElapsedSeconds: Int?
     public let winnerName: String?
     public let opponentName: String?
 
     public init(
-        reason: Int,
+        reason: GameEndReasonCode,
         winnerId: UUID? = nil,
         winnerElapsedSeconds: Int? = nil,
         winnerName: String? = nil,

@@ -19,11 +19,8 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         case .invite, .inviteAccept, .inviteDecline, .inviteCancel, .gameReady:
             await forwardToTarget(message: message, manager: manager)
 
-        case .input, .videoFrame:
+        case .input, .videoFrame, .gameEnded:
             await handleForwarding(message: message, from: session, manager: manager)
-
-        case .gameEnded:
-            await forwardGameEnded(message: message, manager: manager)
 
         case .ping:
             let pong = WSMessage(type: GameMessageType.pong.rawValue, senderId: "server")
@@ -126,22 +123,6 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         )
         await manager.send(to: routed.to, message: forwarded)
     }
-
-    private func forwardGameEnded(message: WSMessage, manager: WSSessionManager) async {
-        guard let payload = message.payload,
-              let data = payload.data(using: .utf8),
-              let routed = try? JSONDecoder().decode(ForwardingPayload.self, from: data) else {
-            return
-        }
-
-        let forwarded = WSMessage(
-            type: GameMessageType.gameEnded.rawValue,
-            senderId: message.senderId,
-            payload: routed.data
-        )
-        await manager.send(to: routed.to, message: forwarded)
-    }
-
 
     private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"

@@ -173,8 +173,8 @@ struct GameView: View {
     private func gameEndOverlay(reason: GameEndReason) -> some View {
         let title = viewModel.gameEndReasonText ?? {
             switch reason {
-            case .timeout: return "시간 종료"
-            case .reachedFinish: return "결승 도착!"
+            case .timeout: return L10N.Game.End.timeoutTitle
+            case .reachedFinish: return L10N.Game.End.finishTitle
             }
         }()
 
@@ -197,12 +197,6 @@ struct GameView: View {
                     Text(opponentText)
                         .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
                         .foregroundStyle(.white.opacity(0.85))
-                }
-
-                if let localElapsed = viewModel.gameEndLocalElapsedText {
-                    Text(localElapsed)
-                        .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
-                        .foregroundStyle(.white)
                 }
 
                 if let opponentElapsed = viewModel.gameEndOpponentElapsedText {
