@@ -25,7 +25,7 @@ extension LobbyViewModel {
             Task { @MainActor in
                 self?.isConnected = connected
                 if !connected {
-                    self?.peers = []
+                    self?.remotePlayers = []
                     self?.selectedPeerID = nil
                     self?.matchStatus = .idle
                 }
@@ -90,11 +90,11 @@ extension LobbyViewModel {
 extension LobbyViewModel {
 
     func updatePeersFromPlayers(_ players: [WebSocketPlayer]) {
-        peers = players.map { player in
+        remotePlayers = players.map { player in
             let proximity = calculateProximity(latency: player.latency)
             return PlayerInfo(
                 id: player.id,
-                role: .peer,
+                role: .remote,
                 displayName: player.nickname,
                 avatar: randomAvatar(),
                 proximity: proximity
@@ -103,22 +103,22 @@ extension LobbyViewModel {
     }
 
     func addPeer(from player: WebSocketPlayer) {
-        guard peers.contains(where: { $0.id == player.id }) == false else { return }
+        guard remotePlayers.contains(where: { $0.id == player.id }) == false else { return }
 
         let proximity = calculateProximity(latency: player.latency)
 
         let player = PlayerInfo(
             id: player.id,
-            role: .peer,
+            role: .remote,
             displayName: player.nickname,
             avatar: randomAvatar(),
             proximity: proximity
         )
-        peers.append(player)
+        remotePlayers.append(player)
     }
 
     func removePeer(playerId: UUID) {
-        peers.removeAll { $0.id == playerId }
+        remotePlayers.removeAll { $0.id == playerId }
 
         if selectedPeerID == playerId {
             selectedPeerID = nil

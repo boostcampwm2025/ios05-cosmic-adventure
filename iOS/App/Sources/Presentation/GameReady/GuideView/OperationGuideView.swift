@@ -10,8 +10,8 @@ import SwiftUI
 struct OperationGuideView: View {
     @Environment(AppRouter.self) private var router: AppRouter
 
-    let me: PlayerInfo
-    let peer: PlayerInfo?
+    let localPlayer: PlayerInfo
+    let remotePlayer: PlayerInfo?
     let isNetwork: Bool
     
     var body: some View {
@@ -53,7 +53,7 @@ struct OperationGuideView: View {
                     title: L10N.Game.Guide.gotoVictoryCondition,
                     verticalPadding: 16
                 ) {
-                    router.push(.victoryGuide(me: me, peer: peer, isNetwork: isNetwork))
+                    router.push(.victoryGuide(localPlayer: localPlayer, remotePlayer: remotePlayer, isNetwork: isNetwork))
                 }
                 .padding(.horizontal, 20)
                 .padding(.bottom, 59)
@@ -64,8 +64,8 @@ struct OperationGuideView: View {
 }
 
 #Preview {
-    OperationGuideView(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                       peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2),
+    OperationGuideView(localPlayer: PlayerInfo(role: .local, displayName: "나", avatar: .character1),
+                       remotePlayer: PlayerInfo(role: .remote, displayName: "상대", avatar: .character2),
                        isNetwork: false)
         .environment(AppRouter())
 }

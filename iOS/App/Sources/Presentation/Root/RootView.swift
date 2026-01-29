@@ -70,9 +70,6 @@ struct RootView: View {
         case .lobby:
             if let localPlayer = players.first {
                 LobbyView(viewModel: container.makeLobbyViewModel(player: localPlayer),
-                            container.makeLobbyViewModel(playerId: myPlayer.id,
-                                                         nickname: myPlayer.nickname,
-                                                         characterType: myPlayer.character),
                           channelListViewModel: container.makeChannelListViewModel()
                 )
             }
@@ -80,18 +77,18 @@ struct RootView: View {
             // TODO: DashboardView 연결
             EmptyView()
         case .settings:
-            if let player = players.first {
-                SettingsView(viewModel: container.makeSettingsViewModel(player: player))
+            if let localPlayer = players.first {
+                SettingsView(viewModel: container.makeSettingsViewModel(player: localPlayer))
             }
-        case .gameReady(let me, let peer, let isNetwork):
-            GameReadyView(viewModel: container.makeGameReadyViewModel(me: me,
-                                                                      peer: peer,
+        case .gameReady(let localPlayer, let remotePlayer, let isNetwork):
+            GameReadyView(viewModel: container.makeGameReadyViewModel(localPlayer: localPlayer,
+                                                                      remotePlayer: remotePlayer,
                                                                       isNetwork: isNetwork))
         case .game(let matchPeer, let isNetwork):
             if let myPlayer = players.first {
                 let me = PlayerInfo(
                     id: myPlayer.id,
-                    role: .me,
+                    role: .local,
                     displayName: myPlayer.nickname,
                     avatar: CharacterAvatar.init(rawValue: myPlayer.character)
                     ?? .character1
@@ -107,13 +104,13 @@ struct RootView: View {
                     videoManager: container.makeVideoManager(isNetwork: isNetwork)
                 )
             }
-        case .operationGuide(let me, let peer, let isNetwork):
-            OperationGuideView(me: me,
-                               peer: peer,
+        case .operationGuide(let local, let remote, let isNetwork):
+            OperationGuideView(localPlayer: local,
+                               remotePlayer: remote,
                                isNetwork: isNetwork)
-        case .victoryGuide(let me, let peer, let isNetwork):
-            VictoryGuideView(me: me,
-                             peer: peer,
+        case .victoryGuide(let local, let remote, let isNetwork):
+            VictoryGuideView(localPlayer: local,
+                             remotePlayer: remote,
                              isNetwork: isNetwork)
         case .result:
             // TODO: ResultView 연결

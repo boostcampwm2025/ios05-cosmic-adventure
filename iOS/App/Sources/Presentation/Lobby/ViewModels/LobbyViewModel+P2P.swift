@@ -63,15 +63,15 @@ extension LobbyViewModel {
         }
     }
 
-    func updateLocalPeers(_ peers: [NetworkPeer]) {
-        self.peers = peers.enumerated().map { index, peer in
+    func updateLocalPeers(_ remotePlayers: [NetworkPeer]) {
+        self.remotePlayers = remotePlayers.enumerated().map { index, peer in
             let discoveryLatency = Double(index * 10 + 5)
             let effectiveLatency = peer.latency ?? discoveryLatency
             let proximity = calculateProximity(latency: effectiveLatency)
             
             return PlayerInfo(
                 id: peer.sessionId,
-                role: .peer,
+                role: .remote,
                 displayName: peer.name,
                 avatar: .character1,
                 proximity: proximity

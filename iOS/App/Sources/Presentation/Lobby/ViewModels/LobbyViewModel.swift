@@ -35,7 +35,7 @@ final class LobbyViewModel {
             avatar: CharacterAvatar(rawValue: player.character) ?? .character1)
     }
 
-    var peers: [PlayerInfo] = []
+    var remotePlayers: [PlayerInfo] = []
     var selectedPeerID: UUID?
 
     // Network State
@@ -72,7 +72,7 @@ final class LobbyViewModel {
     }
 
     var orderedPeers: [PlayerInfo] {
-        peers.sorted { lhs, rhs in
+        remotePlayers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
             case let (l?, r?): return l < r
             case (_?, nil): return true
@@ -196,7 +196,7 @@ extension LobbyViewModel {
     func leaveChannel() {
         explorationCoordinator.stopExploration()
         selectedChannelId = nil
-        peers = []
+        remotePlayers = []
     }
 }
 
@@ -209,8 +209,8 @@ extension LobbyViewModel {
     }
 
     func updateProximity(for playerID: UUID, value: Double) {
-        guard let index = peers.firstIndex(where: { $0.id == playerID }) else { return }
-        peers[index].proximity = max(0, min(1, value))
+        guard let index = remotePlayers.firstIndex(where: { $0.id == playerID }) else { return }
+        remotePlayers[index].proximity = max(0, min(1, value))
     }
 
     func calculateProximity(latency: Double?) -> Double {
@@ -246,7 +246,7 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func handleInviteReceived(from senderId: UUID) {
-        guard let peer = peers.first(where: { $0.id == senderId }) else {
+        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else {
             logger.warning("초대한 피어를 찾을 수 없음: \(senderId.uuidString)")
             return
         }
@@ -269,7 +269,7 @@ extension LobbyViewModel {
     }
 
     func handleInviteAccepted(from senderId: UUID) {
-        guard let peer = peers.first(where: { $0.id == senderId }) else { return }
+        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.setGameReady(with: peer)
@@ -277,7 +277,7 @@ extension LobbyViewModel {
     }
 
     func handleInviteDeclined(from senderId: UUID) {
-        guard let peer = peers.first(where: { $0.id == senderId }) else { return }
+        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
             matchStatus.requestDeclined(by: peer)

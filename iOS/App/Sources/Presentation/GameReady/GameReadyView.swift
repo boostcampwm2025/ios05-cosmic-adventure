@@ -23,14 +23,14 @@ struct GameReadyView: View {
                 Spacer()
 
                 HStack(spacing: 10) {
-                    characterView(player: viewModel.me)
+                    characterView(player: viewModel.localPlayer)
                         .offset(y: isAnimating ? -15 : 0) // 위아래 둥둥 효과
                         .animation(
                             .easeInOut(duration: 1.0).repeatForever(autoreverses: true),
                             value: isAnimating
                         )
 
-                    if let peer = viewModel.peer {
+                    if let peer = viewModel.remotePlayer {
                         characterView(player: peer)
                             .offset(y: isAnimating ? 0 : -15) // 엇박자로 움직임
                             .animation(
@@ -75,7 +75,7 @@ struct GameReadyView: View {
              DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
                  Task { @MainActor in
                      guard await appEntryManager.canEnterGame() else { return }
-                     router.push(.game(viewModel.peer, isNetwork: viewModel.isNetwork))
+                     router.push(.game(viewModel.remotePlayer, isNetwork: viewModel.isNetwork))
                  }
              }
          }
@@ -128,8 +128,8 @@ struct GameReadyView_Previews: PreviewProvider {
     static var previews: some View {
         let container = AppContainer()
         GameReadyView(
-            viewModel: container.makeGameReadyViewModel(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                                                        peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2),
+            viewModel: container.makeGameReadyViewModel(localPlayer: PlayerInfo(role: .local, displayName: "나", avatar: .character1),
+                                                        remotePlayer: PlayerInfo(role: .remote, displayName: "상대", avatar: .character2),
                                                         isNetwork: false)
         )
     }

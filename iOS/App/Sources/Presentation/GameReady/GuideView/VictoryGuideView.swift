@@ -12,8 +12,8 @@ struct VictoryGuideView: View {
     @Environment(AppEntryManager.self) private var appEntryManager: AppEntryManager
     @State private var isChecked: Bool = UserDefaultsList.Game.isGuideChecked
 
-    let me: PlayerInfo
-    let peer: PlayerInfo?
+    let localPlayer: PlayerInfo
+    let remotePlayer: PlayerInfo?
     let isNetwork: Bool
     
     var body: some View {
@@ -48,7 +48,7 @@ struct VictoryGuideView: View {
                 ) {
                     Task { @MainActor in
                         guard await appEntryManager.canEnterGame() else { return }
-                        router.push(.gameReady(me: me, peer: peer, isNetwork: isNetwork))
+                        router.push(.gameReady(localPlayer: localPlayer, remotePlayer: remotePlayer, isNetwork: isNetwork))
                     }
                 }
                 .padding(.horizontal, 20)
@@ -76,8 +76,8 @@ struct VictoryGuideView: View {
 }
 
 #Preview {
-    VictoryGuideView(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),
-                     peer: PlayerInfo(role: .peer, displayName: "상대", avatar: .character2),
+    VictoryGuideView(localPlayer: PlayerInfo(role: .local, displayName: "나", avatar: .character1),
+                     remotePlayer: PlayerInfo(role: .remote, displayName: "상대", avatar: .character2),
                      isNetwork: false)
         .environment(AppRouter())
 }

@@ -47,21 +47,8 @@ struct LobbyView: View {
                 Task { await channelListViewModel.fetchChannels() }
             }
         }
-         .onChange(of: viewModel.matchStatus) { _, newValue in
-             if case .gameReady(let peer) = newValue {
-                 if UserDefaultsList.Game.isGuideChecked {
-                     Task { @MainActor in
-                         guard await appEntryManager.canEnterGame() else { return }
-                         router.push(.gameReady(me: viewModel.localPlayer,
-                                                peer: peer,
-                                                isNetwork: viewModel.networkMode == .remote))
-                     }
-                } else {
-                    router.push(.operationGuide(me: viewModel.localPlayer,
-                                                peer: peer,
-                                                isNetwork: viewModel.networkMode == .remote))
-                }
-            }
+        .onChange(of: viewModel.matchStatus) { _, newValue in
+            handleMatchStatusChange(newValue)
         }
         .overlay {
             if isModalPresented {
@@ -91,6 +78,23 @@ struct LobbyView: View {
         let isInSettings = newPath.contains(.settings)
         if wasInSettings && !isInSettings {
             viewModel.setupExploration()
+        }
+    }
+
+    private func handleMatchStatusChange(_ newValue: GameMatchStatus) {
+        guard case .gameReady(let remotePlayer) = newValue else { return }
+
+        if UserDefaultsList.Game.isGuideChecked {
+            Task { @MainActor in
+                guard await appEntryManager.canEnterGame() else { return }
+                router.push(.gameReady(localPlayer: viewModel.localPlayer,
+                                       remotePlayer: remotePlayer,
+                                       isNetwork: viewModel.networkMode == .remote))
+            }
+        } else {
+            router.push(.operationGuide(localPlayer: viewModel.localPlayer,
+                                        remotePlayer: remotePlayer,
+                                        isNetwork: viewModel.networkMode == .remote))
         }
     }
 }
@@ -167,13 +171,13 @@ private extension LobbyView {
                  if UserDefaultsList.Game.isGuideChecked {
                      Task { @MainActor in
                          guard await appEntryManager.canEnterGame() else { return }
-                         router.push(.gameReady(me: viewModel.localPlayer,
-                                                peer: nil,
+                         router.push(.gameReady(localPlayer: viewModel.localPlayer,
+                                                remotePlayer: nil,
                                                 isNetwork: viewModel.networkMode == .remote))
                      }
                 } else {
-                    router.push(.operationGuide(me: viewModel.localPlayer,
-                                                peer: nil,
+                    router.push(.operationGuide(localPlayer: viewModel.localPlayer,
+                                                remotePlayer: nil,
                                                 isNetwork: viewModel.networkMode == .remote))
                 }
             }
