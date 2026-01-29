@@ -16,6 +16,8 @@ let project = Project(
             bundleId: "kr.boostcamp10.ios05.cosmic-adventure",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(with: [
+                "CFBundleShortVersionString": .string("$(MARKETING_VERSION)"),
+                "CFBundleVersion": .string("$(CURRENT_PROJECT_VERSION)"),
                 "UILaunchScreen": .dictionary([:]),
                 "NSCameraUsageDescription": .string("AR 게임 플레이를 위해 카메라 접근이 필요해요."),
 
