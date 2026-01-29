@@ -56,17 +56,21 @@ final class GameReadyViewModel {
         self.networkMode = isNetwork ? .remote : .local
 
         setupConnectivityMonitor()
-        setupP2PCallbacks()
-        setupWebSocketCallbacks()
     }
 
     deinit {
         readyRetryTimer?.invalidate()
+        readyRetryTimer = nil
+        networkSessionManager.onReadyStatusReceived = nil
+        webSocketSessionManager?.onReadyStatusReceived = nil
     }
 
     func setMyReady() {
         guard !isMeReady else { return }
         isMeReady = true
+
+        setupP2PCallbacks()
+        setupWebSocketCallbacks()
 
         // 본인의 Ready를 UI에 즉시 반영
         updateProgressUI()
@@ -79,13 +83,7 @@ final class GameReadyViewModel {
                 self.updateProgressUI() // 둘 다 Ready
             }
         } else {
-            // 2인 모드
-            if isPeerReady {
-                sendReadySignal()
-                stopTimer()
-            } else {
-                startReadySignalTimer()
-            }
+            startReadySignalTimer()
         }
     }
 
@@ -96,16 +94,11 @@ final class GameReadyViewModel {
     private func startReadySignalTimer() {
         readyRetryTimer?.invalidate()
 
-        readyRetryTimer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { [weak self] _ in
+        readyRetryTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
             Task { @MainActor in
                 guard let self = self else { return }
                 
                 self.sendReadySignal()
-
-                if self.isPeerReady {
-                    self.stopTimer()
-                    return
-                }
             }
         }
 
@@ -166,19 +159,6 @@ final class GameReadyViewModel {
 
         isPeerReady = true
         updateProgressUI()
-
-        if isMeReady {
-            sendReadySignal()
-        }
-
-        if isMeReady && isPeerReady {
-            stopTimer()
-        }
-    }
-
-    private func stopTimer() {
-        readyRetryTimer?.invalidate()
-        readyRetryTimer = nil
     }
 
     private func updateProgressUI() {

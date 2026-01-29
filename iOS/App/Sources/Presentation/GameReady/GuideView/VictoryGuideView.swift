@@ -48,7 +48,7 @@ struct VictoryGuideView: View {
                 ) {
                     Task { @MainActor in
                         guard await appEntryManager.canEnterGame() else { return }
-                        router.push(.game(peer, isNetwork: isNetwork))
+                        router.push(.gameReady(me: me, peer: peer, isNetwork: isNetwork))
                     }
                 }
                 .padding(.horizontal, 20)
