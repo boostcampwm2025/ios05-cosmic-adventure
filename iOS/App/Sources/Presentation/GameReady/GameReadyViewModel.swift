@@ -60,8 +60,6 @@ final class GameReadyViewModel {
 
     deinit {
         readyRetryTimer?.invalidate()
-        networkSessionManager.onReadyStatusReceived = nil
-        webSocketSessionManager?.onReadyStatusReceived = nil
     }
 
     func setMyReady() {
