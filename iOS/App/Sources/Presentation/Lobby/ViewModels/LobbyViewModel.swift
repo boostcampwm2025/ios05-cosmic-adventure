@@ -55,6 +55,10 @@ final class LobbyViewModel {
     @ObservationIgnored
     let appEntryManager: AppEntryManager
 
+    /// setupExploration()에서 생성한 권한 체크 Task. 중복 호출 시 이전 Task를 cancel하기 위해 보관.
+    @ObservationIgnored
+    private var permissionCheckTask: Task<Void, Never>?
+
     // MARK: - Computed Properties
 
     var isNetworkAvailable: Bool {
@@ -154,10 +158,13 @@ extension LobbyViewModel {
     }
 
     func setupExploration() {
+        permissionCheckTask?.cancel()
+
         switch networkMode {
         case .local:
-            Task {
+            permissionCheckTask = Task {
                 let isPermissionGranted = await appEntryManager.isLocalNetworkPermissionGranted()
+                guard !Task.isCancelled else { return }
                 if !isPermissionGranted {
                     appEntryManager.presentAlert(.localNetworkDenied)
                     matchStatus.reset()
