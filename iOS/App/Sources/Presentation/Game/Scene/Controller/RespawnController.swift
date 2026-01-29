@@ -13,8 +13,8 @@ final class RespawnController {
 
     private enum Layout {
         static let iconSize: CGFloat = 45
-        static let topMargin: CGFloat = 40
-        static let rightMargin: CGFloat = 20
+        static let topMargin: CGFloat = 60
+        static let rightMargin: CGFloat = 30
     }
 
     // MARK: - Public

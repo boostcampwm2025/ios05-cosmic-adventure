@@ -24,7 +24,7 @@ struct VictoryGuideView: View {
             VStack(alignment: .leading, spacing: 0) {
                 GuideTitleView(title: L10N.Game.Guide.victoryManual)
                     .padding(.top, 24)
-                    .padding(.leading, 52)
+                    .padding(.leading, 20)
                 
                 GuideImageView(image: AppAsset.Image.victoryConditionTime.swiftUIImage)
                     .padding(.top, 48)
@@ -71,6 +71,7 @@ struct VictoryGuideView: View {
             }
             .padding(.bottom, 59)
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
 
