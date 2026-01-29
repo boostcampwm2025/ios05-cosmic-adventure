@@ -22,7 +22,7 @@ struct OperationGuideView: View {
             VStack(alignment: .leading, spacing: 0) {
                 GuideTitleView(title: L10N.Game.Guide.moveManual)
                     .padding(.top, 24)
-                    .padding(.leading, 52)
+                    .padding(.leading, 20)
                 
                 GuideImageView(image: AppAsset.Image.horizontalGuide.swiftUIImage)
                     .padding(.top, 48)
@@ -59,10 +59,9 @@ struct OperationGuideView: View {
                 .padding(.bottom, 59)
             }
         }
+        .navigationBarBackButtonHidden(true)
     }
 }
-
-
 
 #Preview {
     OperationGuideView(me: PlayerInfo(role: .me, displayName: "나", avatar: .character1),

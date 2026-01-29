@@ -54,6 +54,7 @@ struct GameReadyView: View {
                 Spacer()
             }
         }
+        .navigationBarBackButtonHidden(true)
         .onAppear {
             isAnimating = true
             viewModel.setMyReady()

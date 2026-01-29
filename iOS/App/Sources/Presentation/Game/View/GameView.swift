@@ -12,6 +12,7 @@ import SpriteKit
 import SwiftUI
 
 struct GameView: View {
+    @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: GameViewModel
     @State private var gameScene: GameScene?
     private var videoManager: VideoManager
@@ -96,6 +97,7 @@ struct GameView: View {
             viewModel.notifyGameEnded(reason)
             viewModel.stop()
         }
+        .navigationBarBackButtonHidden(true)
     }
     
     private var facePreviewOverlay: some View {
@@ -208,6 +210,16 @@ struct GameView: View {
                         .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
                         .foregroundStyle(.white.opacity(0.85))
                 }
+
+                Button("로비로 돌아가기") {
+                    router.resetToHome()
+                }
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 10)
+                .background(AppAsset.Color.buttonGradientStart.swiftUIColor)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
             .padding(20)
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
