@@ -62,6 +62,9 @@ struct GameReadyView: View {
                 attemptStart()
             }
         }
+        .onDisappear {
+            viewModel.stopTimer()
+        }
         .onChange(of: viewModel.isMeReady) { _, _ in attemptStart() }
         .onChange(of: viewModel.isPeerReady) { _, _ in attemptStart() }
     }
