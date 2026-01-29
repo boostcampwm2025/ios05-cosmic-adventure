@@ -17,8 +17,12 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
 
     /// 초기 권한 요청을 위한 임시 세션을 실행하고 결과를 반환합니다.
     func requestPermission(hostName: String) async -> Bool {
-        await AsyncStream { continuation in
+        return await AsyncStream { continuation in
+            var timeoutTask: Task<Void, Never>?
+
             networkSessionManager.onPermissionResult = { [weak self] result in
+                timeoutTask?.cancel()
+
                 switch result {
                 case .success:
                     continuation.yield(true)
@@ -32,9 +36,10 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
             networkSessionManager.activate(nickname: hostName)
 
             // 초기 요청 시 응답이 없을 경우를 대비한 타임아웃
-            Task {
+            timeoutTask = Task { [weak self] in
                 try? await Task.sleep(for: .seconds(3))
-                networkSessionManager.deactivate()
+                guard !Task.isCancelled else { return }
+                self?.networkSessionManager.deactivate()
                 continuation.yield(false)
                 continuation.finish()
             }
