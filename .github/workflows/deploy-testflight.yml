@@ -32,24 +32,16 @@ jobs:
 
       - name: Setup Keychain for Match
         run: |
-          security create-keychain -p actions temp.keychain
-          security default-keychain -s temp.keychain
-          security set-keychain-settings -lut 21600 temp.keychain
-          security unlock-keychain -p actions temp.keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k actions temp.keychain
-          security list-keychains -d user -s temp.keychain
+          security create-keychain -p actions temp.keychain-db
+          security default-keychain -s temp.keychain-db
+          security unlock-keychain -p actions temp.keychain-db
+          security set-keychain-settings -lut 21600 temp.keychain-db
+          security list-keychains -d user -s temp.keychain-db login.keychain-db
 
       - name: Decode App Store Connect API Key
         run: |
           echo "${{ secrets.APP_STORE_CONNECT_API_KEY_P8_BASE64 }}" | base64 --decode > fastlane/AuthKey.p8
           chmod 600 fastlane/AuthKey.p8
-          cat > fastlane/api_key.json << EOF
-          {
-            "key_id": "${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}",
-            "issuer_id": "${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}",
-            "key_filepath": "fastlane/AuthKey.p8"
-          }
-          EOF
 
       - name: Build and Upload to TestFlight
         run: bundle exec fastlane upload_testflight
@@ -58,13 +50,18 @@ jobs:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           MATCH_PASSWORD: ${{ secrets.MATCH_PASSWORD }}
-          MATCH_KEYCHAIN_NAME: temp.keychain
+          MATCH_KEYCHAIN_NAME: temp.keychain-db
           MATCH_KEYCHAIN_PASSWORD: actions
           # Team ID
           COSMIC_TEAM_ID: ${{ secrets.COSMIC_TEAM_ID }}
+          FASTLANE_XCODEBUILD_SETTINGS_TIMEOUT: "30"
+          FASTLANE_XCODEBUILD_SETTINGS_RETRIES: "6"
+          # App Store Connect API Key
+          APP_STORE_CONNECT_API_KEY_KEY_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_KEY_ID }}
+          APP_STORE_CONNECT_API_KEY_ISSUER_ID: ${{ secrets.APP_STORE_CONNECT_API_KEY_ISSUER_ID }}
 
       - name: Cleanup
         if: always()
         run: |
-          security delete-keychain temp.keychain || true
-          rm -f fastlane/AuthKey.p8 fastlane/api_key.json || true
+          security delete-keychain temp.keychain-db || true
+          rm -f fastlane/AuthKey.p8 || true

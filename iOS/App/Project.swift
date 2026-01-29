@@ -6,11 +6,6 @@ let xconfigPath = URL(fileURLWithPath: #file)
     .appendingPathComponent("Environment.xcconfig")
 let xconfigExists = FileManager.default.fileExists(atPath: xconfigPath.path)
 
-let isCI: Bool = {
-    let v = ProcessInfo.processInfo.environment["CI"]?.lowercased()
-    return v == "true" || v == "1"
-}()
-
 let project = Project(
     name: "App",
     targets: [
@@ -21,12 +16,7 @@ let project = Project(
             bundleId: "kr.boostcamp10.ios05.cosmic-adventure",
             deploymentTargets: .iOS("18.0"),
             infoPlist: .extendingDefault(with: [
-                "UILaunchScreen": .array([
-                    .dictionary([
-                        "UIColorName": .string(""),
-                        "UIImageName": .string(""),
-                    ])
-                ]),
+                "UILaunchScreen": .dictionary([:]),
                 "NSCameraUsageDescription": .string("AR 게임 플레이를 위해 카메라 접근이 필요해요."),
 
                 "NSLocalNetworkUsageDescription": .string("근거리 통신(로컬 네트워크)으로 연결하기 위해 필요해요."),
@@ -60,6 +50,9 @@ let project = Project(
 
                 "UISupportedInterfaceOrientations~ipad": .array([
                     .string("UIInterfaceOrientationPortrait"),
+                    .string("UIInterfaceOrientationPortraitUpsideDown"),
+                    .string("UIInterfaceOrientationLandscapeLeft"),
+                    .string("UIInterfaceOrientationLandscapeRight"),
                 ])
             ]),
             sources: [
@@ -78,8 +71,8 @@ let project = Project(
             ],
             settings: .settings(
                 base: [
-                    "DEVELOPMENT_TEAM": "B3PWYBKFUK",
-                    "CODE_SIGN_STYLE": .string(isCI ? "Manual" : "Automatic"),
+                    "DEVELOPMENT_TEAM": "AQCS8SYVV6",
+                    "CODE_SIGN_STYLE": "Automatic",
                 ],
                 configurations: xconfigExists ? [
                     .debug(name: "Debug", xcconfig: "Environment.xcconfig"),

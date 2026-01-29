@@ -1,8 +1,10 @@
 default_platform(:ios)
 
 def tuist_generate
-  sh "tuist install"
-  sh "tuist generate --no-open"
+  Dir.chdir("..") do
+    sh "tuist install"
+    sh "tuist generate --no-open"
+  end
 end
 
 platform :ios do
@@ -48,14 +50,24 @@ platform :ios do
     # Match 사용 시 프로파일 이름 가져오기
     profile_name = ENV["sigh_#{app_identifier}_appstore_profile-name"] || ENV.fetch("APP_STORE_PROVISIONING_PROFILE_NAME", "")
 
+    # App 타겟만 Manual signing으로 변경 (프레임워크 모듈은 건드리지 않음)
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      team_id: team_id,
+      profile_name: profile_name,
+      code_sign_identity: "Apple Distribution",
+      targets: ["App"],
+      path: "iOS/App/App.xcodeproj"
+    )
+
     gym(
       workspace: "cosmic-adventure.xcworkspace",
       scheme: "App",
       export_method: "app-store",
+      skip_profile_detection: true,
       xcargs: [
         "MARKETING_VERSION=#{marketing_version}",
         "CURRENT_PROJECT_VERSION=#{build_number}",
-        "CODE_SIGN_IDENTITY=Apple Distribution",
         "DEVELOPMENT_TEAM=#{team_id}"
       ].join(" "),
       export_options: {
@@ -68,8 +80,15 @@ platform :ios do
       }
     )
 
+    api_key = app_store_connect_api_key(
+      key_id: ENV.fetch("APP_STORE_CONNECT_API_KEY_KEY_ID"),
+      issuer_id: ENV.fetch("APP_STORE_CONNECT_API_KEY_ISSUER_ID"),
+      key_filepath: "fastlane/AuthKey.p8",
+      in_house: false
+    )
+
     pilot(
-      api_key_path: "fastlane/api_key.json",
+      api_key: api_key,
       skip_waiting_for_build_processing: true
     )
   end
