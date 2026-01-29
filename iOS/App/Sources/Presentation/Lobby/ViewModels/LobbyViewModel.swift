@@ -42,6 +42,10 @@ final class LobbyViewModel {
     var isConnected = false
     private(set) var networkMode: NetworkMode = .local
     var selectedChannelId: String?
+    /// ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 false.
+    /// LobbyView에서 이 값이 true가 될 때까지 중립적 placeholder를 표시하여
+    /// local↔remote 전환 시 발생하는 깜빡임을 방지한다.
+    private(set) var isConnectivityResolved = false
 
     // Match State
     var matchStatus: GameMatchStatus = .idle
@@ -68,6 +72,11 @@ final class LobbyViewModel {
     /// setupExploration()에서 생성한 권한 체크 Task. 중복 호출 시 이전 Task를 cancel하기 위해 보관.
     @ObservationIgnored
     private var permissionCheckTask: Task<Void, Never>?
+    
+    @ObservationIgnored
+    /// SwiftUI 라이프사이클 특성상 onAppear가 여러 번 호출될 수 있으므로,
+    /// setup()의 중복 실행을 방지하기 위한 플래그.
+    private var didSetup = false
 
     // MARK: - Computed Properties
 
@@ -106,10 +115,15 @@ final class LobbyViewModel {
     }
 
     func setup() {
+        // SwiftUI의 onAppear가 여러 번 호출되어도 setup은 한 번만 실행되도록 보장.
+        guard !didSetup else { return }
+        didSetup = true
         setupConnectivityMonitor()
         setupP2PCallbacks()
         setupWebSocketCallbacks()
-        setupExploration()
+        // setupExploration()은 여기서 직접 호출하지 않음.
+        // ConnectivityMonitor의 첫 콜백(handleConnectivityChange)에서 호출되므로
+        // networkMode가 확정된 후에만 탐색이 시작된다.
         setupNotificationHandlers()
         resetToIdle()
     }
@@ -134,10 +148,13 @@ extension LobbyViewModel {
             }
         }
         connectivityMonitor.start()
-        networkMode = connectivityMonitor.isConnected ? .remote : .local
     }
 
     private func handleConnectivityChange(isConnected: Bool) {
+        // ConnectivityMonitor 콜백에서 실제 네트워크 상태를 받아 확정.
+        // isConnectivityResolved를 true로 설정하여 LobbyView가 placeholder 대신 실제 UI를 렌더링하도록 함.
+        self.isConnected = isConnected
+        isConnectivityResolved = true
         if isConnected {
             networkMode = .remote
         } else {
