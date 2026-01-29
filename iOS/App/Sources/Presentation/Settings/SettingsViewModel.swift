@@ -7,6 +7,7 @@
 
 import Foundation
 import Observation
+import os
 
 import StorageKit
 
@@ -15,6 +16,8 @@ import StorageKit
 final class SettingsViewModel {
     
     // MARK: - Properties
+    
+    private let logger = Logger(subsystem: "com.cosmicadventure.app", category: "LobbyViewModel")
     
     var nickname: String
     var selectedAvatar: CharacterAvatar
@@ -63,6 +66,12 @@ final class SettingsViewModel {
     func saveProfile(modelContext: ModelContext) {
         player.nickname = nickname.isEmpty ? player.nickname : nickname
         player.character = selectedAvatar.rawValue
+        
+        do {
+            try modelContext.save()
+        } catch {
+            logger.error("[SettingsViewModel] 플레이어 정보 저장에 실패했습니다: \(error.localizedDescription)")
+        }
     }
 }
 
