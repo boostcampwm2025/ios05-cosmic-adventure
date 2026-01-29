@@ -17,6 +17,10 @@ final class GameViewModel {
     public let remotePlayer: PlayerInfo?
     
     var remotePlayerId: UUID? { remotePlayer?.id }
+    
+    /// 상대 플레이어의 화면 좌표
+    var remotePlayerScreenPosition: CGPoint = .zero
+    var isRemotePlayerVisible: Bool = false
 
     public let localPlayerID: UUID
     public let remotePlayerIDs: [UUID]
@@ -114,5 +118,14 @@ final class GameViewModel {
 
         gameplayManager.unbind()
         inputProvider.stop()
+    }
+
+    func bindRemotePlayerPosition(scene: GameScene) {
+        scene.onRemotePlayerPositionUpdate = { [weak self] position, isVisible in
+            Task { @MainActor in
+                self?.remotePlayerScreenPosition = position
+                self?.isRemotePlayerVisible = isVisible
+            }
+        }
     }
 }
