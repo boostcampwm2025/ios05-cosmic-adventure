@@ -28,7 +28,10 @@ jobs:
         run: tuist install
 
       - name: Create Environment.xcconfig
-        run: echo "${{ secrets.XCCONFIG_CONTENT }}" > iOS/App/Environment.xcconfig
+        run: |
+          cat <<'EOF' > iOS/App/Environment.xcconfig
+          ${{ secrets.XCCONFIG_CONTENT }}
+          EOF
 
       - name: Generate Project
         run: tuist generate --no-open
