@@ -205,6 +205,65 @@
 > 결과적으로, PR 당 리뷰 사이클이 더 예측 가능해졌고, 품질 기준을 팀 전체에 일관되게 적용할 수 있었습니다.
 
 
+## 프로젝트 구조
+### 폴더 구조
+```swift
+├── iOS/
+│   ├── App/
+│   │   ├── Sources/
+│   │   ├── Resources/
+│   │   └── Tests/
+│   ├── Modules/
+│   │   ├── GameEngineCore/
+│   │   ├── InputSystem/
+│   │   ├── NetworkKit/
+│   │   ├── VideoKit/
+│   │   ├── StorageKit/
+│   │   └── Games/
+│   └── Tuist/
+├── backend/
+│   ├── Sources/
+│   ├── Tests/
+│   └── Public/
+├── fastlane/
+├── docs/
+├── Project.swift
+└── cosmic-adventure.xcworkspace
+```
+
+### 모듈화
+<img width="1607" height="796" alt="스크린샷 2026-02-01 오후 10 46 06" src="https://github.com/user-attachments/assets/1231c2bd-e2cb-4043-bc13-2fe42583f230" />
+<br/>
+
+### 모듈화 도입 이유 및 설계 원칙
+
+> 고도화된 게임 경험과 유지보수의 효율성을 극대화하기 위해 **구조를 모듈화** 하였습니다. 그리고 단순히 코드를 나누는 것을 넘어, **SOLID 원칙**을 기반으로 지속 가능한 확장성을 확보하는 데 초점을 맞추었습니다
+
+- **`SRP` (Single Responsibility Principle)**: 각 모듈은 물리 엔진, 네트워크, UI 등 독립적인 하나의 책임만을 수행하여 코드의 응집도를 높였습니다.
+- **`DIP` (Dependency Inversion Principle)**: 상위 모듈은 하위의 구체 기술이 아닌 **Protocol** 에 의존합니다. 이를 통해 다른 모듈의 수정 없이 유연하게 대응합니다.
+- **`OCP` (Open-Closed Principle)**: 기존 코드를 수정하지 않고 프로토콜 확장을 통해 기능을 더할 수 있는 구조를 구축하였습니다.
+
+### 모듈별 역할
+
+### **Application & UI**
+
+- **`App`**: 프로젝트의 진입점으로, 전체 앱의 생명주기와 전역 설정을 관리합니다.
+- **`Presentation`**: SwiftUI 기반의 UI와 ViewModel을 포함하며, 상태 관리와 모듈 간의 의존성을 주입(DI)하는 역할을 수행합니다.
+
+### **Domain (Business Logic)**
+
+- **`Domain`**: 게임의 규칙 및 핵심 비즈니스 로직을 포함합니다. 특정 기술 스택에 종속되지 않는 순수 로직으로 유지됩니다.
+- **`Games`**: 게임의 구체적인 룰을 정의하는 모듈입니다.
+
+### **Infrastructure (구체 기술 구현)**
+
+- **`InputSystem`**: ARKit 기반의 얼굴 표정 트래킹 및 입력 이벤트를 처리하여 실시간 상호작용의 기반을 마련합니다.
+- **`GameEngineCore`**: 게임 물리 연산 및 엔진의 핵심 기능을 담당하여 안정적인 게임 환경을 제공합니다.
+- **`NetworkKit`**: P2P(Local) 및 WebSocket(Remote) 통신을 추상화하여 멀티플레이 환경을 구축합니다.
+- **`VideoKit`**: 영상 데이터의 고효율 인코딩/디코딩 및 실시간 전송을 최적화합니다.
+- **`StorageKit`**: SwiftData를 활용한 로컬 데이터 영속성 관리를 담당하며 정형화된 데이터 저장 구조를 제공합니다.
+
+
 ## Development
 
 ### 사전 요구사항
