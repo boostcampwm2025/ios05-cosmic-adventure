@@ -2,13 +2,14 @@
 
 언제나, 어디서나 환경에 구애받지 않고 우주를 탐험할 수 있는 코스믹 어드벤처에 오신 것을 환영합니다!
 
-## 프로젝트 환경
+## 목차
+- [주요 기능 소개](#주요-기능-소개)
+- [개발 환경 및 버전 정보](#개발-환경-및-버전-정보)
+- [기술 스택 및 도입 이유](#기술-스택-및-도입-이유)
+- [프로젝트 진행 방식](#프로젝트-진행-방식)
+- [Development](#development)
 
-|항목 | 내용|
-|:--|:--|
-|최소 버전 | iOS 18.0+|
-|UI 프레임워크 | SwiftUI|
-|데이터 관리 | SwiftData|
+
 
 ## **주요 기능 소개**
 
@@ -96,29 +97,20 @@
     - 설정값이 실제 플레이에 어떻게 적용되는지 즉시 확인
 
 ## 개발 환경 및 버전 정보
-| 항목 | 버전 |
-| :--: | :--: |
-|	Swift	| 6.0 |
-| iOS	| 18.0+ |
-| Xcode	| 16.0+ |
-|	Vapor	| 4.115.0 |
-| Tuist	| 4.99.0 |
+![Swift](https://img.shields.io/badge/Swift-6.0-orange?logo=swift)  
+![iOS](https://img.shields.io/badge/iOS-18.0+-black?logo=apple)  
+![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue?logo=xcode)  
+![Vapor](https://img.shields.io/badge/Vapor-4.115-blue?logo=vapor)  
+![Tuist](https://img.shields.io/badge/Tuist-4.99.0-blue?logo=tuist)  
 
-### Environment
-![Swift](https://img.shields.io/badge/Swift-6.0-orange?logo=swift)
-![iOS](https://img.shields.io/badge/iOS-18.0+-black?logo=apple)
-![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue?logo=xcode)
-![Vapor](https://img.shields.io/badge/Vapor-4.115-blue?logo=vapor)
-![Tuist](https://img.shields.io/badge/Tuist-4.99-blue?logo=tuist)
-
-## 🛠 기술 스택 및 도입 이유
+## 기술 스택 및 도입 이유
 
 ### 🌐 실시간 통신 및 네트워크
 - **Network.framework**
-    - **도입 이유**: `URLSession`보다 낮은 수준(Low-level)에서 TCP/UDP 및 TLS 연결을 직접 제어하여 오버헤드를 줄이고, 저지연(Low Latency) 실시간 P2P 통신을 구현하기 위해 채택했습니다.
-    - **활용**: Bonjour를 통한 주변 기기 탐색과 TCP 연결을 통해 별도의 중앙 서버 없이 로컬 환경에서 멀티플레이어 환경을 구축합니다.
+    - **도입 이유**: `URLSession`보다 낮은 수준(Low-level)에서 TCP/UDP 및 TLS 연결을 직접 제어하여 오버헤드를 줄이고, 저지연 실시간 P2P 통신을 구현하기 위해 채택했습니다.
+    - **활용**: `Bonjour`를 통한 주변 기기 탐색과 TCP 연결을 통해 별도의 중앙 서버 없이 로컬 환경에서 멀티플레이어 환경을 구축합니다.
 - **WebSocket**
-    - **도입 이유**: 클라이언트와 서버 간의 양방향 실시간 데이터 교환을 통해 앱의 반응성을 극대화하기 위해 채택했습니다.
+    - **도입 이유**: 클라이언트와 서버 간의 양방향 실시간 데이터 교환을 위해 채택했습니다.
     - **활용**: Vapor 백엔드 서버와 연결되어 실시간 사용자 상태 동기화, 매칭 시스템 및 게임 데이터 중계를 담당합니다.
 
 ### 🎥 비디오 및 미디어 처리
@@ -128,7 +120,7 @@
 
 ### 🎮 게임 엔진 및 AR
 - **SpriteKit & ARKit**
-    - **도입 이유**: 현실 세계와 상호작용하는 증강현실(AR) 환경을 구축하고, 2D 그래픽 요소를 가볍고 직관적으로 렌더링하기 위해 두 프레임워크를 조합했습니다.
+    - **도입 이유**: 현실 세계와 상호작용하는 증강현실(AR) 환경을 구축하고, 2D 그래픽 요소를 가볍고 직관적으로 렌더링하기 위해 두 프레임워크를 함께 사용했습니다.
     - **활용**: `ARKit`의 Face Tracking 기술로 사용자의 표정과 움직임을 추적해 실시간 게임 컨트롤러로 변환하며, `SpriteKit` 기반의 물리 엔진과 애니메이션으로 몰입감 있는 게임 경험을 제공합니다.
 
 ### 🏗 프로젝트 관리 및 자동화
