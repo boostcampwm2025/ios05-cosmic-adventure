@@ -11,7 +11,15 @@ import NetworkKit
 
 // MARK: - Multiplayer Network IO
 
-actor MultiplayerNetworkIO {
+protocol MultiplayerNetworkManaging: AnyObject {
+    func bind(peerId: UUID)
+    func unbind()
+    func notifyGameEnded(_ reason: GameEndReason)
+    func setOnGameEndReceived(_ handler: @escaping @Sendable (NetworkGameEndDTO) -> Void)
+    func tick(deltaTime: TimeInterval)
+}
+
+actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     private let localPlayer: PlayerInfo
     private let remotePlayers: [PlayerInfo]
     private let gameplayManager: GameplayManager
