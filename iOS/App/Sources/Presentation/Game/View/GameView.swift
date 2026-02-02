@@ -15,6 +15,7 @@ struct GameView: View {
     @Environment(AppRouter.self) private var router: AppRouter
     @State private var viewModel: GameViewModel
     @State private var gameScene: GameScene?
+    @State private var isMenuPresented: Bool = false
     private var videoManager: VideoManager
     private let size = VideoConfiguration().displaySize
 
@@ -48,9 +49,6 @@ struct GameView: View {
                     .allowsHitTesting(true)
             }
 
-            gameHUD
-                .padding(16)
-
             if !viewModel.remotePlayerIDs.isEmpty {
                 RemoteVideoView(layer: videoManager.remoteDisplayLayer)
                     .frame(width: size, height: size)
@@ -63,14 +61,29 @@ struct GameView: View {
                         x: clampX(viewModel.remotePlayerScreenPosition.x),
                         y: clampY(viewModel.remotePlayerScreenPosition.y - size)
                     )
-                    .zIndex(999)
+                    .zIndex(1000)
             }
 
             if let reason = viewModel.endReason {
                 gameEndOverlay(reason: reason)
+                    .zIndex(3000)
             }
             
+            if isMenuPresented {
+                menuOverlay
+                    .zIndex(2500)
+            }
+
             facePreviewOverlay
+        }
+        .safeAreaInset(edge: .top) {
+            HStack {
+                gameHUD
+                Spacer()
+                menuButton
+            }
+            .padding(.horizontal, 16)
+            .padding(.top, 8)
         }
         .onAppear {
             setupGame()
@@ -165,9 +178,67 @@ struct GameView: View {
         .padding(12)
         .background(.white.opacity(0.8))
         .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-        .padding(16)
         .allowsHitTesting(false)
+    }
+
+    private var menuButton: some View {
+        Button {
+            isMenuPresented = true
+        } label: {
+            Image(systemName: "gearshape")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            AppAsset.Color.iconGradientStart.swiftUIColor,
+                            AppAsset.Color.iconGradientEnd.swiftUIColor
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Circle())
+        }
+    }
+
+    private var menuOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.45)
+                .ignoresSafeArea()
+                .onTapGesture { isMenuPresented = false }
+
+            VStack(spacing: 12) {
+                Text(L10N.Game.Menu.title)
+                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 18))
+                    .foregroundStyle(.white)
+
+                Button(L10N.Game.Menu.quit) {
+                    isMenuPresented = false
+                    viewModel.requestQuitGame()
+                }
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 16))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.9))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+
+                Button(L10N.Game.Menu.close) {
+                    isMenuPresented = false
+                }
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 16))
+                .foregroundStyle(.black)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 10)
+                .background(.white.opacity(0.9))
+                .clipShape(RoundedRectangle(cornerRadius: 10, style: .continuous))
+            }
+            .padding(20)
+            .background(.black.opacity(0.75))
+            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+        }
     }
 
     private func gameEndOverlay(reason: GameEndReason) -> some View {
@@ -175,6 +246,7 @@ struct GameView: View {
             switch reason {
             case .timeout: return L10N.Game.End.timeoutTitle
             case .reachedFinish: return L10N.Game.End.finishTitle
+            case .quit: return L10N.Game.End.quitTitle
             }
         }()
 
@@ -205,7 +277,7 @@ struct GameView: View {
                         .foregroundStyle(.white.opacity(0.85))
                 }
 
-                Button("로비로 돌아가기") {
+                Button(L10N.Game.End.backToLobby) {
                     router.resetToHome()
                 }
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))

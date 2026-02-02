@@ -10,6 +10,7 @@ import Foundation
 public enum GameEndReasonCode: Int, Codable, Sendable {
     case timeout = 0
     case reachedFinish = 1
+    case quit = 2
 }
 
 public struct NetworkGameEndDTO: Codable, Sendable {

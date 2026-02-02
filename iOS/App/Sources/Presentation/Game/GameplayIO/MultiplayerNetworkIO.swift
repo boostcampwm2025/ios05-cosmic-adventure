@@ -262,6 +262,8 @@ actor MultiplayerNetworkIO {
             return .timeout
         case .reachedFinish:
             return .reachedFinish
+        case .quit:
+            return .quit
         }
     }
 
@@ -271,6 +273,8 @@ actor MultiplayerNetworkIO {
             return .timeout
         case .reachedFinish:
             return .reachedFinish
+        case .quit:
+            return .quit
         }
     }
 
@@ -300,9 +304,19 @@ actor MultiplayerNetworkIO {
         case .timeout:
             winnerId = remotePlayerId
             winnerElapsed = nil
+        case .quit:
+            winnerId = nil
+            winnerElapsed = nil
         }
-        let winnerName = (winnerId == localPlayerID) ? localDisplayName : remoteDisplayName
-        let opponentName = (winnerId == localPlayerID) ? remoteDisplayName : localDisplayName
+        let winnerName: String?
+        let opponentName: String?
+        if reason == .quit {
+            winnerName = nil
+            opponentName = nil
+        } else {
+            winnerName = (winnerId == localPlayerID) ? localDisplayName : remoteDisplayName
+            opponentName = (winnerId == localPlayerID) ? remoteDisplayName : localDisplayName
+        }
         return NetworkGameEndDTO(
             reason: encodeGameEndReason(reason),
             winnerId: winnerId,

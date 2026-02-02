@@ -130,11 +130,19 @@ enum L10N {
     }
     
     enum Game {
+        enum Menu {
+            static let title: LocalizedStringKey = "메뉴"
+            static let quit: LocalizedStringKey = "게임 끝내기"
+            static let close: LocalizedStringKey = "닫기"
+        }
+
         enum End {
             static let timeoutTitle: String = "시간 종료"
             static let winTitle: String = "승리"
             static let loseTitle: String = "패배"
             static let finishTitle: String = "결승 도착"
+            static let quitTitle: String = "게임 종료"
+            static let backToLobby: LocalizedStringKey = "로비로 돌아가기"
             static let winnerPrefix: String = "승자"
             static let opponentPrefix: String = "상대"
             static let winnerElapsedFormat: String = "승자 소요시간: %ds"
