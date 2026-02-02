@@ -141,6 +141,7 @@ final class AppContainer: ViewModelFactory {
     }
 
     func makeVideoManager(isNetwork: Bool) -> VideoManager {
+        videoManager.reset()
         videoManager.setNetworkMode(isNetwork: isNetwork)
 
         return videoManager

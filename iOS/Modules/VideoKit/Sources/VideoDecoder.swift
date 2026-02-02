@@ -36,9 +36,14 @@ final public class VideoDecoder: VideoDecoding {
 
                 if #available(iOS 18.0, *) {
                     layer.sampleBufferRenderer.flush()
+                    layer.sampleBufferRenderer.stopRequestingMediaData()
                 } else {
                     layer.flushAndRemoveImage()
+                    layer.stopRequestingMediaData()
                 }
+                
+                layer.controlTimebase = nil
+                layer.setNeedsDisplay()
             }
         }
     }
