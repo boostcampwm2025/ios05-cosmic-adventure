@@ -36,7 +36,7 @@ final class GameViewModel {
     
     // Multiplayer Network IO
     @ObservationIgnored
-    private var multiplayerIO: MultiplayerNetworkIO?
+    private var multiplayerIO: MultiplayerNetworkManaging?
     
     // ViewState
     var endReason: GameEndReason? {
@@ -67,7 +67,8 @@ final class GameViewModel {
         remotePlayer: PlayerInfo?,
         endCondition: any GameEndCondition,
         connectionSessionManager: ConnectionSessionManaging,
-        gameConfig: GameConfigProviding
+        gameConfig: GameConfigProviding,
+        multiplayerIO: MultiplayerNetworkManaging? = nil
     ) {
         self.localPlayer = localPlayer
         self.remotePlayer = remotePlayer
@@ -92,13 +93,25 @@ final class GameViewModel {
             endCondition: endCondition
         )
         
-        self.multiplayerIO = MultiplayerNetworkIO(
-            localPlayer: localPlayer,
-            remotePlayers: remotePlayer.map { [$0] } ?? [],
-            gameplayManager: gameplayManager,
-            inputProvider: inputProvider,
-            networkSessionManager: connectionSessionManager
-        )
+        if let multiplayerIO {
+            self.multiplayerIO = multiplayerIO
+        } else {
+            self.multiplayerIO = MultiplayerNetworkIO(
+                localPlayer: localPlayer,
+                remotePlayers: remotePlayer.map { [$0] } ?? [],
+                gameplayManager: gameplayManager,
+                inputProvider: inputProvider,
+                networkSessionManager: connectionSessionManager
+            )
+        }
+
+        if remotePlayerId != nil {
+            self.multiplayerIO?.setOnGameEndReceived { [weak self] dto in
+                Task { @MainActor in
+                    self?.applyRemoteGameEnd(dto)
+                }
+            }
+        }
     }
     
     func start() {
@@ -109,11 +122,6 @@ final class GameViewModel {
         // 네트워크 송신/수신 바인딩 (멀티플레이일 때만)
         if let remotePlayerId {
             multiplayerIO?.bind(peerId: remotePlayerId)
-            multiplayerIO?.setOnGameEndReceived { [weak self] dto in
-                Task { @MainActor in
-                    self?.applyRemoteGameEnd(dto)
-                }
-            }
         } else {
             multiplayerIO?.unbind()
         }
@@ -246,5 +254,4 @@ final class GameViewModel {
             return .quit
         }
     }
-
 }
