@@ -48,6 +48,12 @@ final public class VideoDecoder: VideoDecoding {
         }
     }
 
+    public func setDisplayLayer(_ layer: AVSampleBufferDisplayLayer?) {
+        decodeQueue.async { [weak self] in
+            self?.displayLayer = layer
+        }
+    }
+
     // 외부에서 받은 H.264 데이터를 디코딩하여 화면에 그림
     public func decode(data: Data) {
         // 들어오는 모든 데이터를 직렬 큐에 넣어서 순차적으로 처리

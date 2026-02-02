@@ -80,7 +80,7 @@ public final class VideoManager {
 
     private func setupDecoder() {
         self.videoDecoder = VideoDecoder()
-        self.videoDecoder?.displayLayer = self.remoteDisplayLayer
+        self.videoDecoder?.setDisplayLayer(self.remoteDisplayLayer)
     }
 
     private func setupVideoDataCallbacks() {
@@ -168,7 +168,7 @@ public final class VideoManager {
 
             let newLayer = self.createCleanDisplayLayer()
             remoteDisplayLayer = newLayer
-            videoDecoder?.displayLayer = newLayer
+            videoDecoder?.setDisplayLayer(newLayer)
         }
 
         isLowBitrateMode = false
