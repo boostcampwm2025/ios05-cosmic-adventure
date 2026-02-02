@@ -9,6 +9,7 @@ import AVFoundation
 
 public protocol VideoDecoding: AnyObject {
     var displayLayer: AVSampleBufferDisplayLayer? { get set }
-    func decode(data: Data)
     func reset()
+    func setDisplayLayer(_ layer: AVSampleBufferDisplayLayer?)
+    func decode(data: Data)
 }
