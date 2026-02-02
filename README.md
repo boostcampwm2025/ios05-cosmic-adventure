@@ -1,17 +1,22 @@
 # Cosmic Adventure
 <img width="2200" alt="image 3283" src="https://github.com/user-attachments/assets/2bbf1b7b-acf5-4876-be2f-5fc0070cb5ff" />
+<br/>
+<br/>
 
 > **언제나, 어디서나 환경에 구애받지 않고 우주를 탐험할 수 있는 코스믹 어드벤처에 오신 것을 환영합니다!**
+
+<br/>
 
 ## 목차
 - [주요 기능 소개](#주요-기능-소개)
 - [개발 환경 및 버전 정보](#개발-환경-및-버전-정보)
 - [프로젝트 구조](#프로젝트-구조)
 - [기술 스택 및 도입 이유](#기술-스택-및-도입-이유)
+- [문제 해결 기록](#문제-해결-기록)
 - [프로젝트 진행 방식](#프로젝트-진행-방식)
 - [Development](#development)  
 
-
+<br/>
 
 ## **주요 기능 소개**
 
@@ -23,6 +28,7 @@
 | 카메라 / 근거리 통신 / 알림 권한 안내 및 설정                                                                                             | 닉네임 + 캐릭터 선택으로 나만의 또잉또잉스 생성                                                                                            |
 
 
+<br/>
 
 ### **홈: 동료 찾기**
 | 로비 뷰                                                                                                                                                                                                                                                    |
@@ -30,6 +36,7 @@
 | <img src="https://github.com/user-attachments/assets/691e74bc-3794-443c-8cd3-994363aba89d" width="300" />                                                                                                                                            |
 | **A) 채널 매칭(서버 기반)**<br><br>- 서버 통신이 가능한 환경에서 사용<br>- 원거리 플레이어와 연결 가능<br>- 채널 혼잡도 기반 오토스케일링<br>    - Scale-Out: 채널 점유율이 80% 초과 시, 추가 채널 할당<br>    - Scale-In: 비어있는 채널 발생 시 자원 정리<br><br>**B) 근거리 탐색(P2P)**<br><br>- 인터넷 없이도 가능<br>- 주변 유저를 직접 탐색해서 연결 |
 
+<br/>
 
 ### **매칭 흐름**
 | 게임 초대 및 수락                                                                                                                                                                                                               |
@@ -38,6 +45,7 @@
 | - 원하는 유저에게 **초대 요청**<br>- 상대가 **수락**하고, 두 플레이어가 준비 완료 시 게임 맵 진입<br>- 여러 요청이 오면 **알림 목록에서 한꺼번에 관리**<br>    - 목록에서도 수락/거절 가능<br>    - 목록 보는 중 새 요청이 오면 즉시 처리 UI 제공                                                    |
 
 
+<br/>
 
 ### **게임 온보딩**
 
@@ -47,6 +55,7 @@
 | - **고개 갸웃(좌/우)**: 좌우 이동<br>- **입 오므리기**: 점프<br>    - 1단 점프: 입술 내밀기<br>    - 연속 동작으로 최대 2단 점프까지 가능<br>- **2인 모드 승리 조건**: 몬스터를 피해 **더 빠르게 결승점 도달**하는 사람이 승리 |
 
 
+<br/>
 
 ### **게임 모드 & 플레이 경험**
 
@@ -56,6 +65,7 @@
 | - 상대의 **비디오 피드 + 캐릭터 상태가 실시간 동기화**<br>- 상대 캐릭터는 **반투명** 처리<br>    - 시야 방해 최소화<br>    - “함께” 플레이하는 느낌 강화   | - 동일한 방식으로 플레이 가능<br>- 몬스터에 닿으면 즉시 리스폰<br>- 우측 상단 버튼으로 수동 리스폰도 지원<br>- 플레이 중 초대가 오면 **배너 알림**으로 바로 참여 가능  | - 게임 종료 시 결과를 보여주고<br>- 결승점에는 또잉또잉스를 탈출시켜줄 **우주선**이 대기                                                    |
 
 
+<br/>
 
 ### **환경 설정(튜닝/테스트)**
 | 환경 설정뷰                                                                                             |
@@ -63,6 +73,7 @@
 | <img src="https://github.com/user-attachments/assets/30a76f11-89fe-4f31-98d1-7f51d5c60094" width="300" /> |
 | - 감도 조절<br>- PIP 크기 조절<br>- 사운드 볼륨 조절<br>- 테스트 뷰(게임 미리보기)<br>    - 설정값이 실제 플레이에 어떻게 적용되는지 즉시 확인           |
 
+<br/>
 
 ## 개발 환경 및 버전 정보
 ![Swift](https://img.shields.io/badge/Swift-6.0-orange?logo=swift)  
@@ -70,6 +81,8 @@
 ![Xcode](https://img.shields.io/badge/Xcode-16.0+-blue?logo=xcode)  
 ![Vapor](https://img.shields.io/badge/Vapor-4.115-blue?logo=vapor)  
 ![Tuist](https://img.shields.io/badge/Tuist-4.99.0-blue?logo=tuist)  
+
+<br/>
 
 ## 프로젝트 구조
 ### 폴더 구조
@@ -97,8 +110,11 @@
 └── cosmic-adventure.xcworkspace
 ```
 
+<br/>
+
 ### 모듈화
 <img width="1000" alt="스크린샷 2026-02-01 오후 10 46 06" src="https://github.com/user-attachments/assets/1231c2bd-e2cb-4043-bc13-2fe42583f230" />
+<br/>
 <br/>
 
 ### 모듈화 도입 이유 및 설계 원칙
@@ -109,25 +125,34 @@
 - **`DIP` (Dependency Inversion Principle)**: 상위 모듈은 하위의 구체 기술이 아닌 **Protocol** 에 의존합니다. 이를 통해 다른 모듈의 수정 없이 유연하게 대응합니다.
 - **`OCP` (Open-Closed Principle)**: 기존 코드를 수정하지 않고 프로토콜 확장을 통해 기능을 더할 수 있는 구조를 구축하였습니다.
 
+<br/>
+
 ### 모듈별 역할
 
-### **Application & UI**
+#### **Application & UI**
 
 - **`App`**: 프로젝트의 진입점으로, 전체 앱의 생명주기와 전역 설정을 관리합니다.
 - **`Presentation`**: SwiftUI 기반의 UI와 ViewModel을 포함하며, 상태 관리와 모듈 간의 의존성을 주입(DI)하는 역할을 수행합니다.
 
-### **Domain (Business Logic)**
+<br/>
+
+#### **Domain (Business Logic)**
 
 - **`Domain`**: 게임의 규칙 및 핵심 비즈니스 로직을 포함합니다. 특정 기술 스택에 종속되지 않는 순수 로직으로 유지됩니다.
 - **`Games`**: 게임의 구체적인 룰을 정의하는 모듈입니다.
 
-### **Infrastructure (구체 기술 구현)**
+<br/>
+
+#### **Infrastructure (구체 기술 구현)**
 
 - **`InputSystem`**: ARKit 기반의 얼굴 표정 트래킹 및 입력 이벤트를 처리하여 실시간 상호작용의 기반을 마련합니다.
 - **`GameEngineCore`**: 게임 물리 연산 및 엔진의 핵심 기능을 담당하여 안정적인 게임 환경을 제공합니다.
 - **`NetworkKit`**: P2P(Local) 및 WebSocket(Remote) 통신을 추상화하여 멀티플레이 환경을 구축합니다.
 - **`VideoKit`**: 영상 데이터의 고효율 인코딩/디코딩 및 실시간 전송을 최적화합니다.
 - **`StorageKit`**: SwiftData를 활용한 로컬 데이터 영속성 관리를 담당하며 정형화된 데이터 저장 구조를 제공합니다.
+
+<br/>
+<br/>
 
 ## 기술 스택 및 도입 이유
 
@@ -139,15 +164,21 @@
     - **도입 이유**: 클라이언트와 서버 간의 양방향 실시간 데이터 교환을 위해 채택했습니다.
     - **활용**: Vapor 백엔드 서버와 연결되어 실시간 사용자 상태 동기화, 매칭 시스템 및 게임 데이터 중계를 담당합니다.
 
+<br/>
+
 ### 🎥 비디오 및 미디어 처리
 - **VideoToolbox**
     - **도입 이유**: 하드웨어 가속을 활용해 비디오를 인코딩/디코딩함으로써 CPU 부하와 기기 발열을 최소화하고, 고해상도 영상을 매끄럽게 처리하기 위해 선택했습니다.
     - **활용**: H.264 코덱을 사용하여 실시간 비디오 스트림을 압축하고 전송함으로써 네트워크 대역폭 효율을 높이고 지연 시간을 최소화합니다.
 
+<br/>
+
 ### 🎮 게임 엔진 및 AR
 - **SpriteKit & ARKit**
     - **도입 이유**: 현실 세계와 상호작용하는 증강현실(AR) 환경을 구축하고, 2D 그래픽 요소를 가볍고 직관적으로 렌더링하기 위해 두 프레임워크를 함께 사용했습니다.
     - **활용**: `ARKit`의 Face Tracking 기술로 사용자의 표정과 움직임을 추적해 실시간 게임 컨트롤러로 변환하며, `SpriteKit` 기반의 물리 엔진과 애니메이션으로 몰입감 있는 게임 경험을 제공합니다.
+
+<br/>
 
 ### 🏗 프로젝트 관리 및 자동화
 - **Tuist**
@@ -157,6 +188,149 @@
     - **도입 이유**: 빌드, 테스트, 배포 과정을 자동화하여 개발 효율성을 높이고 반복적인 실수를 방지하기 위해 도입했습니다.
     - **활용**: `Match`를 통한 인증서 관리와 TestFlight 업로드 프로세스를 자동화하여 지속적인 배포(CD) 환경을 구축했습니다.
 
+<br/>
+<br/>
+
+## 문제 해결 기록
+
+### P2P + WebSocket 통합 네트워킹 레이어
+
+#### 문제
+프로젝트는 **근거리 P2P(Network.framework)** 와 **원거리 서버 통신(WebSocket)** 을 모두 지원합니다.  
+다만 두 방식은 전송 방식과 데이터 포맷이 달라(예: P2P는 `Data`, WebSocket은 `String/JSON`) 다음 문제가 발생했습니다.
+
+- 동일 기능(초대/입력/영상)을 모드별로 따로 구현하며 **코드 중복 증가**
+- ViewModel/UI가 “현재 통신 방식”을 알아야 해서 **UI 로직이 네트워크 구현에 종속**
+- 전송 포맷 변환 로직이 곳곳에 퍼져 **유지보수 및 테스트 비용 증가**
+
+
+#### 원인
+- **통신 방식별 API가 달라** 상위 레이어에서 분기 처리(서버 모드/P2P 모드)가 필요했습니다.
+- **전송 단위가 다름**(Binary `Data` vs JSON `String`) → 변환 책임이 상위 레이어로 새어 나왔습니다.
+
+
+#### 해결
+**1) 프로토콜 추상화로 인터페이스 표준화**
+
+상위 레이어가 구체 구현이 아니라 **인터페이스에만 의존**하도록 최상위 프로토콜을 정의했습니다.
+
+<img width="1200" alt="image" src="https://github.com/user-attachments/assets/7974a338-299f-4ee8-b918-e01abfc6c9f4" />
+
+- `ConnectionSessionManaging`
+  - 연결 관리: `activate`, `deactivate`
+  - 이벤트 수신(구독): `onInviteReceived`, `onInputReceived`, `onVideoReceived`
+  - 액션 발신: `sendInvite()`, `sendInput()`, `sendVideo()`
+
+또한 모드별 전용 기능은 하위 프로토콜로 분리했습니다.
+
+- `NetworkSessionManaging` (P2P 전용)
+- `WebSocketSessionManaging` (서버 전용)
+
+> 결과적으로 ViewModel은 P2P/서버 여부와 관계없이 동일한 API로 동작하도록 정리했습니다.
+
+**2) 어댑터 패턴으로 데이터 타입 단일화(`Data`)**
+
+상위 레이어에서는 전송 단위를 **`Data`로 통일**했습니다.
+<img width="1200" alt="image" src="https://github.com/user-attachments/assets/bcfa2b3a-82d3-4202-8dd2-bac8f84142ff" />
+
+- P2P: `Data` 기반 → 그대로 사용
+- WebSocket: 내부에서 `String ↔ Data` 변환을 수행하는 **어댑터 역할** 담당
+
+> 전송 포맷 차이를 하위 레이어로 숨겨, 상위 로직의 복잡도를 낮추고 변환 책임을 한 곳으로 모았습니다.
+
+#### 결과
+- 모드(P2P/서버)에 관계없이 **초대/입력/영상 흐름을 동일 코드로 처리**할 수 있게 되었습니다.
+- UI/ViewModel이 통신 방식에 종속되지 않아 **관심사가 분리**되었습니다.
+- 인터페이스 기반이라 Mock 주입이 쉬워져 **네트워크 없이도 테스트 가능한 구조**를 확보했습니다.
+  
+> 관련 문서: [통합 네트워크 레이어](https://tarry-scarecrow-a88.notion.site/P2P-WebSocket-Local-P2P-Server-2cefc7a866b180ada7b4dc82fc475210?source=copy_link)
+
+<br/>
+
+### 멀티플레이 플랫폼 착지 불일치(One-Way Platform) 안정화
+
+#### 문제
+멀티플레이에서 플랫폼 충돌 활성 여부가 **로컬 캐릭터 기준으로만 판단**되면서,
+원격 캐릭터가 로컬 기준으로 비활성화된 플랫폼을 밟지 못하거나(착지 실패),
+로컬/원격 간 충돌 상태가 달라 **착지 동작이 불일치**하는 문제가 있었습니다.  
+또한 플랫폼을 **상승 시 통과 / 하강 시 착지**(One-Way)로 동작시키는 과정에서,
+빠른 낙하 시 충돌 활성 타이밍을 놓쳐 **관통**이 발생할 수 있었습니다.
+
+
+#### 원인
+- 로컬/원격이 공유하는 단일 충돌 판단 로직으로 인해 **캐릭터별 충돌 상태를 독립적으로 제어하기 어려웠습니다.**
+- One-Way 플랫폼 구현 시, 프레임 사이 이동량이 큰 경우(빠른 낙하) **활성 조건을 놓쳐 관통**이 발생할 수 있었습니다.
+
+
+#### 해결
+**1) 로컬/원격 충돌 카테고리 분리**
+플랫폼 충돌 카테고리를 캐릭터 타입별로 분리하여,
+동일 플랫폼이라도 로컬/원격이 **서로 다른 충돌 상태**를 가질 수 있도록 개선했습니다.
+
+- `groundMe`: 로컬 전용
+- `groundOther`: 원격 전용
+
+**2) 하강 중에만 착지(One-Way Platform)**
+`collisionBitMask`는 항상 플레이어와의 충돌 관계를 유지하고,
+실제 착지 여부는 `categoryBitMask`를 **프레임 단위로 ON/OFF** 하여 제어했습니다.
+<img width="1200" alt="image" src="https://github.com/user-attachments/assets/fbdd11bf-3bcf-415a-af96-4f7a8e6b4e97" />
+
+- 하강 시(`dy <= 0`): category ON → 착지
+- 상승 시(`dy > 0`): category OFF → 통과
+
+> **선정 이유**  
+> `collisionBitMask`를 매 프레임 변경하면 물리 동작 예측이 어려워질 수 있어,  
+> 충돌 관계는 고정한 채 `categoryBitMask`만 토글하여 “착지 가능한 플랫폼”을 선택하는 방식으로 정리했습니다.
+
+**3) 빠른 낙하 관통 방지(Fall Buffer)**
+빠른 낙하로 프레임 사이 관통이 발생하지 않도록 낙하 속도에 비례해 buffer를 확장했습니다.
+
+- `buffer = min(200, 20 + |dy| * dt * 1.5)` (하강 시에만)
+
+
+#### 결과
+- 로컬/원격 캐릭터의 플랫폼 충돌을 **독립적으로 제어**할 수 있게 되었습니다.
+- 멀티플레이에서 발생하던 **착지 불일치**와 체감 이질감이 감소했습니다.
+- One-Way 동작(상승 통과/하강 착지)을 안정적으로 보장하고,
+  빠른 낙하 상황에서의 **관통 현상**을 유의미하게 줄였습니다.
+
+
+#### (연관) 원격 점프 확정 이벤트 기반 동기화
+네트워크 지연으로 원격 점프 입력이 누락/지연될 수 있어,
+원격 점프를 “입력”이 아닌 **확정 이벤트(`jumpTriggered`)** 로 전송·적용하는 방식으로 보완했습니다.
+<img width="900" alt="image" src="https://github.com/user-attachments/assets/be8299c7-66ee-4514-91d8-96f663bca387" />
+
+- `NetworkGameInputDTO.Kind.jumpTriggered`
+- `GameplayManager.applyJumpTriggered`
+- `MultiplayerNetworkIO.installLocalJumpTriggeredSender`
+
+> 관련 문서: [플랫폼 충돌 분리](https://tarry-scarecrow-a88.notion.site/One-Way-Platform-2fbfc7a866b1803f9af3e16d36aed966?source=copy_link)
+[멀티플레이 리스폰 동기화](https://tarry-scarecrow-a88.notion.site/2fbfc7a866b180aa9fefdd31c2abd29c?source=copy_link)
+
+<br/>
+
+### 비디오 스트리밍 구현 방식 - MJPEG vs WebRTC vs Native H.264 VideoToolbox
+
+#### 기술 스택 선정 비교 분석표비교 항목
+| 비교 항목 | 1. MJPEG (기존 POC) | 2. WebRTC (외부 라이브러리) | 3. Native H.264 (제안) |
+|---|---|---|---|
+| 압축 방식 | 매 프레임 전체 전송 (I-Frame Only) | 차이값 전송 (Inter-frame) | 차이값 전송 (Inter-frame) |
+| 대역폭 (30fps) | 매우 높음 (~1.5 MB/s) | 낮음 (~0.1 MB/s) | 낮음 (~0.1 MB/s) |
+| 앱 용량 증가 | 없음 (0 MB) | 큼 (+50~100 MB)<br/>→ 외부 라이브러리로 인해 빌드 속도 저하 및 의존성 증가 | 없음 (0 MB) |
+| 네트워크 통합 | 쉬움 | 별도 채널 필요 | 기존 패킷 활용<br/>→ ping/pong 시그널링 활용 |
+| 하드웨어 가속 | 지원 안 함 (CPU 부하 큼) | 지원함 | 지원함 (OS 레벨 최적화) |
+| 결론 | ❌ 비효율적 (폐기) | ⚠️ Overkill (과잉) | ✅ Best Fit (최적) |
+
+**결론: `Native H.264 VideoToolbox` 사용**
+
+단순한 기능 구현을 넘어 앱의 핵심 서비스를 외부 라이브러리 없이 네이티브 환경에서 직접 구축함으로써 프로젝트 최적화와 기술적 성장을 동시에 도모하기로 했습니다.  프로젝트에 무거운 `WebRTC` 라이브러리 대신, 애플의 **`VideoToolbox`**를 직접 제어하여 **하드웨어 가속 기반의 H.264 압축**을 구현하는 방향을 택했습니다. 
+
+이를 통해 `MJPEG` 대비 **데이터 소모량을 1/30 수준으로 절감**하여 네트워크 효율을 극대화하고, 저수준(Low-level) API를 능동적으로 설계함으로써 기기 발열 최소화와 성능 최적화를 직접 이끌어내고자 했습니다. 그리고 라이브러리를 가져다 쓰는 편리함 대신, 서비스에 가장 적합한 설계를 통해 기술적 완성도를 높이려고 했습니다.
+
+> 관련문서: [VideoToolbox 사용 이유](https://tarry-scarecrow-a88.notion.site/MJPEG-vs-WebRTC-vs-Native-H-264-VideoToolbox-2effc7a866b180cba4e4ca202d2aa18b?source=copy_link)
+
+<br/>
+<br/>
 
 ## 프로젝트 진행 방식
 코스믹 어드벤처는 “완성도를 빠르게 끌어올리되, 리스크는 작게” 가져가는 방식으로 진행했습니다.  
@@ -192,6 +366,8 @@
 - **개선**: 싱글 플레이 도중에도 초대를 즉시 인지하고 처리할 수 있도록 **Local Notification + 인앱 Top Modal** 방향을 검토/적용했습니다.  
   > PR: [#168](https://github.com/boostcampwm2025/ios05-cosmic-adventure/pull/168)
 
+<br/>
+
 ### 2) 태스크 관리 및 분배 (Task Management & Ownership)
   <img width="800" alt="스크린샷 2026-02-01 오후 11 26 07" src="https://github.com/user-attachments/assets/7ce9d547-ca69-4439-b026-de87fedcb9b9" />
   
@@ -204,6 +380,8 @@
 - 또한 특정 사람에게 지식이 쏠리지 않도록, 팀원 모두가 각 모듈을 이해할 수 있게  
   **담당하지 않았던 영역도 번갈아가며 개선/수정**하는 방식으로 운영했습니다(버스 팩터 감소).
 - PR은 “리뷰 가능한 크기”를 유지하고, 병합 후에는 변경 영향 범위를 공유해 **리그레션을 최소화**했습니다.
+
+<br/>
 
 ### 3) AI 코드 리뷰 도입 (CodeRabbit)
 <img width="500" alt="image" src="https://github.com/user-attachments/assets/eff98cc3-6ba7-4b7b-a879-2e66d489b832" />
@@ -230,8 +408,8 @@
 
 > 결과적으로, PR 당 리뷰 사이클이 더 예측 가능해졌고, 품질 기준을 팀 전체에 일관되게 적용할 수 있었습니다.
 
-
-
+<br/>
+<br/>
 
 ## Development
 
