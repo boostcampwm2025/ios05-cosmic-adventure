@@ -46,19 +46,55 @@ final class CharacterController {
         if playerNode != nil { return }
         guard let scene else { return }
         
-        let player = SKSpriteNode(imageNamed: characterType.name)
+        let player = makePlayerNode(
+            initialPosition: initialPosition,
+            size: size,
+            characterType: characterType
+        )
+        let body = makePlayerPhysicsBody(for: player)
+        configurePhysicsMasks(for: body)
+        body.velocity = .zero
+        player.physicsBody = body
+        
+        scene.addChild(player)
+        self.playerNode = player
+        attachPhysicsCore(to: player)
+    }
+
+    private func makePlayerNode(
+        initialPosition: CGPoint,
+        size: CGSize,
+        characterType: CharacterAvatar
+    ) -> SKSpriteNode {
+        let texture = SKTexture(imageNamed: characterType.name)
+        let player = SKSpriteNode(texture: texture)
         player.name = "\(L10N.Game.NodeName.player)_\(playerRole.rawValue)"
-        player.size = size
+        let textureSize = texture.size()
+        let targetHeight = size.height
+        let scaledWidth = textureSize.height == 0 ? size.width : (textureSize.width * (targetHeight / textureSize.height))
+        player.size = CGSize(width: scaledWidth, height: targetHeight)
         player.position = initialPosition
         
         if playerRole == .remote {
             player.alpha = 0.4
         }
         
-        let body = SKPhysicsBody(rectangleOf: size)
+        return player
+    }
+
+    private func makePlayerPhysicsBody(for player: SKSpriteNode) -> SKPhysicsBody {
+        let bodySize = CGSize(width: player.size.width * 0.3, height: player.size.height * 0.9)
+        let bodyOffset = CGPoint(x: 0, y: -player.size.height * 0.05)
+        let body = SKPhysicsBody(rectangleOf: bodySize, center: bodyOffset)
+        let oldArea = max(player.size.width * player.size.height, 0.0001)
+        let newArea = max(bodySize.width * bodySize.height, 0.0001)
+        body.mass *= (oldArea / newArea)
         body.isDynamic = true
         body.allowsRotation = false
-        
+        return body
+    }
+
+    private func configurePhysicsMasks(for body: SKPhysicsBody) {
         if playerRole == .local {
             body.categoryBitMask = PhysicsCategory.playerMe.rawValue
             
@@ -76,14 +112,9 @@ final class CharacterController {
             let contactsWith: PhysicsCategory = [.groundOther]
             body.contactTestBitMask = contactsWith.rawValue
         }
-        
-        body.velocity = .zero
-        player.physicsBody = body
-        
-        scene.addChild(player)
-        self.playerNode = player
-        
-        // 커스텀 물리 엔진 연결
+    }
+
+    private func attachPhysicsCore(to player: SKSpriteNode) {
         if let playerBody = player.physicsBody {
             physicsCore = PhysicsCore(body: playerBody)
             playerBody.usesPreciseCollisionDetection = true
