@@ -20,13 +20,7 @@ public final class VideoManager {
     private var isLowBitrateMode: Bool = false
 
     lazy var remoteDisplayLayer: AVSampleBufferDisplayLayer = {
-        let layer = AVSampleBufferDisplayLayer()
-        let size = configuration.displaySize
-
-        layer.frame = CGRect(x: 0, y: 0, width: size, height: size)
-        layer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
-        layer.videoGravity = .resizeAspectFill
-        return layer
+        createCleanDisplayLayer()
     }()
 
     private(set) var remotePlayer: PlayerInfo?
@@ -53,6 +47,16 @@ public final class VideoManager {
     deinit {
         stopLatencyMonitoring()
         videoEncoder?.invalidate()
+    }
+
+    private func createCleanDisplayLayer() -> AVSampleBufferDisplayLayer {
+        let layer = AVSampleBufferDisplayLayer()
+        let size = configuration.displaySize
+
+        layer.frame = CGRect(x: 0, y: 0, width: size, height: size)
+        layer.bounds = CGRect(x: 0, y: 0, width: size, height: size)
+        layer.videoGravity = .resizeAspectFill
+        return layer
     }
 
     private func setupEncoder() {
@@ -140,22 +144,35 @@ public final class VideoManager {
         videoEncoder?.encode(pixelBuffer: pixelBuffer)
     }
 
-    func reset(includePeer: Bool = false) {
-        DispatchQueue.main.async { [weak self] in
-            if #available(iOS 18.0, *) {
-                self?.remoteDisplayLayer.sampleBufferRenderer.flush()
-            } else {
-                self?.remoteDisplayLayer.flush()
-            }
-            self?.remoteDisplayLayer.controlTimebase = nil
-        }
+    func reset() {
+        videoEncoder?.invalidate()
+        videoEncoder = nil
 
         videoDecoder?.reset()
-        isLowBitrateMode = false
-        
-        if includePeer {
-            self.remotePlayer = nil
+
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            let oldLayer = remoteDisplayLayer
+            oldLayer.removeFromSuperlayer()
+
+            if #available(iOS 18.0, *) {
+                oldLayer.sampleBufferRenderer.flush()
+                oldLayer.sampleBufferRenderer.stopRequestingMediaData()
+            } else {
+                oldLayer.flushAndRemoveImage()
+                oldLayer.stopRequestingMediaData()
+            }
+
+            oldLayer.controlTimebase = nil
+
+            let newLayer = self.createCleanDisplayLayer()
+            remoteDisplayLayer = newLayer
+            videoDecoder?.displayLayer = newLayer
         }
+
+        isLowBitrateMode = false
+        self.remotePlayer = nil
 
         setupEncoder()
     }
@@ -164,7 +181,6 @@ public final class VideoManager {
         self.networkMode = isNetwork ? .remote : .local
         logger.info("네트워크 모드 변경: \(self.networkMode == .remote ? "Remote" : "Local")")
 
-        reset(includePeer: false)
         checkNetworkHealth()
     }
 }
