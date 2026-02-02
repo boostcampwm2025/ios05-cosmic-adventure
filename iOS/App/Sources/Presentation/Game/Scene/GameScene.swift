@@ -26,7 +26,6 @@ final class GameScene: SKScene {
     
     private let outOfBoundsMargin: CGFloat = 100
     private var lastUpdateTime: TimeInterval = 0
-    private var respawnController: RespawnController?
 
     private var goalPlatformIndex: Int
 
@@ -68,10 +67,6 @@ final class GameScene: SKScene {
         self.cameraSystem = cameraSystem
 
         // 리스폰 버튼 설정
-        let respawnController = RespawnController()
-        respawnController.setup(in: self, cameraNode: cameraSystem.cameraNode)
-        self.respawnController = respawnController
-        
         // 맵 설정
         platformController = PlatformController(scene: self)
         platformController?.setupInitialPlatforms(goalIndex: goalPlatformIndex)
@@ -171,9 +166,6 @@ final class GameScene: SKScene {
         
         // 리스폰 적용 여부 판단
         handleRespawnRequest(gameplayManager: gameplayManager)
-        
-        // 리스폰 버튼 위치조정
-        respawnController?.update(sceneSize: size)
         
         // 상대 플레이어 화면 좌표 업데이트
         updateRemotePlayerScreenPosition()
@@ -300,17 +292,6 @@ final class GameScene: SKScene {
         return UUID(uuidString: uuidString)
     }
 
-}
-
-extension GameScene {
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        guard let respawnController else { return }
-        if respawnController.handleTouch(touch, in: self) {
-            gameplayManager?.requestRespawn(.fell, for: localPlayerID)
-            respawnController.resetAfterAction(sceneSize: size)
-        }
-    }
 }
 
 extension GameScene: SKPhysicsContactDelegate {

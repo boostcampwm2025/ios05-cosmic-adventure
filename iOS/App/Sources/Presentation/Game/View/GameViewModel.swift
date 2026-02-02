@@ -162,6 +162,11 @@ final class GameViewModel {
         gameplayManager.applyGameEnd(.quit)
     }
 
+    func requestRespawn() {
+        guard endReason == nil else { return }
+        gameplayManager.requestRespawn(.fell, for: localPlayerID)
+    }
+
     func updateLocalGameEndDisplay(_ reason: GameEndReason) {
         guard gameEndDisplay == nil else { return }
         let opponentId = remotePlayerId

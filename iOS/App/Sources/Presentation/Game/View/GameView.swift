@@ -80,7 +80,10 @@ struct GameView: View {
             HStack {
                 gameHUD
                 Spacer()
-                menuButton
+                HStack(spacing: 12) {
+                    respawnButton
+                    menuButton
+                }
             }
             .padding(.horizontal, 16)
             .padding(.top, 8)
@@ -186,6 +189,28 @@ struct GameView: View {
             isMenuPresented = true
         } label: {
             Image(systemName: "gearshape")
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(width: 44, height: 44)
+                .background(
+                    LinearGradient(
+                        colors: [
+                            AppAsset.Color.iconGradientStart.swiftUIColor,
+                            AppAsset.Color.iconGradientEnd.swiftUIColor
+                        ],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .clipShape(Circle())
+        }
+    }
+
+    private var respawnButton: some View {
+        Button {
+            viewModel.requestRespawn()
+        } label: {
+            Image(systemName: "arrow.counterclockwise")
                 .font(.system(size: 18, weight: .semibold))
                 .foregroundStyle(.white)
                 .frame(width: 44, height: 44)
