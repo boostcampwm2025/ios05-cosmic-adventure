@@ -8,4 +8,5 @@
 public enum GameEndReason: Hashable {
     case timeout
     case reachedFinish
+    case quit
 }

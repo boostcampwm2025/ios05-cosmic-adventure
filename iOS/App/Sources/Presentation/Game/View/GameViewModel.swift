@@ -150,6 +150,10 @@ final class GameViewModel {
         multiplayerIO?.notifyGameEnded(reason)
     }
 
+    func requestQuitGame() {
+        gameplayManager.applyGameEnd(.quit)
+    }
+
     func updateLocalGameEndDisplay(_ reason: GameEndReason) {
         guard gameEndDisplay == nil else { return }
         let opponentId = remotePlayerId
@@ -159,14 +163,25 @@ final class GameViewModel {
             winnerId = localPlayerID
         case .timeout:
             winnerId = opponentId
+        case .quit:
+            winnerId = nil
+        }
+        let winnerName: String?
+        let opponentName: String?
+        if reason == .quit {
+            winnerName = nil
+            opponentName = nil
+        } else {
+            winnerName = winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName
+            opponentName = winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
         }
         gameEndDisplay = GameEndDisplay(
             reason: reason,
             winnerId: winnerId,
             localElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
             winnerElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
-            winnerName: winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName,
-            opponentName: winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
+            winnerName: winnerName,
+            opponentName: opponentName
         )
     }
 
@@ -195,19 +210,21 @@ final class GameViewModel {
                 return L10N.Game.End.loseTitle
             }
             return L10N.Game.End.finishTitle
+        case .quit:
+            return L10N.Game.End.quitTitle
         }
     }
 
     var gameEndWinnerText: String? {
         guard let display = gameEndDisplay else { return nil }
-        if display.reason == .timeout { return nil }
+        if display.reason == .timeout || display.reason == .quit { return nil }
         guard let winnerName = display.winnerName else { return nil }
         return "\(L10N.Game.End.winnerPrefix): \(winnerName)"
     }
 
     var gameEndOpponentText: String? {
         guard let display = gameEndDisplay else { return nil }
-        if display.reason == .timeout { return nil }
+        if display.reason == .timeout || display.reason == .quit { return nil }
         guard let opponentName = display.opponentName else { return nil }
         return "\(L10N.Game.End.opponentPrefix): \(opponentName)"
     }
@@ -215,7 +232,7 @@ final class GameViewModel {
     var gameEndOpponentElapsedText: String? {
         guard let display = gameEndDisplay,
               let winnerElapsed = display.winnerElapsedSeconds else { return nil }
-        if display.reason == .timeout { return nil }
+        if display.reason == .timeout || display.reason == .quit { return nil }
         return String(format: L10N.Game.End.winnerElapsedFormat, winnerElapsed)
     }
 
@@ -225,6 +242,8 @@ final class GameViewModel {
             return .timeout
         case .reachedFinish:
             return .reachedFinish
+        case .quit:
+            return .quit
         }
     }
 
