@@ -39,6 +39,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
     public var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
+    public var onDisconnected: (() -> Void)?                 // 웹소켓에서도 비디오/게임 세션이 분리될 때 사용
 
     // MARK: - Initialization
     

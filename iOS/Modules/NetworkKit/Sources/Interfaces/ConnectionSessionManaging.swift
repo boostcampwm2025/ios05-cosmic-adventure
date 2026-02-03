@@ -23,6 +23,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     var onReadyStatusReceived: ((UUID) -> Void)? { get set }
     var onVideoReceived: ((UUID, Data) -> Void)? { get set }
     var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)? { get set }
+    var onDisconnected: (() -> Void)? { get set }
 
     // MARK: - action
 

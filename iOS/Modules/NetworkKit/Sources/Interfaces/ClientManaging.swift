@@ -18,6 +18,7 @@ public protocol ClientManaging {
     var onPermissionDeniedOrFailed: ((Error) -> Void)? { get set }
     var onPeersUpdated: (([NetworkPeer]) -> Void)? { get set }
     var onDataReceived: ((Data, NWConnection) -> Void)? { get set }
+    var onConnectionFailed: ((NWConnection) -> Void)? { get set }
 
     func startBrowsing()
     func stopBrowsing()
