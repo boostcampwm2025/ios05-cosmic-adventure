@@ -16,12 +16,12 @@ enum AppRoute: Hashable {
     case dashboard
 
     // Game
-    case gameReady(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool)
-    case game(PlayerInfo?, isNetwork: Bool = false) // TODO: 나중에 이름 변경
     case operationGuide(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool)
     case victoryGuide(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool)
-    case result
-    
+    case gameReady(localPlayer: PlayerInfo, remotePlayer: PlayerInfo?, isNetwork: Bool)
+    case game(PlayerInfo?, isNetwork: Bool = false) // TODO: 나중에 이름 변경
+    case gameResult(display: GameViewModel.GameEndDisplay, localPlayer: PlayerInfo, remotePlayer: PlayerInfo?)
+
     // Test
     case testGamePreview
 }

@@ -147,8 +147,12 @@ enum L10N {
 
         enum End {
             static let timeoutTitle: String = "시간 종료"
-            static let winTitle: String = "승리"
-            static let loseTitle: String = "패배"
+            static let successTitle: String = "성공!"
+            static let failTitle: String = "실패!"
+            static let winTitle: String = "승리!"
+            static let loseTitle: String = "패배!"
+            static let decisiveWinTitle: String = "판정승리!"
+            static let elapsedTime: String = "소요시간"
             static let finishTitle: String = "결승 도착"
             static let quitTitle: String = "게임 종료"
             static let backToLobby: LocalizedStringKey = "로비로 돌아가기"

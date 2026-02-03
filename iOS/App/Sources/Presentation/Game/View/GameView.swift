@@ -64,6 +64,11 @@ struct GameView: View {
                     .zIndex(1)
             }
 
+            if isMenuPresented {
+                menuOverlay
+                    .zIndex(10)
+            }
+
             facePreviewOverlay
                 .zIndex(1)
 
@@ -112,6 +117,14 @@ struct GameView: View {
             viewModel.updateLocalGameEndDisplay(reason)
             viewModel.notifyGameEnded(reason)
             viewModel.stop()
+
+            if let display = viewModel.gameEndDisplay {
+                router.push(.gameResult(
+                    display: display,
+                    localPlayer: viewModel.localPlayer,
+                    remotePlayer: viewModel.remotePlayer
+                ))
+            }
         }
         .navigationBarBackButtonHidden(true)
     }

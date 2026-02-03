@@ -128,9 +128,8 @@ struct RootView: View {
             VictoryGuideView(localPlayer: local,
                              remotePlayer: remote,
                              isNetwork: isNetwork)
-        case .result:
-            // TODO: ResultView 연결
-            EmptyView()
+        case .gameResult(let display, let localPlayer, let remotePlayer):
+            GameResultView(display: display, localPlayer: localPlayer, remotePlayer: remotePlayer)
         case .testGamePreview:
             TestGamePreviewView(gameConfig: UserDefaultsList.Settings())
         }
