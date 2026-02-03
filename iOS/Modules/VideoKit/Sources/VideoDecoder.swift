@@ -12,7 +12,7 @@ import os
 final public class VideoDecoder: VideoDecoding {
 
     private var formatDescription: CMVideoFormatDescription?
-    public var displayLayer: AVSampleBufferDisplayLayer?
+    public var output: ((CMSampleBuffer) -> Void)?
 
     private var lastSps: Data?
     private var lastPps: Data?
@@ -30,27 +30,6 @@ final public class VideoDecoder: VideoDecoding {
             self?.formatDescription = nil
             self?.lastSps = nil
             self?.lastPps = nil
-
-            DispatchQueue.main.async { [weak self] in
-                guard let layer = self?.displayLayer else { return }
-
-                if #available(iOS 18.0, *) {
-                    layer.sampleBufferRenderer.flush()
-                    layer.sampleBufferRenderer.stopRequestingMediaData()
-                } else {
-                    layer.flushAndRemoveImage()
-                    layer.stopRequestingMediaData()
-                }
-                
-                layer.controlTimebase = nil
-                layer.setNeedsDisplay()
-            }
-        }
-    }
-
-    public func setDisplayLayer(_ layer: AVSampleBufferDisplayLayer?) {
-        decodeQueue.async { [weak self] in
-            self?.displayLayer = layer
         }
     }
 
@@ -115,7 +94,6 @@ final public class VideoDecoder: VideoDecoding {
             // 프레임 데이터
             // type == 5: I-Frame (키프레임, 독립적)
             // type == 1: P-Frame (이전 프레임 참조)
-            guard let displayLayer = displayLayer else { return }
 
             if let sps = lastSps,
                let pps = lastPps {
@@ -134,7 +112,7 @@ final public class VideoDecoder: VideoDecoding {
 
                 if let blockBuffer = createBlockBuffer(from: videoSlices),
                    let sampleBuffer = createSampleBuffer(from: blockBuffer, format: formatDesc) {
-                    enqueue(sampleBuffer, to: displayLayer)
+                    output?(sampleBuffer)
                 }
             }
         }
@@ -246,59 +224,5 @@ final public class VideoDecoder: VideoDecoding {
             return buffer
         }
         return nil
-    }
-
-    private func enqueue(_ sampleBuffer: CMSampleBuffer, to layer: AVSampleBufferDisplayLayer) {
-        DispatchQueue.main.async {
-            // 레이어가 view hierarchy에 있는지 확인
-            guard layer.superlayer != nil else { return }
-
-            let currentStatus: AVQueuedSampleBufferRenderingStatus
-            if #available(iOS 18.0, *) {
-                currentStatus = layer.sampleBufferRenderer.status
-            } else {
-                currentStatus = layer.status
-            }
-
-            // Failed 상태 복구
-            if currentStatus == .failed {
-                if #available(iOS 18.0, *) {
-                    layer.sampleBufferRenderer.flush()
-                } else {
-                    layer.flush()
-                }
-
-                var tb: CMTimebase?
-                CMTimebaseCreateWithSourceClock(allocator: nil,
-                                                sourceClock: CMClockGetHostTimeClock(),
-                                                timebaseOut: &tb)
-                layer.controlTimebase = tb
-                if let timebase = tb {
-                    CMTimebaseSetRate(timebase, rate: 1.0)
-                }
-            }
-
-            // Timebase 설정
-            if layer.controlTimebase == nil {
-                var tb: CMTimebase?
-                CMTimebaseCreateWithSourceClock(allocator: nil,
-                                                sourceClock: CMClockGetHostTimeClock(),
-                                                timebaseOut: &tb)
-                layer.controlTimebase = tb
-
-            }
-            
-            // 시계가 정상 속도(1.0)로 흐름
-            if let timebase = layer.controlTimebase {
-                CMTimebaseSetRate(timebase, rate: 1.0)
-            }
-
-            // 샘플 버퍼 투입
-            if #available(iOS 18.0, *) {
-                layer.sampleBufferRenderer.enqueue(sampleBuffer)
-            } else {
-                layer.enqueue(sampleBuffer)
-            }
-        }
     }
 }
