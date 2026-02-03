@@ -29,6 +29,7 @@ final class GameReadyViewModel {
 
     private(set) var isMeReady: Bool = false
     private(set) var isPeerReady: Bool = false
+    private(set) var scheduledStartAt: TimeInterval? = nil
 
     private(set) var message: String = ""
     private(set) var progress: Double = 0.0
@@ -36,6 +37,9 @@ final class GameReadyViewModel {
     private(set) var networkMode: NetworkMode
     
     let appEntryManager: AppEntryManager
+
+    private var hasSentStartSignal: Bool = false
+    private let decoder = JSONDecoder()
 
     init(
         localPlayer: PlayerInfo,
@@ -78,6 +82,7 @@ final class GameReadyViewModel {
                 try? await Task.sleep(for: .seconds(3))
                 self.isPeerReady = true // 3초 뒤 상대도 Ready
                 self.updateProgressUI() // 둘 다 Ready
+                self.evaluateStartIfReady()
             }
         } else {
             startReadySignalTimer()
@@ -132,6 +137,15 @@ final class GameReadyViewModel {
                 self.handlePeerReady()
             }
         }
+
+        networkSessionManager.onInputReceived = { [weak self] senderId, payload in
+            guard let self else { return }
+            guard let remoteId = remotePlayer?.id,
+                  senderId == remoteId else { return }
+            Task { @MainActor in
+                self.handleStartSyncPayload(payload)
+            }
+        }
     }
 
     private func setupWebSocketCallbacks() {
@@ -142,6 +156,15 @@ final class GameReadyViewModel {
 
             Task { @MainActor in
                 self.handlePeerReady()
+            }
+        }
+
+        webSocketSessionManager?.onInputReceived = { [weak self] senderId, payload in
+            guard let self else { return }
+            guard let remoteId = self.remotePlayer?.id,
+                  senderId == remoteId else { return }
+            Task { @MainActor in
+                self.handleStartSyncPayload(payload)
             }
         }
     }
@@ -163,6 +186,51 @@ final class GameReadyViewModel {
 
         isPeerReady = true
         updateProgressUI()
+        evaluateStartIfReady()
+    }
+
+    private func evaluateStartIfReady() {
+        if remotePlayer == nil {
+            scheduleLocalStart(after: 0.0)
+            return
+        }
+
+        guard checkAllReady() else { return }
+        guard scheduledStartAt == nil else { return }
+
+        if isHost() && !hasSentStartSignal {
+            hasSentStartSignal = true
+            let startAt = Date().timeIntervalSince1970 + 2.0
+            scheduledStartAt = startAt
+            sendStartSignal(startAt: startAt)
+        }
+    }
+
+    private func handleStartSyncPayload(_ payload: Data) {
+        guard scheduledStartAt == nil else { return }
+        guard let dto = try? decoder.decode(NetworkGameStartSyncDTO.self, from: payload) else { return }
+        scheduledStartAt = dto.startAt
+    }
+
+    private func scheduleLocalStart(after delay: TimeInterval) {
+        guard scheduledStartAt == nil else { return }
+        scheduledStartAt = Date().timeIntervalSince1970 + delay
+    }
+
+    private func isHost() -> Bool {
+        guard let remoteId = remotePlayer?.id else { return true }
+        return localPlayer.id.uuidString < remoteId.uuidString
+    }
+
+    private func sendStartSignal(startAt: TimeInterval) {
+        guard let remoteId = remotePlayer?.id else { return }
+        let dto = NetworkGameStartSyncDTO(startAt: startAt)
+        switch networkMode {
+        case .local:
+            networkSessionManager.sendGameData(dto, to: remoteId)
+        case .remote:
+            webSocketSessionManager?.sendGameData(dto, to: remoteId)
+        }
     }
 
     private func updateProgressUI() {

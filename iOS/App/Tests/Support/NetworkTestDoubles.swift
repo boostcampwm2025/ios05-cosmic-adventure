@@ -25,7 +25,7 @@ final class MockConnectionSessionManager: ConnectionSessionManaging {
     func acceptInvite(from targetId: UUID) {}
     func declineInvite(from targetId: UUID) {}
     func cancelInvite(to targetId: UUID) {}
-    func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {}
+    func sendGameData<T: Codable>(_ data: T, to targetId: UUID?) {}
     func sendReadyStatus(to targetId: UUID) {}
     func sendVideo(_ data: Data, to targetId: UUID?) {}
     func getLatency(for playerId: UUID) -> Double? { nil }
@@ -65,7 +65,7 @@ final class MockNetworkSessionManager: NetworkSessionManaging {
     func acceptInvite(from targetId: UUID) { acceptInviteCalls.append(targetId) }
     func declineInvite(from targetId: UUID) { declineInviteCalls.append(targetId) }
     func cancelInvite(to targetId: UUID) { cancelInviteCalls.append(targetId) }
-    func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {}
+    func sendGameData<T: Codable>(_ data: T, to targetId: UUID?) {}
     func sendReadyStatus(to targetId: UUID) {}
     func sendVideo(_ data: Data, to targetId: UUID?) {}
     func getLatency(for playerId: UUID) -> Double? { nil }
@@ -109,7 +109,7 @@ final class MockWebSocketSessionManager: WebSocketSessionManaging {
     func acceptInvite(from targetId: UUID) { acceptInviteCalls.append(targetId) }
     func declineInvite(from targetId: UUID) { declineInviteCalls.append(targetId) }
     func cancelInvite(to targetId: UUID) { cancelInviteCalls.append(targetId) }
-    func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {}
+    func sendGameData<T: Codable>(_ data: T, to targetId: UUID?) {}
     func sendReadyStatus(to targetId: UUID) {}
     func sendVideo(_ data: Data, to targetId: UUID?) {}
     func getLatency(for playerId: UUID) -> Double? { nil }

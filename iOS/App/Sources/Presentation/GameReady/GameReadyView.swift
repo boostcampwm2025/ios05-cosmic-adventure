@@ -12,6 +12,8 @@ struct GameReadyView: View {
     @Environment(AppEntryManager.self) private var appEntryManager
     @State private var viewModel: GameReadyViewModel
     @State private var isAnimating = false
+    @State private var didScheduleStart = false
+    @State private var startTask: Task<Void, Never>?
 
     init(viewModel: GameReadyViewModel) {
         _viewModel = State(initialValue: viewModel)
@@ -46,7 +48,6 @@ struct GameReadyView: View {
                         .padding(.horizontal, 60)
 
                     Text(viewModel.message)
-                        .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
                         .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 14))
                         .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
                 }
@@ -58,28 +59,33 @@ struct GameReadyView: View {
         .onAppear {
             isAnimating = true
             viewModel.setMyReady()
-
-            if viewModel.checkAllReady() {
-                attemptStart()
-            }
+            attemptStart()
         }
         .onDisappear {
             viewModel.stopTimer()
+            startTask?.cancel()
         }
         .onChange(of: viewModel.isMeReady) { _, _ in attemptStart() }
         .onChange(of: viewModel.isPeerReady) { _, _ in attemptStart() }
+        .onChange(of: viewModel.scheduledStartAt) { _, _ in attemptStart() }
     }
 
-     private func attemptStart() {
-         if viewModel.checkAllReady() {
-             DispatchQueue.main.asyncAfter(deadline: .now() + 3.0) {
-                 Task { @MainActor in
-                     guard await appEntryManager.canEnterGame() else { return }
-                     router.push(.game(viewModel.remotePlayer, isNetwork: viewModel.isNetwork))
-                 }
-             }
-         }
-     }
+    private func attemptStart() {
+        guard let startAt = viewModel.scheduledStartAt else { return }
+        guard didScheduleStart == false else { return }
+        didScheduleStart = true
+        let delay = max(0, startAt - Date().timeIntervalSince1970)
+        
+        startTask = Task { @MainActor in
+            try? await Task.sleep(for: .seconds(delay))
+            guard !Task.isCancelled else { return }
+            guard await appEntryManager.canEnterGame() else {
+                didScheduleStart = false
+                return
+            }
+            router.push(.game(viewModel.remotePlayer, isNetwork: viewModel.isNetwork))
+        }
+    }
 }
 
 // MARK: - Subviews
