@@ -80,7 +80,63 @@ public final class VideoManager {
 
     private func setupDecoder() {
         self.videoDecoder = VideoDecoder()
-        self.videoDecoder?.setDisplayLayer(self.remoteDisplayLayer)
+
+        self.videoDecoder?.output = { [weak self] sampleBuffer in
+            self?.enqueueToRemoteLayer(sampleBuffer)
+        }
+    }
+
+    private func enqueueToRemoteLayer(_ sampleBuffer: CMSampleBuffer) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self = self,
+                  self.remoteDisplayLayer.superlayer != nil else { return }
+
+            let layer = self.remoteDisplayLayer
+
+            let status: AVQueuedSampleBufferRenderingStatus = {
+                if #available(iOS 18.0, *) {
+                    return layer.sampleBufferRenderer.status
+                } else {
+                    return layer.status
+                }
+            }()
+
+            // Failed 상태 복구 및 타임베이스 설정
+            if status == .failed {
+                self.repairLayer(layer)
+            }
+
+            if layer.controlTimebase == nil {
+                self.setupTimebase(for: layer)
+            }
+
+            // 최종 투입
+            if #available(iOS 18.0, *) {
+                layer.sampleBufferRenderer.enqueue(sampleBuffer)
+            } else {
+                layer.enqueue(sampleBuffer)
+            }
+        }
+    }
+
+    private func repairLayer(_ layer: AVSampleBufferDisplayLayer) {
+        if #available(iOS 18.0, *) {
+            layer.sampleBufferRenderer.flush()
+        } else {
+            layer.flush()
+        }
+        setupTimebase(for: layer)
+    }
+
+    private func setupTimebase(for layer: AVSampleBufferDisplayLayer) {
+        var tb: CMTimebase?
+        CMTimebaseCreateWithSourceClock(allocator: nil,
+                                        sourceClock: CMClockGetHostTimeClock(),
+                                        timebaseOut: &tb)
+        layer.controlTimebase = tb
+        if let timebase = tb {
+            CMTimebaseSetRate(timebase, rate: 1.0)
+        }
     }
 
     private func setupVideoDataCallbacks() {
@@ -168,12 +224,10 @@ public final class VideoManager {
 
             let newLayer = self.createCleanDisplayLayer()
             remoteDisplayLayer = newLayer
-            videoDecoder?.setDisplayLayer(newLayer)
         }
 
         isLowBitrateMode = false
         self.remotePlayer = nil
-
         setupEncoder()
     }
 
