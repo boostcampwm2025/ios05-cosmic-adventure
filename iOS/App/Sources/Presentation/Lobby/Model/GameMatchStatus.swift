@@ -11,11 +11,11 @@ enum GameMatchStatus: Equatable {
     case idle
     case soloGame
 
-    case readyToSend(peer: PlayerInfo)
-    case sendingRequest(peer: PlayerInfo)
-    case receivedInvite(peer: PlayerInfo, wasSoloGame: Bool = false)
-    case requestDeclined(peer: PlayerInfo)
-    case gameReady(peer: PlayerInfo)
+    case readyToSend(player: PlayerInfo)
+    case sendingRequest(player: PlayerInfo)
+    case receivedInvite(player: PlayerInfo, wasSoloGame: Bool = false)
+    case requestDeclined(player: PlayerInfo)
+    case gameReady(player: PlayerInfo)
 
     mutating func reset() {
         self = .idle
@@ -25,25 +25,25 @@ enum GameMatchStatus: Equatable {
         self = .soloGame
     }
 
-    mutating func select(_ peer: PlayerInfo) {
-        self = .readyToSend(peer: peer)
+    mutating func select(_ player: PlayerInfo) {
+        self = .readyToSend(player: player)
     }
 
     mutating func sendRequest() {
-        if case .readyToSend(let peer) = self {
-            self = .sendingRequest(peer: peer)
+        if case .readyToSend(let player) = self {
+            self = .sendingRequest(player: player)
         }
     }
 
-    mutating func requestDeclined(by peer: PlayerInfo) {
-        self = .requestDeclined(peer: peer)
+    mutating func requestDeclined(by player: PlayerInfo) {
+        self = .requestDeclined(player: player)
     }
 
-    mutating func receiveInvite(from peer: PlayerInfo, wasSoloGame: Bool = false) {
-        self = .receivedInvite(peer: peer, wasSoloGame: wasSoloGame)
+    mutating func receiveInvite(from player: PlayerInfo, wasSoloGame: Bool = false) {
+        self = .receivedInvite(player: player, wasSoloGame: wasSoloGame)
     }
 
-    mutating func setGameReady(with peer: PlayerInfo) {
-        self = .gameReady(peer: peer)
+    mutating func setGameReady(with player: PlayerInfo) {
+        self = .gameReady(player: player)
     }
 }

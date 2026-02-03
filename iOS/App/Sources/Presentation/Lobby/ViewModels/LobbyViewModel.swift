@@ -36,7 +36,7 @@ final class LobbyViewModel {
     }
 
     var remotePlayers: [PlayerInfo] = []
-    var selectedPeerID: UUID?
+    var selectedPlayerID: UUID?
 
     // Network State
     var isConnected = false
@@ -84,7 +84,7 @@ final class LobbyViewModel {
         connectivityMonitor.isConnected
     }
 
-    var orderedPeers: [PlayerInfo] {
+    var orderedPlayers: [PlayerInfo] {
         remotePlayers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
             case let (l?, r?): return l < r
@@ -111,7 +111,7 @@ final class LobbyViewModel {
         self.webSocketSessionManager = webSocketSessionManager
         self.appEntryManager = appEntryManager
         self.player = player
-        self.selectedPeerID = nil
+        self.selectedPlayerID = nil
     }
 
     func setup() {
@@ -224,12 +224,12 @@ extension LobbyViewModel {
     }
 }
 
-// MARK: - NetworkPeer Management
+// MARK: - Player Management
 
 extension LobbyViewModel {
-    func selectPeer(_ peer: PlayerInfo) {
-        self.selectedPeerID = peer.id
-        self.matchStatus.select(peer)
+    func selectPlayer(_ player: PlayerInfo) {
+        self.selectedPlayerID = player.id
+        self.matchStatus.select(player)
     }
 
     func updateProximity(for playerID: UUID, value: Double) {
@@ -262,7 +262,7 @@ extension LobbyViewModel {
 
     func resetToIdle() {
         matchStatus.reset()
-        selectedPeerID = nil
+        selectedPlayerID = nil
     }
 }
 
@@ -270,48 +270,48 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func handleInviteReceived(from senderId: UUID) {
-        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else {
-            logger.warning("초대한 피어를 찾을 수 없음: \(senderId.uuidString)")
+        guard let player = remotePlayers.first(where: { $0.id == senderId }) else {
+            logger.warning("초대한 플레이어를 찾을 수 없음: \(senderId.uuidString)")
             return
         }
         self.isShowingNotification = false
 
         if !inviteNotifications.contains(where: { $0.sender.id == senderId }) {
-            inviteNotifications.insert(InviteNotification(sender: peer), at: 0)
+            inviteNotifications.insert(InviteNotification(sender: player), at: 0)
         }
 
         switch matchStatus {
         case .idle:
-            matchStatus.receiveInvite(from: peer, wasSoloGame: false)
+            matchStatus.receiveInvite(from: player, wasSoloGame: false)
         case .soloGame:
             // TODO: - 알림 권한 사전 확인 필요, 권한이 없다면 초대를 수신받을 수 없음
-            NotificationManager.shared.sendInviteNotification(from: peer)
-            matchStatus.receiveInvite(from: peer, wasSoloGame: true)
+            NotificationManager.shared.sendInviteNotification(from: player)
+            matchStatus.receiveInvite(from: player, wasSoloGame: true)
         default:
             break
         }
     }
 
     func handleInviteAccepted(from senderId: UUID) {
-        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else { return }
+        guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
-            matchStatus.setGameReady(with: peer)
+            matchStatus.setGameReady(with: player)
         }
     }
 
     func handleInviteDeclined(from senderId: UUID) {
-        guard let peer = remotePlayers.first(where: { $0.id == senderId }) else { return }
+        guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
-            matchStatus.requestDeclined(by: peer)
+            matchStatus.requestDeclined(by: player)
         }
     }
 
     func handleInviteCancelled(from senderId: UUID) {
         inviteNotifications.removeAll { $0.sender.id == senderId }
 
-        if case .receivedInvite(let peer, let wasSoloGame) = matchStatus, peer.id == senderId {
+        if case .receivedInvite(let player, let wasSoloGame) = matchStatus, player.id == senderId {
             if wasSoloGame {
                 setSoloMode()
             } else {
@@ -325,26 +325,26 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func sendInvite() {
-        guard case .readyToSend(let peer) = matchStatus else { return }
+        guard case .readyToSend(let player) = matchStatus else { return }
         matchStatus.sendRequest()
 
         switch networkMode {
         case .local:
-            networkSessionManager.sendInvite(to: peer.id)
+            networkSessionManager.sendInvite(to: player.id)
 
         case .remote:
-            webSocketSessionManager?.sendInvite(to: peer.id)
+            webSocketSessionManager?.sendInvite(to: player.id)
         }
     }
 
     func cancelInvite() {
-        if case .sendingRequest(let peer) = matchStatus {
+        if case .sendingRequest(let player) = matchStatus {
             switch networkMode {
             case .local:
-                networkSessionManager.cancelInvite(to: peer.id)
+                networkSessionManager.cancelInvite(to: player.id)
 
             case .remote:
-                webSocketSessionManager?.cancelInvite(to: peer.id)
+                webSocketSessionManager?.cancelInvite(to: player.id)
             }
         }
 
@@ -352,28 +352,28 @@ extension LobbyViewModel {
     }
 
     func acceptInvite() {
-        guard case .receivedInvite(let peer, _) = matchStatus else { return }
+        guard case .receivedInvite(let player, _) = matchStatus else { return }
 
         switch networkMode {
         case .local:
-            networkSessionManager.acceptInvite(from: peer.id)
+            networkSessionManager.acceptInvite(from: player.id)
 
         case .remote:
-            webSocketSessionManager?.acceptInvite(from: peer.id)
+            webSocketSessionManager?.acceptInvite(from: player.id)
         }
 
-        matchStatus.setGameReady(with: peer)
+        matchStatus.setGameReady(with: player)
     }
 
     func declineInvite() {
-        guard case .receivedInvite(let peer, let wasSoloGame) = matchStatus else { return }
+        guard case .receivedInvite(let player, let wasSoloGame) = matchStatus else { return }
 
         switch networkMode {
         case .local:
-            networkSessionManager.declineInvite(from: peer.id)
+            networkSessionManager.declineInvite(from: player.id)
 
         case .remote:
-            webSocketSessionManager?.declineInvite(from: peer.id)
+            webSocketSessionManager?.declineInvite(from: player.id)
         }
 
         if wasSoloGame {
@@ -393,7 +393,7 @@ extension LobbyViewModel {
 extension LobbyViewModel {
     func acceptInviteFromNotification(_ notification: InviteNotification) {
         let wasSoloGame = matchStatus == .soloGame
-        matchStatus = .receivedInvite(peer: notification.sender, wasSoloGame: wasSoloGame)
+        matchStatus = .receivedInvite(player: notification.sender, wasSoloGame: wasSoloGame)
         acceptInvite()
         inviteNotifications.removeAll { $0.id == notification.id }
         isShowingNotification = false
@@ -401,7 +401,7 @@ extension LobbyViewModel {
     
     func declineInviteFromNotification(_ notification: InviteNotification) {
         let wasSoloGame = matchStatus == .soloGame
-        matchStatus = .receivedInvite(peer: notification.sender, wasSoloGame: wasSoloGame)
+        matchStatus = .receivedInvite(player: notification.sender, wasSoloGame: wasSoloGame)
         declineInvite()
         inviteNotifications.removeAll { $0.id == notification.id }
     }
