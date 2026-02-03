@@ -130,6 +130,12 @@ enum L10N {
     }
     
     enum Game {
+        enum Disconnect {
+            static let title: LocalizedStringKey = "연결이 끊어졌어요"
+            static let subtitle: LocalizedStringKey = "연결 문제로 게임을 계속할 수 없어요.\n로비로 돌아가 다시 시도해 주세요."
+            static let returnButton: LocalizedStringKey = "로비로 돌아가기"
+        }
+
         enum Menu {
             static let title: LocalizedStringKey = "메뉴"
             static let quit: LocalizedStringKey = "게임 끝내기"

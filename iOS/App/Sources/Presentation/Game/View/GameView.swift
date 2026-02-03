@@ -61,20 +61,21 @@ struct GameView: View {
                         x: clampX(viewModel.remotePlayerScreenPosition.x),
                         y: clampY(viewModel.remotePlayerScreenPosition.y - size)
                     )
-                    .zIndex(1000)
-            }
-
-            if let reason = viewModel.endReason {
-                gameEndOverlay(reason: reason)
-                    .zIndex(3000)
-            }
-            
-            if isMenuPresented {
-                menuOverlay
-                    .zIndex(2500)
+                    .zIndex(1)
             }
 
             facePreviewOverlay
+                .zIndex(1)
+
+            if let reason = viewModel.endReason {
+                gameEndOverlay(reason: reason)
+                    .zIndex(10)
+            }
+            
+            if viewModel.showDisconnectAlert {
+                disconnectAlertOverlay
+                    .zIndex(10)
+            }
         }
         .safeAreaInset(edge: .top) {
             HStack {
@@ -307,7 +308,7 @@ struct GameView: View {
                 .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
                 .foregroundStyle(.white)
                 .padding(.horizontal, 20)
-                .padding(.vertical, 10)
+                .padding(.vertical, 20)
                 .background(AppAsset.Color.buttonGradientStart.swiftUIColor)
                 .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
             }
@@ -315,5 +316,75 @@ struct GameView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
         .transition(.opacity)
+    }
+
+    // MARK: - Disconnect Alert
+
+    private var disconnectAlertOverlay: some View {
+        ZStack {
+            Color.black.opacity(0.7)
+                .ignoresSafeArea()
+
+            VStack {
+                Spacer()
+                disconnectAlertSheet
+            }
+            .transition(.move(edge: .bottom))
+            .ignoresSafeArea(edges: .bottom)
+            .zIndex(999)
+        }
+    }
+
+    private var disconnectAlertSheet: some View {
+        VStack(spacing: 24) {
+            disconnectAlertHeader
+            disconnectAlertContent
+            disconnectAlertButton
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 40)
+        .background(AppAsset.Color.sheetBackground.swiftUIColor)
+        .clipShape(
+            .rect(
+                topLeadingRadius: 40,
+                bottomLeadingRadius: 0,
+                bottomTrailingRadius: 0,
+                topTrailingRadius: 40
+            )
+        )
+        .shadow(radius: 30)
+    }
+
+    private var disconnectAlertHeader: some View {
+        HStack {
+            Image(systemName: "wifi.exclamationmark")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 30, height: 22)
+            Text(L10N.Game.Disconnect.title)
+                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 24))
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+    }
+
+    private var disconnectAlertContent: some View {
+        Text(L10N.Game.Disconnect.subtitle)
+            .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
+            .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            .multilineTextAlignment(.leading)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, 20)
+    }
+
+    private var disconnectAlertButton: some View {
+        PrimaryGradientButton(
+            title: L10N.Game.Disconnect.returnButton,
+            cornerRadius: 16,
+            verticalPadding: 20
+        ) {
+            router.resetToHome()
+        }
     }
 }
