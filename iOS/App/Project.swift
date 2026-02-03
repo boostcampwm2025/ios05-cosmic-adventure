@@ -48,13 +48,6 @@ let project = Project(
 
                 "UISupportedInterfaceOrientations": .array([
                     .string("UIInterfaceOrientationPortrait"),
-                ]),
-
-                "UISupportedInterfaceOrientations~ipad": .array([
-                    .string("UIInterfaceOrientationPortrait"),
-                    .string("UIInterfaceOrientationPortraitUpsideDown"),
-                    .string("UIInterfaceOrientationLandscapeLeft"),
-                    .string("UIInterfaceOrientationLandscapeRight"),
                 ])
             ]),
             sources: [
@@ -77,6 +70,7 @@ let project = Project(
                     "CODE_SIGN_STYLE": "Automatic",
                     "SUPPORTS_MACCATALYST": "NO",
                     "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
+                    "TARGETED_DEVICE_FAMILY": "1",
                 ],
                 configurations: xconfigExists ? [
                     .debug(name: "Debug", xcconfig: "Environment.xcconfig"),
