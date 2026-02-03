@@ -874,8 +874,6 @@ private extension LobbyView {
 
     // 수락/거절 버튼
     func notificationActionButtons(for notification: InviteNotification) -> some View {
-        let wasSoloGame = viewModel.matchStatus == .soloGame
-
         return HStack(spacing: 8) {
             // 수락 버튼
             PrimaryGradientButton(

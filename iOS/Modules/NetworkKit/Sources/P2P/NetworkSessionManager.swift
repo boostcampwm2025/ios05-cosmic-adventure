@@ -62,51 +62,51 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     }
 
     public convenience init() {
-         self.init(
-             host: HostManager(),
-             client: ClientManager()
-         )
-     }
+        self.init(
+            host: HostManager(),
+            client: ClientManager()
+        )
+    }
 
      // MARK: - Public Methods
 
-    public func activate(channelId: String?, nickname: String) {
-         guard !isActive else { return }
-         isActive = true
+    public func activate(channelId: String?, nickname: String, characterRawValue: String) {
+        guard !isActive else { return }
+        isActive = true
 
-         logger.info("P2P 탐색 시작")
+        logger.info("P2P 탐색 시작")
 
-         myNickname = nickname
-         localSessionId = UUID()
+        myNickname = nickname
+        localSessionId = UUID()
 
-         host.startHosting(nickName: nickname, status: .available, sessionId: localSessionId)
-         client.startBrowsing()
-         startPingTimer()
-     }
+        host.startHosting(nickName: nickname, status: .available, sessionId: localSessionId)
+        client.startBrowsing()
+        startPingTimer()
+    }
 
-     public func deactivate() {
-         guard isActive else { return }
-         isActive = false
+    public func deactivate() {
+        guard isActive else { return }
+        isActive = false
 
-         logger.info("P2P 탐색 종료")
+        logger.info("P2P 탐색 종료")
 
-         host.stopHosting()
-         client.stopBrowsing()
-         stopPingTimer()
+        host.stopHosting()
+        client.stopBrowsing()
+        stopPingTimer()
 
-         nearbyPlayer.removeAll()
-         peerById.removeAll()
-         myNickname = nil
-         activeGameConnection = nil
-         activeVideoConnection = nil
-         activePeerId = nil
-         pendingInviteConnections.removeAll()
+        nearbyPlayer.removeAll()
+        peerById.removeAll()
+        myNickname = nil
+        activeGameConnection = nil
+        activeVideoConnection = nil
+        activePeerId = nil
+        pendingInviteConnections.removeAll()
 
-         hostGranted = nil
-         clientGranted = nil
+        hostGranted = nil
+        clientGranted = nil
 
-         onPermissionResult = nil
-     }
+        onPermissionResult = nil
+    }
 
     public func sendInvite(to targetId: UUID) {
         guard let targetPeer = peerById[targetId] else { return }
@@ -248,7 +248,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
                 } else if peer1.status == .busy && peer2.status == .available {
                     return false
                 } else {
-                    return peer1.name < peer2.name
+                    return peer1.nickname < peer2.nickname
                 }
             }
             self.peerById = Dictionary(uniqueKeysWithValues: self.nearbyPlayer.map { ($0.sessionId, $0) })
