@@ -48,13 +48,6 @@ let project = Project(
 
                 "UISupportedInterfaceOrientations": .array([
                     .string("UIInterfaceOrientationPortrait"),
-                ]),
-
-                "UISupportedInterfaceOrientations~ipad": .array([
-                    .string("UIInterfaceOrientationPortrait"),
-                    .string("UIInterfaceOrientationPortraitUpsideDown"),
-                    .string("UIInterfaceOrientationLandscapeLeft"),
-                    .string("UIInterfaceOrientationLandscapeRight"),
                 ])
             ]),
             sources: [
