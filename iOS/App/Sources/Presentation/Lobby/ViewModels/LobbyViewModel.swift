@@ -84,6 +84,12 @@ final class LobbyViewModel {
         connectivityMonitor.isConnected
     }
 
+    /// 채널 리스트(로고 + 채널 선택) 화면이 표시 중인지 여부.
+    /// LobbyView의 channelListContent 표시 조건과 동일하게 유지해야 한다.
+    var isOnChannelList: Bool {
+        networkMode == .remote && selectedChannelId == nil
+    }
+
     var orderedPlayers: [PlayerInfo] {
         remotePlayers.sorted { lhs, rhs in
             switch (lhs.proximity, rhs.proximity) {
@@ -157,6 +163,9 @@ extension LobbyViewModel {
         isConnectivityResolved = true
         if isConnected {
             networkMode = .remote
+            if selectedChannelId == nil {
+                enterChannelListCleanup()
+            }
         } else {
             networkMode = .local
             selectedChannelId = nil
@@ -172,6 +181,7 @@ extension LobbyViewModel {
         networkMode = mode
         if mode == .remote {
             selectedChannelId = nil
+            enterChannelListCleanup()
         }
         setupExploration()
     }
@@ -199,7 +209,10 @@ extension LobbyViewModel {
                 )
             }
         case .remote:
-            guard let channelId = selectedChannelId else { return }
+            guard let channelId = selectedChannelId else {
+                explorationCoordinator.stopExploration()
+                return
+            }
             explorationCoordinator.updateExploration(
                 mode: .remote,
                 channelId: channelId,
@@ -207,6 +220,40 @@ extension LobbyViewModel {
                 characterRawValue: player.character
             )
         }
+    }
+
+    /// 채널 리스트 화면으로 전환할 때 진행 중인 매치 상태를 정리한다.
+    /// - 보내는 중인 초대는 best-effort로 취소하고, 받은 초대는 best-effort로 거절한다.
+    /// - 양쪽 스택(P2P + WebSocket) 모두에게 시도하되, 해당 플레이어가 스택의 플레이어 목록에
+    ///   존재하는 경우에만 전송하여 잘못된 대상에게 메시지가 가는 것을 방지한다.
+    // TODO: 채널 리스트 전환 시 매치 취소 확인 UI 추가
+    private func enterChannelListCleanup() {
+        switch matchStatus {
+        case .sendingRequest(let player):
+            if networkSessionManager.nearbyPlayer.contains(where: { $0.sessionId == player.id }) {
+                networkSessionManager.cancelInvite(to: player.id)
+            }
+            if webSocketSessionManager?.players.contains(where: { $0.id == player.id }) == true {
+                webSocketSessionManager?.cancelInvite(to: player.id)
+            }
+
+        case .receivedInvite(let player, _):
+            if networkSessionManager.nearbyPlayer.contains(where: { $0.sessionId == player.id }) {
+                networkSessionManager.declineInvite(from: player.id)
+            }
+            if webSocketSessionManager?.players.contains(where: { $0.id == player.id }) == true {
+                webSocketSessionManager?.declineInvite(from: player.id)
+            }
+
+        default:
+            break
+        }
+
+        matchStatus.reset()
+        inviteNotifications.removeAll()
+        isShowingNotification = false
+        selectedPlayerID = nil
+        explorationCoordinator.stopExploration()
     }
 }
 
@@ -220,9 +267,9 @@ extension LobbyViewModel {
     }
 
     func leaveChannel() {
-        explorationCoordinator.stopExploration()
         selectedChannelId = nil
         remotePlayers = []
+        enterChannelListCleanup()
     }
 }
 
@@ -272,6 +319,7 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func handleInviteReceived(from senderId: UUID) {
+        guard !isOnChannelList else { return }
         guard let player = remotePlayers.first(where: { $0.id == senderId }) else {
             logger.warning("초대한 플레이어를 찾을 수 없음: \(senderId.uuidString)")
             return
@@ -295,6 +343,7 @@ extension LobbyViewModel {
     }
 
     func handleInviteAccepted(from senderId: UUID) {
+        guard !isOnChannelList else { return }
         guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
@@ -303,6 +352,7 @@ extension LobbyViewModel {
     }
 
     func handleInviteDeclined(from senderId: UUID) {
+        guard !isOnChannelList else { return }
         guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
         if case .sendingRequest = matchStatus {
@@ -311,6 +361,7 @@ extension LobbyViewModel {
     }
 
     func handleInviteCancelled(from senderId: UUID) {
+        guard !isOnChannelList else { return }
         inviteNotifications.removeAll { $0.sender.id == senderId }
 
         if case .receivedInvite(let player, let wasSoloGame) = matchStatus, player.id == senderId {
@@ -394,6 +445,7 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func acceptInviteFromNotification(_ notification: InviteNotification) {
+        guard !isOnChannelList else { return }
         let wasSoloGame = matchStatus == .soloGame
         matchStatus = .receivedInvite(player: notification.sender, wasSoloGame: wasSoloGame)
         acceptInvite()
@@ -402,6 +454,7 @@ extension LobbyViewModel {
     }
     
     func declineInviteFromNotification(_ notification: InviteNotification) {
+        guard !isOnChannelList else { return }
         let wasSoloGame = matchStatus == .soloGame
         matchStatus = .receivedInvite(player: notification.sender, wasSoloGame: wasSoloGame)
         declineInvite()
