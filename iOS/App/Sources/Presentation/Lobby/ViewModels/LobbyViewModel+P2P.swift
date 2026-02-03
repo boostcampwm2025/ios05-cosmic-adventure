@@ -26,15 +26,15 @@ extension LobbyViewModel {
     }
 
     func setupP2PCallbacks() {
-        networkSessionManager.onPeersUpdated = { [weak self] peers in
+        networkSessionManager.onPeersUpdated = { [weak self] players in
             guard let self = self else { return }
 
-            let activePeerIds = Set(peers.map { $0.sessionId })
+            let activePlayerIds = Set(players.map { $0.sessionId })
 
             // 알림 리스트 중 접속 중이지 않은 유저의 알림 제거
             Task { @MainActor in
-                self.updateLocalPeers(peers)
-                self.inviteNotifications.removeAll { !activePeerIds.contains($0.sender.id) }
+                self.updateLocalPlayers(players)
+                self.inviteNotifications.removeAll { !activePlayerIds.contains($0.sender.id) }
             }
         }
 
@@ -63,16 +63,16 @@ extension LobbyViewModel {
         }
     }
 
-    func updateLocalPeers(_ remotePlayers: [NetworkPeer]) {
-        self.remotePlayers = remotePlayers.enumerated().map { index, peer in
+    func updateLocalPlayers(_ remotePlayers: [NetworkPeer]) {
+        self.remotePlayers = remotePlayers.enumerated().map { index, player in
             let discoveryLatency = Double(index * 10 + 5)
-            let effectiveLatency = peer.latency ?? discoveryLatency
+            let effectiveLatency = player.latency ?? discoveryLatency
             let proximity = calculateProximity(latency: effectiveLatency)
             
             return PlayerInfo(
-                id: peer.sessionId,
+                id: player.sessionId,
                 role: .remote,
-                displayName: peer.name,
+                displayName: player.name,
                 avatar: .character1,
                 proximity: proximity
             )

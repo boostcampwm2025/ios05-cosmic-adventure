@@ -325,8 +325,8 @@ private extension LobbyView {
 
 private extension LobbyView {
     var playerOrbitSelector: some View {
-        let displayPeers = viewModel.orderedPeers.prefix(OrbitSlot.orderedSlots.count)
-        let isZoomedOut = displayPeers.count > 5
+        let displayPlayers = viewModel.orderedPlayers.prefix(OrbitSlot.orderedSlots.count)
+        let isZoomedOut = displayPlayers.count > 5
         let radarScale: CGFloat = isAppearing ? (isZoomedOut ? 0.8 : 1.0) : 0.1
         
         return GeometryReader { geometry in
@@ -337,7 +337,7 @@ private extension LobbyView {
                 ZStack {
                     radarRings(size: size, center: center, isZoomedOut: isZoomedOut)
 
-                    ForEach(Array(displayPeers.enumerated()), id: \.element.id) { index, player in
+                    ForEach(Array(displayPlayers.enumerated()), id: \.element.id) { index, player in
                         let position = calculatePosition(
                             index: index,
                             proximity: player.proximity,
@@ -346,7 +346,7 @@ private extension LobbyView {
                             isZoomedOut: isZoomedOut
                         )
 
-                        peerPlayerView(player: player)
+                        remotePlayerView(player: player)
                             .position(position)
                             .id(player.id)
                     }
@@ -436,8 +436,8 @@ private extension LobbyView {
         }
     }
 
-    func peerPlayerView(player: PlayerInfo) -> some View {
-        let isSelected = viewModel.selectedPeerID == player.id
+    func remotePlayerView(player: PlayerInfo) -> some View {
+        let isSelected = viewModel.selectedPlayerID == player.id
         let labelOffset: CGFloat = -50
 
         return ZStack {
@@ -467,7 +467,7 @@ private extension LobbyView {
         }
         .onTapGesture {
             withAnimation(.spring(response: 0.35, dampingFraction: 0.7)) {
-                viewModel.selectPeer(player)
+                viewModel.selectPlayer(player)
             }
         }
     }
@@ -500,24 +500,24 @@ private extension LobbyView {
     @ViewBuilder
     var modalContent: some View {
         switch viewModel.matchStatus {
-        case .readyToSend(let peer), .sendingRequest(let peer):
-            requestModal(peer: peer)
+        case .readyToSend(let player), .sendingRequest(let player):
+            requestModal(player: player)
                 .transition(.opacity.combined(with: .scale))
                 .padding(.horizontal, 24)
 
-        case .receivedInvite(let peer, let wasSoloGame):
+        case .receivedInvite(let player, let wasSoloGame):
             if !wasSoloGame {
                 VStack {
                     Spacer()
-                    inviteReceivedSheet(peer: peer)
+                    inviteReceivedSheet(player: player)
                 }
                 .transition(.move(edge: .bottom))
                 .zIndex(1)
                 .ignoresSafeArea(edges: .bottom)
             }
 
-        case .requestDeclined(let peer):
-            declineModal(peer: peer)
+        case .requestDeclined(let player):
+            declineModal(player: player)
                 .transition(.opacity.combined(with: .scale))
                 .padding(.horizontal, 24)
 
@@ -532,7 +532,7 @@ private extension LobbyView {
 
 // MARK: - Request Modal Views
 private extension LobbyView {
-    func requestModal(peer: PlayerInfo) -> some View {
+    func requestModal(player: PlayerInfo) -> some View {
         let isSending: Bool = {
             if case .sendingRequest = viewModel.matchStatus { return true }
             return false
@@ -541,9 +541,9 @@ private extension LobbyView {
         return VStack(spacing: 24) {
             modalTitle(L10N.Lobby.RequestModal.title)
 
-            modalAvatarView(for: peer, isGrayscale: false)
+            modalAvatarView(for: player, isGrayscale: false)
 
-            modalDisplayName(for: peer)
+            modalDisplayName(for: player)
 
             HStack(spacing: 12) {
                 requestButton(isSending: isSending)
@@ -565,14 +565,14 @@ private extension LobbyView {
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
     }
 
-    func modalAvatarView(for peer: PlayerInfo, isGrayscale: Bool) -> some View {
+    func modalAvatarView(for player: PlayerInfo, isGrayscale: Bool) -> some View {
         ZStack {
             Circle()
                 .fill(.white.opacity(0.5))
                 .frame(width: 100, height: 100)
                 .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5)
 
-            peer.avatar.image
+            player.avatar.image
                 .resizable()
                 .scaledToFit()
                 .frame(width: 85, height: 85)
@@ -581,8 +581,8 @@ private extension LobbyView {
         }
     }
 
-    func modalDisplayName(for peer: PlayerInfo) -> some View {
-        Text(peer.displayName)
+    func modalDisplayName(for player: PlayerInfo) -> some View {
+        Text(player.displayName)
             .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 20))
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
     }
@@ -624,13 +624,13 @@ private extension LobbyView {
 // MARK: - Decline Modal Views
 
 private extension LobbyView {
-    func declineModal(peer: PlayerInfo) -> some View {
+    func declineModal(player: PlayerInfo) -> some View {
         VStack(spacing: 24) {
             modalTitle(L10N.Lobby.DeclineModal.invitationDeclinedTitle)
 
-            modalAvatarView(for: peer, isGrayscale: true)
+            modalAvatarView(for: player, isGrayscale: true)
 
-            declineModalMessage(for: peer)
+            declineModalMessage(for: player)
 
             declineModalConfirmButton
 
@@ -643,8 +643,8 @@ private extension LobbyView {
         .shadow(radius: 10)
     }
 
-    func declineModalMessage(for peer: PlayerInfo) -> some View {
-        (Text("'\(peer.displayName)'") +
+    func declineModalMessage(for player: PlayerInfo) -> some View {
+        (Text("'\(player.displayName)'") +
          Text(L10N.Lobby.DeclineModal.invitationDeclinedMessage))
         .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
         .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
@@ -675,11 +675,11 @@ private extension LobbyView {
 // MARK: - 초대 수신 Bottom Sheet
 
 private extension LobbyView {
-    func inviteReceivedSheet(peer: PlayerInfo) -> some View {
+    func inviteReceivedSheet(player: PlayerInfo) -> some View {
         VStack(spacing: 24) {
             inviteSheetHeader
 
-            inviteSheetContent(for: peer)
+            inviteSheetContent(for: player)
 
             HStack(spacing: 12) {
                 inviteAcceptButton
@@ -713,7 +713,7 @@ private extension LobbyView {
         .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
     }
 
-    func inviteSheetContent(for peer: PlayerInfo) -> some View {
+    func inviteSheetContent(for player: PlayerInfo) -> some View {
         HStack(spacing: 16) {
             ZStack {
                 Circle()
@@ -721,13 +721,13 @@ private extension LobbyView {
                     .frame(width: 100, height: 100)
                     .shadow(color: .black.opacity(0.2), radius: 5, x: 0, y: 5)
 
-                peer.avatar.image
+                player.avatar.image
                     .resizable()
                     .scaledToFit()
                     .frame(width: 85, height: 85)
             }
 
-            (Text("'\(peer.displayName)'")
+            (Text("'\(player.displayName)'")
                 .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 22))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
              +
@@ -747,9 +747,9 @@ private extension LobbyView {
             cornerRadius: 16,
             verticalPadding: 14
         ) {
-            if case .receivedInvite(let peer, _) = viewModel.matchStatus {
+            if case .receivedInvite(let player, _) = viewModel.matchStatus {
                 withAnimation {
-                    viewModel.inviteNotifications.removeAll { $0.sender.id == peer.id }
+                    viewModel.inviteNotifications.removeAll { $0.sender.id == player.id }
                     viewModel.acceptInvite()
                 }
             }
@@ -758,9 +758,9 @@ private extension LobbyView {
 
     var inviteDeclineButton: some View {
         Button(action: {
-            if case .receivedInvite(let peer, _) = viewModel.matchStatus {
+            if case .receivedInvite(let player, _) = viewModel.matchStatus {
                 withAnimation {
-                    viewModel.inviteNotifications.removeAll { $0.sender.id == peer.id }
+                    viewModel.inviteNotifications.removeAll { $0.sender.id == player.id }
                     viewModel.declineInvite()
                 }
             }

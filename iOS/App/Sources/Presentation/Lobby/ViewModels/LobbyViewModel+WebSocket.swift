@@ -26,7 +26,7 @@ extension LobbyViewModel {
                 self?.isConnected = connected
                 if !connected {
                     self?.remotePlayers = []
-                    self?.selectedPeerID = nil
+                    self?.selectedPlayerID = nil
                     self?.matchStatus = .idle
                 }
             }
@@ -40,20 +40,20 @@ extension LobbyViewModel {
             let activePlayerIds = Set(players.map { $0.id })
 
             Task { @MainActor in
-                self.updatePeersFromPlayers(players)
+                self.updateRemotePlayers(players)
                 self.inviteNotifications.removeAll { !activePlayerIds.contains($0.sender.id) }
             }
         }
 
         webSocketSessionManager?.onPlayerJoined = { [weak self] player in
             Task { @MainActor in
-                self?.addPeer(from: player)
+                self?.addRemotePlayer(from: player)
             }
         }
 
         webSocketSessionManager?.onPlayerLeft = { [weak self] playerId in
             Task { @MainActor in
-                self?.removePeer(playerId: playerId)
+                self?.removeRemotePlayer(playerId: playerId)
             }
         }
     }
@@ -89,7 +89,7 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
 
-    func updatePeersFromPlayers(_ players: [WebSocketPlayer]) {
+    func updateRemotePlayers(_ players: [WebSocketPlayer]) {
         remotePlayers = players.map { player in
             let proximity = calculateProximity(latency: player.latency)
             return PlayerInfo(
@@ -102,7 +102,7 @@ extension LobbyViewModel {
         }
     }
 
-    func addPeer(from player: WebSocketPlayer) {
+    func addRemotePlayer(from player: WebSocketPlayer) {
         guard remotePlayers.contains(where: { $0.id == player.id }) == false else { return }
 
         let proximity = calculateProximity(latency: player.latency)
@@ -117,11 +117,11 @@ extension LobbyViewModel {
         remotePlayers.append(player)
     }
 
-    func removePeer(playerId: UUID) {
+    func removeRemotePlayer(playerId: UUID) {
         remotePlayers.removeAll { $0.id == playerId }
 
-        if selectedPeerID == playerId {
-            selectedPeerID = nil
+        if selectedPlayerID == playerId {
+            selectedPlayerID = nil
         }
     }
 
