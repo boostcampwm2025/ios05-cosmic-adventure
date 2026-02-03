@@ -132,7 +132,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         replyToPeer(to: targetId, packet: packet)
     }
 
-    public func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {
+    public func sendGameData<T: Codable>(_ data: T, to targetId: UUID?) {
         guard let payload = try? encoder.encode(data) else { return }
         let packet = NetworkPacket(
             type: .input,

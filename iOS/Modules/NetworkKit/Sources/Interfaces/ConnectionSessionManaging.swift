@@ -30,7 +30,7 @@ public protocol ConnectionSessionManaging: AnyObject {
     func acceptInvite(from targetId: UUID)
     func declineInvite(from targetId: UUID)
     func cancelInvite(to targetId: UUID)
-    func sendInput<T: Codable>(_ data: T, to targetId: UUID?)
+    func sendGameData<T: Codable>(_ data: T, to targetId: UUID?)
     func sendReadyStatus(to targetId: UUID)
     func sendVideo(_ data: Data, to targetId: UUID?)
 
@@ -43,8 +43,8 @@ extension ConnectionSessionManaging {
         self.activate(channelId: nil, nickname: nickname, characterRawValue: characterRawValue)
     }
 
-    public func sendInput<T: Codable>(_ data: T) {
-        self.sendInput(data, to: nil)
+    public func sendGameData<T: Codable>(_ data: T) {
+        self.sendGameData(data, to: nil)
     }
 
     public func sendVideo(_ data: Data) {

@@ -91,7 +91,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         service.cancelInvite(to: sessionId)
     }
     
-    public func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {
+    public func sendGameData<T: Codable>(_ data: T, to targetId: UUID?) {
         guard let targetId else { return }
         let sessionId = sessionId(forPlayerId: targetId)
 
@@ -183,7 +183,6 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         case .input:
             if let payloadString = message.payload,
                let payloadData = payloadString.data(using: .utf8) {
-
                 onInputReceived?(playerId(forSenderId: message.senderId), payloadData)
             }
 

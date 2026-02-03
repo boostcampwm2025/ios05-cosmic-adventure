@@ -427,6 +427,6 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     }
 
     private func sendDTO(_ dto: NetworkGameInputDTO, to peerId: UUID) {
-        connectionSessionManager.sendInput(dto, to: peerId)
+        connectionSessionManager.sendGameData(dto, to: peerId)
     }
 }
