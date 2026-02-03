@@ -47,7 +47,7 @@ struct ChannelRowView: View {
     private var statusBadge: some View {
         Text(channel.isFull ? "만원" : "입장 가능")
             .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 12))
-            .foregroundStyle(channel.isFull ? .red : .green)
+            .foregroundStyle(channel.isFull ? .red : AppAsset.Color.greenLabel.swiftUIColor)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
             .background(
