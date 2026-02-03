@@ -17,7 +17,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             }
 
         case .invite, .inviteAccept, .inviteDecline, .inviteCancel, .gameReady:
-            await forwardToTarget(message: message, manager: manager)
+            await forwardToTarget(message: message, from: session, manager: manager)
 
         case .input, .videoFrame, .gameEnded:
             await handleForwarding(message: message, from: session, manager: manager)
@@ -99,9 +99,14 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         }
     }
 
-    private func forwardToTarget(message: WSMessage, manager: WSSessionManager) async {
+    private func forwardToTarget(message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
         guard let targetId = message.payload else { return }
-        await manager.send(to: targetId, message: message)
+        let forwarded = WSMessage(
+            type: message.type,
+            senderId: session.id,
+            payload: message.payload
+        )
+        await manager.send(to: targetId, message: forwarded)
     }
 
     private func handleForwarding(message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
@@ -118,7 +123,7 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
 
         let forwarded = WSMessage(
             type: message.type,
-            senderId: message.senderId,
+            senderId: session.id,
             payload: routed.data
         )
         await manager.send(to: routed.to, message: forwarded)
