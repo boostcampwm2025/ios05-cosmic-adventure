@@ -123,6 +123,11 @@ final class GameViewModel {
         // 네트워크 송신/수신 바인딩 (멀티플레이일 때만)
         if let remotePlayerId {
             multiplayerIO?.bind(peerId: remotePlayerId)
+            multiplayerIO?.setOnPeerDisconnected { [weak self] in
+                Task { @MainActor in
+                    self?.showDisconnectAlert = true
+                }
+            }
         } else {
             multiplayerIO?.unbind()
         }
