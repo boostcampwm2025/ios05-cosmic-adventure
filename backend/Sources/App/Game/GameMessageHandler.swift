@@ -68,34 +68,40 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
     }
 
     func sendPlayerList(in channelId: String, to toSession: WSSession? = nil, manager: WSSessionManager) async {
-        let players = await ChannelManager.shared.getSessionsInChannel(channelId)
-        guard !players.isEmpty else { return }
+        let sessionsInChannel = await ChannelManager.shared.getSessionsInChannel(channelId)
+        guard !sessionsInChannel.isEmpty else { return }
 
         let playerInfos = await withTaskGroup(of: String.self) { group in
-            for player in players {
+            for session in sessionsInChannel {
                 group.addTask {
-                    let latency = await manager.getLatency(for: player.id)
-                    return self.buildPlayerInfo(from: player, latency: latency)
+                    let latency = await manager.getLatency(for: session.id)
+                    return self.buildPlayerInfo(from: session, latency: latency)
                 }
             }
             
             return await group.reduce(into: [String]()) { $0.append($1) }
         }
 
-        let payload = playerInfos.joined(separator: "|")
-
-        let listMessage = WSMessage(
-            type: GameMessageType.channelPlayerList.rawValue,
-            senderId: "server",
-            payload: payload
-        )
+        let playersArray = "[" + playerInfos.joined(separator: ",") + "]"
 
         if let session = toSession {
-            // 특정 유저에게만 전송
+            let payload = "{\"youSessionId\":\"\(session.id)\",\"players\":\(playersArray)}"
+            let listMessage = WSMessage(
+                type: GameMessageType.channelPlayerList.rawValue,
+                senderId: "server",
+                payload: payload
+            )
             await manager.send(to: session.id, message: listMessage)
         } else {
-            // 채널 전체에 전송
-            await ChannelManager.shared.broadcastToChannel(channelId, message: listMessage)
+            for session in sessionsInChannel {
+                let payload = "{\"youSessionId\":\"\(session.id)\",\"players\":\(playersArray)}"
+                let listMessage = WSMessage(
+                    type: GameMessageType.channelPlayerList.rawValue,
+                    senderId: "server",
+                    payload: payload
+                )
+                await manager.send(to: session.id, message: listMessage)
+            }
         }
     }
 
@@ -131,7 +137,20 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
 
     private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
         let nickname = session.metadata["nickname"] ?? "unknown"
+        let character = session.metadata["character"] ?? ""
         let lat = latency ?? 200.0
-        return "\(session.id):\(nickname):\(lat)"
+
+        let dict: [String: Any] = [
+            "sessionId": session.id,
+            "nickname": nickname,
+            "characterRawValue": character,
+            "latency": lat
+        ]
+
+        guard let data = try? JSONSerialization.data(withJSONObject: dict),
+              let json = String(data: data, encoding: .utf8) else {
+            return "{\"sessionId\":\"\(session.id)\",\"nickname\":\"\(nickname)\",\"characterRawValue\":\"\(character)\",\"latency\":\(lat)}"
+        }
+        return json
     }
 }

@@ -33,13 +33,13 @@ public final class WebSocketService: NSObject {
         urlSession = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
     }
 
-    public func connect(to wsURL: String, channelId: String, nickname: String) {
+    public func connect(to wsURL: String, channelId: String, nickname: String, characterRawValue: String) {
         guard !isConnected else { return }
 
         self.channelId = channelId
         self.nickname = nickname
 
-        let urlString = "\(wsURL)/ws?channelId=\(channelId)&nickname=\(nickname)"
+        let urlString = "\(wsURL)/ws?channelId=\(channelId)&nickname=\(nickname)&character=\(characterRawValue)"
         guard let url = URL(string: urlString) else { return }
 
         webSocketTask = urlSession.webSocketTask(with: url)
@@ -178,10 +178,6 @@ public final class WebSocketService: NSObject {
                 return
             }
 
-            if webSocketMessage.messageType == .channelPlayerList, sessionId == nil {
-                extractSessionId(from: webSocketMessage)
-            }
-
             DispatchQueue.main.async { [weak self] in
                 self?.onMessage?(webSocketMessage)
             }
@@ -194,18 +190,8 @@ public final class WebSocketService: NSObject {
         }
     }
 
-    private func extractSessionId(from message: WebSocketMessage) {
-        guard let payload = message.payload,
-              let nickname = self.nickname else { return }
-
-        let players = payload.split(separator: "|")
-        for player in players {
-            let parts = player.split(separator: ":")
-            if parts.count >= 2, String(parts[1]) == nickname {
-                sessionId = String(parts[0])
-                break
-            }
-        }
+    public func setSessionId(_ id: String) {
+        self.sessionId = id
     }
 
     private func handleError(_ error: Error) {

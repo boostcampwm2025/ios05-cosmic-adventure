@@ -202,6 +202,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
             var status: PeerStatus = .available
             var nickname = name
             var sessionId: UUID?
+            var characterRawValue = ""
 
             if case .bonjour(let txtRecord) = result.metadata {
                 if let statusString = txtRecord["status"],
@@ -215,6 +216,9 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
                 if let sessionIdString = txtRecord["sessionId"] {
                     sessionId = UUID(uuidString: sessionIdString)
                 }
+                if let characterString = txtRecord["character"] {
+                    characterRawValue = characterString
+                }
             }
 
             guard let sessionId else { return nil }
@@ -222,10 +226,10 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
             return NetworkPeer(
                 sessionId: sessionId,
                 nickname: nickname,
-                characterRawValue: "",
+                characterRawValue: characterRawValue,
                 status: status,
                 endpoint: result.endpoint,
-                latency: nil                    // 탐색 직후부터 latency를 계산할 수 없으므로 초기값 nil
+                latency: nil
             )
         }
 

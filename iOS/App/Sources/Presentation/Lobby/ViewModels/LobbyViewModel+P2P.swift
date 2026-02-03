@@ -73,7 +73,7 @@ extension LobbyViewModel {
                 id: player.sessionId,
                 role: .remote,
                 displayName: player.nickname,
-                avatar: .character1,
+                avatar: CharacterAvatar(rawValue: player.characterRawValue) ?? .character1,
                 proximity: proximity
             )
         }
