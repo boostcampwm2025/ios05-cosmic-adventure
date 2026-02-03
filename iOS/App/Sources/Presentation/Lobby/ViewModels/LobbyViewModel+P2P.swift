@@ -33,6 +33,7 @@ extension LobbyViewModel {
 
             // 알림 리스트 중 접속 중이지 않은 유저의 알림 제거
             Task { @MainActor in
+                guard self.screenState == .local else { return }
                 self.updateLocalPlayers(players)
                 self.inviteNotifications.removeAll { !activePlayerIds.contains($0.sender.id) }
             }

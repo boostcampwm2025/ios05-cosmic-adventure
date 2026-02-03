@@ -17,6 +17,18 @@ enum NetworkMode {
     case remote
 }
 
+/// 로비 화면의 세 가지 상태.
+/// networkMode와 selectedChannelId 두 프로퍼티의 조합을 하나의 enum으로 통합하여,
+/// 상태 전환 시 cleanup 누락(human error)을 구조적으로 방지한다.
+enum LobbyScreenState: Equatable {
+    /// P2P 근거리 탐색 모드
+    case local
+    /// 원격 모드, 채널 미선택 (로고 + 채널 리스트 화면, 매치메이킹 불가)
+    case channelList
+    /// 원격 모드, 채널 선택됨
+    case channel(id: String)
+}
+
 @MainActor
 @Observable
 final class LobbyViewModel {
@@ -40,8 +52,12 @@ final class LobbyViewModel {
 
     // Network State
     var isConnected = false
-    private(set) var networkMode: NetworkMode = .local
-    var selectedChannelId: String?
+    private(set) var screenState: LobbyScreenState = .local {
+        didSet {
+            guard oldValue != screenState else { return }
+            handleScreenTransition(from: oldValue, to: screenState)
+        }
+    }
     /// ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 false.
     /// LobbyView에서 이 값이 true가 될 때까지 중립적 placeholder를 표시하여
     /// local↔remote 전환 시 발생하는 깜빡임을 방지한다.
@@ -84,10 +100,34 @@ final class LobbyViewModel {
         connectivityMonitor.isConnected
     }
 
-    /// 채널 리스트(로고 + 채널 선택) 화면이 표시 중인지 여부.
-    /// LobbyView의 channelListContent 표시 조건과 동일하게 유지해야 한다.
+    var networkMode: NetworkMode {
+        switch screenState {
+        case .local: return .local
+        case .channelList, .channel: return .remote
+        }
+    }
+
     var isOnChannelList: Bool {
-        networkMode == .remote && selectedChannelId == nil
+        screenState == .channelList
+    }
+
+    var isNetwork: Bool {
+        if case .channel = screenState { return true }
+        return false
+    }
+
+    var selectedChannelId: String? {
+        if case .channel(let id) = screenState { return id }
+        return nil
+    }
+
+    /// 현재 활성 네트워크 연결. 채널 리스트에서는 nil (매치메이킹 불가).
+    private var activeConnection: ConnectionSessionManaging? {
+        switch screenState {
+        case .local: return networkSessionManager
+        case .channel: return webSocketSessionManager
+        case .channelList: return nil
+        }
     }
 
     var orderedPlayers: [PlayerInfo] {
@@ -157,20 +197,17 @@ extension LobbyViewModel {
     }
 
     private func handleConnectivityChange(isConnected: Bool) {
-        // ConnectivityMonitor 콜백에서 실제 네트워크 상태를 받아 확정.
-        // isConnectivityResolved를 true로 설정하여 LobbyView가 placeholder 대신 실제 UI를 렌더링하도록 함.
         self.isConnected = isConnected
         isConnectivityResolved = true
         if isConnected {
-            networkMode = .remote
-            if selectedChannelId == nil {
-                enterChannelListCleanup()
+            if case .channel = screenState {
+                // 이미 채널에 접속 중이면 유지
+            } else {
+                screenState = .channelList
             }
         } else {
-            networkMode = .local
-            selectedChannelId = nil
+            screenState = .local
         }
-        setupExploration()
     }
 }
 
@@ -178,56 +215,69 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func switchNetworkMode(to mode: NetworkMode) {
-        networkMode = mode
-        if mode == .remote {
-            selectedChannelId = nil
-            enterChannelListCleanup()
+        switch mode {
+        case .local:  screenState = .local
+        case .remote: screenState = .channelList
         }
-        setupExploration()
     }
 
     func setupExploration() {
         permissionCheckTask?.cancel()
-
-        switch networkMode {
+        switch screenState {
         case .local:
-            permissionCheckTask = Task {
-                let isPermissionGranted = await appEntryManager.isLocalNetworkPermissionGranted()
-                guard !Task.isCancelled else { return }
-                if !isPermissionGranted {
-                    appEntryManager.presentAlert(.localNetworkDenied)
-                    matchStatus.reset()
-                    return
-                }
-                
-                setupSessionManager()
-                explorationCoordinator.updateExploration(
-                    mode: .local,
-                    channelId: nil,
-                    nickname: localPlayer.displayName,
-                    characterRawValue: player.character
-                )
-            }
-        case .remote:
-            guard let channelId = selectedChannelId else {
-                explorationCoordinator.stopExploration()
-                return
-            }
+            setupLocalExploration()
+        case .channel(let id):
             explorationCoordinator.updateExploration(
                 mode: .remote,
-                channelId: channelId,
+                channelId: id,
+                nickname: localPlayer.displayName,
+                characterRawValue: player.character
+            )
+        case .channelList:
+            explorationCoordinator.stopExploration()
+        }
+    }
+
+    private func handleScreenTransition(from oldState: LobbyScreenState, to newState: LobbyScreenState) {
+        // Exit Actions
+        switch oldState {
+        case .channel, .local:
+            remotePlayers = []
+        default:
+            break
+        }
+
+        // Enter Actions
+        if newState == .channelList {
+            cleanupMatchState()
+        }
+
+        setupExploration()
+    }
+
+    private func setupLocalExploration() {
+        permissionCheckTask?.cancel()
+        permissionCheckTask = Task {
+            let isPermissionGranted = await appEntryManager.isLocalNetworkPermissionGranted()
+            guard !Task.isCancelled else { return }
+            if !isPermissionGranted {
+                appEntryManager.presentAlert(.localNetworkDenied)
+                matchStatus.reset()
+                return
+            }
+
+            setupSessionManager()
+            explorationCoordinator.updateExploration(
+                mode: .local,
+                channelId: nil,
                 nickname: localPlayer.displayName,
                 characterRawValue: player.character
             )
         }
     }
 
-    /// 채널 리스트 화면으로 전환할 때 진행 중인 매치 상태를 정리한다.
-    /// - 보내는 중인 초대는 best-effort로 취소하고, 받은 초대는 best-effort로 거절한다.
-    /// - 양쪽 스택(P2P + WebSocket) 모두에게 시도하되, 해당 플레이어가 스택의 플레이어 목록에
-    ///   존재하는 경우에만 전송하여 잘못된 대상에게 메시지가 가는 것을 방지한다.
     // TODO: 채널 리스트 전환 시 매치 취소 확인 UI 추가
-    private func enterChannelListCleanup() {
+    private func cleanupMatchState() {
         switch matchStatus {
         case .sendingRequest(let player):
             if networkSessionManager.nearbyPlayer.contains(where: { $0.sessionId == player.id }) {
@@ -253,7 +303,6 @@ extension LobbyViewModel {
         inviteNotifications.removeAll()
         isShowingNotification = false
         selectedPlayerID = nil
-        explorationCoordinator.stopExploration()
     }
 }
 
@@ -261,15 +310,11 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func selectChannel(_ channelId: String) {
-        networkMode = .remote
-        selectedChannelId = channelId
-        setupExploration()
+        screenState = .channel(id: channelId)
     }
 
     func leaveChannel() {
-        selectedChannelId = nil
-        remotePlayers = []
-        enterChannelListCleanup()
+        screenState = .channelList
     }
 }
 
@@ -380,55 +425,25 @@ extension LobbyViewModel {
     func sendInvite() {
         guard case .readyToSend(let player) = matchStatus else { return }
         matchStatus.sendRequest()
-
-        switch networkMode {
-        case .local:
-            networkSessionManager.sendInvite(to: player.id)
-
-        case .remote:
-            webSocketSessionManager?.sendInvite(to: player.id)
-        }
+        activeConnection?.sendInvite(to: player.id)
     }
 
     func cancelInvite() {
         if case .sendingRequest(let player) = matchStatus {
-            switch networkMode {
-            case .local:
-                networkSessionManager.cancelInvite(to: player.id)
-
-            case .remote:
-                webSocketSessionManager?.cancelInvite(to: player.id)
-            }
+            activeConnection?.cancelInvite(to: player.id)
         }
-
         resetToIdle()
     }
 
     func acceptInvite() {
         guard case .receivedInvite(let player, _) = matchStatus else { return }
-
-        switch networkMode {
-        case .local:
-            networkSessionManager.acceptInvite(from: player.id)
-
-        case .remote:
-            webSocketSessionManager?.acceptInvite(from: player.id)
-        }
-
+        activeConnection?.acceptInvite(from: player.id)
         matchStatus.setGameReady(with: player)
     }
 
     func declineInvite() {
         guard case .receivedInvite(let player, let wasSoloGame) = matchStatus else { return }
-
-        switch networkMode {
-        case .local:
-            networkSessionManager.declineInvite(from: player.id)
-
-        case .remote:
-            webSocketSessionManager?.declineInvite(from: player.id)
-        }
-
+        activeConnection?.declineInvite(from: player.id)
         if wasSoloGame {
             setSoloMode()
         } else {

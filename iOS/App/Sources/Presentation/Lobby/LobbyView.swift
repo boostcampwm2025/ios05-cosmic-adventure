@@ -24,16 +24,16 @@ struct LobbyView: View {
         @Bindable var viewModel = viewModel
 
         BackgroundContainerView {
-             VStack(spacing: 0) {
-                 topBar
-                     .padding(.top, 60)
-                     .padding(.horizontal, 20)
+            VStack(spacing: 0) {
+                topBar
+                    .padding(.top, 60)
+                    .padding(.horizontal, 20)
 
-                 // ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 networkMode가 확정되지 않으므로,
-                 // resolved 전에는 중립적 placeholder를 표시하여 local↔remote 전환 깜빡임을 방지.
-                 if !viewModel.isConnectivityResolved {
+                // ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 networkMode가 확정되지 않으므로,
+                // resolved 전에는 중립적 placeholder를 표시하여 local↔remote 전환 깜빡임을 방지.
+                if !viewModel.isConnectivityResolved {
                     loadingContent
-                } else if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
+                } else if viewModel.isOnChannelList {
                     channelListContent
                 } else {
                     lobbyContent
@@ -45,15 +45,15 @@ struct LobbyView: View {
 
             // onChange는 값이 '변경'될 때만 트리거되므로, 이미 remote 모드로 진입한 경우
             // 채널 목록을 불러오지 못함. onAppear에서도 fetch를 호출하여 이를 보완.
-            if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
+            if viewModel.isOnChannelList {
                 Task { await channelListViewModel.fetchChannels() }
             }
         }
         .onChange(of: router.path) { oldPath, newPath in
             handleRouteChange(from: oldPath, to: newPath)
         }
-        .onChange(of: viewModel.networkMode) { _, newMode in
-            if newMode == .remote && viewModel.selectedChannelId == nil {
+        .onChange(of: viewModel.screenState) { _, newState in
+            if newState == .channelList {
                 Task { await channelListViewModel.fetchChannels() }
             }
         }
@@ -99,12 +99,12 @@ struct LobbyView: View {
                 guard await appEntryManager.canEnterGame() else { return }
                 router.push(.gameReady(localPlayer: viewModel.localPlayer,
                                        remotePlayer: remotePlayer,
-                                       isNetwork: viewModel.networkMode == .remote))
+                                       isNetwork: viewModel.isNetwork))
             }
         } else {
             router.push(.operationGuide(localPlayer: viewModel.localPlayer,
                                         remotePlayer: remotePlayer,
-                                        isNetwork: viewModel.networkMode == .remote))
+                                        isNetwork: viewModel.isNetwork))
         }
     }
 }
@@ -117,11 +117,11 @@ private extension LobbyView {
         greetingCard
             .padding(.top, 40)
             .padding(.horizontal, 30)
-        
+
         playerOrbitSelector
-        
+
         Spacer()
-        
+
         bottomButtons(
             secondaryTitle: L10N.Lobby.remoteGalaxyButtonTitle,
             secondaryAction: {
@@ -131,23 +131,24 @@ private extension LobbyView {
                     viewModel.leaveChannel()
                 }
             },
-            showSecondary: viewModel.isNetworkAvailable)
+            showSecondary: viewModel.isNetworkAvailable
+        )
     }
 
     // TODO: 채널 목록 로드 실패 시 분기 처리 (네트워크 끊김 등)
-     @ViewBuilder
-     var channelListContent: some View {
-         AppAsset.Image.titleLogo.swiftUIImage
-             .resizable()
-             .scaledToFit()
-             .frame(height: 100)
-             .padding(.top, 20)
+    @ViewBuilder
+    var channelListContent: some View {
+        AppAsset.Image.titleLogo.swiftUIImage
+            .resizable()
+            .scaledToFit()
+            .frame(height: 100)
+            .padding(.top, 20)
 
-         // channels 배열이 비어있는 것이 '로딩 중'인지 '정말 없는 것'인지 구분하기 위해
-         // LoadState 기반으로 분기. idle/loading 시 placeholder, loaded 시에만 실제 목록 표시.
-         switch channelListViewModel.loadState {
-         case .idle, .loading:
-             loadingContent
+        // channels 배열이 비어있는 것이 '로딩 중'인지 '정말 없는 것'인지 구분하기 위해
+        // LoadState 기반으로 분기. idle/loading 시 placeholder, loaded 시에만 실제 목록 표시.
+        switch channelListViewModel.loadState {
+        case .idle, .loading:
+            loadingContent
         case .failed:
             channelLoadFailedContent
         case .loaded:
@@ -168,9 +169,9 @@ private extension LobbyView {
                 }
             }
         }
-        
+
         Spacer()
-        
+
         bottomButtons(
             secondaryTitle: L10N.Lobby.localGalaxyButtonTitle,
             secondaryAction: { viewModel.switchNetworkMode(to: .local) }
@@ -183,9 +184,9 @@ private extension LobbyView {
         LoadingPlaceholderView()
     }
 
-     /// 채널 목록 로드 실패 시 표시되는 뷰. 재시도 버튼을 포함한다.
-     @ViewBuilder
-     var channelLoadFailedContent: some View {
+    /// 채널 목록 로드 실패 시 표시되는 뷰. 재시도 버튼을 포함한다.
+    @ViewBuilder
+    var channelLoadFailedContent: some View {
         Spacer()
         ChannelEmptyView()
         Spacer()
@@ -195,7 +196,7 @@ private extension LobbyView {
         .padding(.horizontal, 20)
         .padding(.bottom, 12)
     }
-    
+
     @ViewBuilder
     func bottomButtons(
         secondaryTitle: LocalizedStringKey,
@@ -203,23 +204,23 @@ private extension LobbyView {
         showSecondary: Bool = true
     ) -> some View {
         VStack(spacing: 12) {
-             PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
-                 viewModel.setSoloMode()
+            PrimaryGradientButton(title: L10N.Lobby.soloAdventureButtonTitle) {
+                viewModel.setSoloMode()
 
-                 if UserDefaultsList.Game.isGuideChecked {
-                     Task { @MainActor in
-                         guard await appEntryManager.canEnterGame() else { return }
-                         router.push(.gameReady(localPlayer: viewModel.localPlayer,
-                                                remotePlayer: nil,
-                                                isNetwork: viewModel.networkMode == .remote))
-                     }
+                if UserDefaultsList.Game.isGuideChecked {
+                    Task { @MainActor in
+                        guard await appEntryManager.canEnterGame() else { return }
+                        router.push(.gameReady(localPlayer: viewModel.localPlayer,
+                                               remotePlayer: nil,
+                                               isNetwork: viewModel.isNetwork))
+                    }
                 } else {
                     router.push(.operationGuide(localPlayer: viewModel.localPlayer,
                                                 remotePlayer: nil,
-                                                isNetwork: viewModel.networkMode == .remote))
+                                                isNetwork: viewModel.isNetwork))
                 }
             }
-            
+
             if showSecondary {
                 PrimaryGradientButton(title: secondaryTitle, isSubtle: true) {
                     withAnimation(.easeInOut(duration: 0.1)) {
@@ -279,7 +280,7 @@ private extension LobbyView {
                     LinearGradient(
                         colors: [
                             AppAsset.Color.iconGradientStart.swiftUIColor,
-                            AppAsset.Color.iconGradientEnd.swiftUIColor
+                            AppAsset.Color.iconGradientEnd.swiftUIColor,
                         ],
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
@@ -328,7 +329,7 @@ private extension LobbyView {
         let displayPlayers = viewModel.orderedPlayers.prefix(OrbitSlot.orderedSlots.count)
         let isZoomedOut = displayPlayers.count > 5
         let radarScale: CGFloat = isAppearing ? (isZoomedOut ? 0.8 : 1.0) : 0.1
-        
+
         return GeometryReader { geometry in
             let size = min(geometry.size.width, geometry.size.height)
             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
@@ -531,6 +532,7 @@ private extension LobbyView {
 }
 
 // MARK: - Request Modal Views
+
 private extension LobbyView {
     func requestModal(player: PlayerInfo) -> some View {
         let isSending: Bool = {
@@ -645,12 +647,12 @@ private extension LobbyView {
 
     func declineModalMessage(for player: PlayerInfo) -> some View {
         (Text("'\(player.displayName)'") +
-         Text(L10N.Lobby.DeclineModal.invitationDeclinedMessage))
-        .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
-        .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
-        .multilineTextAlignment(.center)
-        .lineLimit(nil)
-        .fixedSize(horizontal: false, vertical: true)
+            Text(L10N.Lobby.DeclineModal.invitationDeclinedMessage))
+            .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 18))
+            .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+            .multilineTextAlignment(.center)
+            .lineLimit(nil)
+            .fixedSize(horizontal: false, vertical: true)
     }
 
     var declineModalConfirmButton: some View {
@@ -730,8 +732,8 @@ private extension LobbyView {
             (Text("'\(player.displayName)'")
                 .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 22))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
-             +
-             Text(L10N.Lobby.InviteReceivedSheet.messageSuffix)
+                +
+                Text(L10N.Lobby.InviteReceivedSheet.messageSuffix)
                 .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 20))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
             )
@@ -777,8 +779,8 @@ private extension LobbyView {
 }
 
 // MARK: - Notification List Popover (알림 리스트)
-private extension LobbyView {
 
+private extension LobbyView {
     // 메인 팝오버 컨테이너
     var notificationListPopover: some View {
         VStack(alignment: .leading, spacing: 14) {
