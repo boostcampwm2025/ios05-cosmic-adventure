@@ -1,5 +1,6 @@
 # Cosmic Adventure
-<img width="2200" alt="image 3283" src="https://github.com/user-attachments/assets/2bbf1b7b-acf5-4876-be2f-5fc0070cb5ff" />
+<img width="6523" height="2352" alt="cosmicMockup" src="https://github.com/user-attachments/assets/02c407dd-f2db-4f3f-b520-aba3f3b67ae5" />
+
 <br/>
 <br/>
 
