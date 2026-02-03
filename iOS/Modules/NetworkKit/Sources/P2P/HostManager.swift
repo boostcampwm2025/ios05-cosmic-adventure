@@ -49,7 +49,9 @@ final class HostManager: HostManaging {
         ])
         let parameters = NWParameters.tcp
         parameters.includePeerToPeer = true
-        
+        let framerOptions = NWProtocolFramer.Options(definition: LengthPrefixFramer.definition)
+        parameters.defaultProtocolStack.applicationProtocols.insert(framerOptions, at: 0)
+
         let service = NWListener.Service(name: nickName, type: serviceType, txtRecord: txtRecord)
         
         do {
@@ -84,7 +86,7 @@ final class HostManager: HostManaging {
     func sendData(_ data: Data, to connection: NWConnection) {
         logger.info("데이터 전송 시작: \(data.count) bytes")
 
-        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
+        connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
             if let error = error {
                 self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
             } else {
@@ -96,7 +98,7 @@ final class HostManager: HostManaging {
     func sendData(_ data: Data, to connection: NWConnection, completion: @escaping (NWError?) -> Void) {
         logger.info("데이터 전송 시작: \(data.count) bytes")
 
-        connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
+        connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
             if let error = error {
                 self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
             } else {
@@ -151,7 +153,7 @@ final class HostManager: HostManaging {
     }
 
     private func receiveData(from connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        connection.receiveMessage { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
                 self?.onDataReceived?(data, connection)

@@ -102,6 +102,8 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
 
                 let parameters = NWParameters.tcp
                 parameters.includePeerToPeer = true
+                let framerOptions = NWProtocolFramer.Options(definition: LengthPrefixFramer.definition)
+                parameters.defaultProtocolStack.applicationProtocols.insert(framerOptions, at: 0)
                 let connection = NWConnection(to: endpoint, using: parameters)
 
                 if self.connections[endpoint] == nil {
@@ -158,7 +160,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
 
             logger.info("데이터 전송: \(data.count) bytes")
             
-            connection.send(content: data, isComplete: false, completion: .contentProcessed { [weak self] error in
+            connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
                 if let error = error {
                     self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
                 } else {
@@ -237,7 +239,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
     }
 
     private func receiveData(from connection: NWConnection) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
+        connection.receiveMessage { [weak self] data, _, isComplete, error in
             if let data = data, !data.isEmpty {
                 self?.logger.info("데이터 수신: \(data.count) bytes")
                 self?.onDataReceived?(data, connection)
