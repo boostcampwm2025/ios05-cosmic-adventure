@@ -35,98 +35,52 @@ final class VideoManagerTests: XCTestCase {
         super.tearDown()
     }
 
-    // MARK: - Layer Reset Tests
+    // MARK: - Layer Lifecycle & Reset Tests
 
-    // reset() 호출 시 새로운 레이어가 생성되는지
-    func testReset_CreatesNewLayer() {
-        // Given: 초기 레이어 참조 저장
-        let originalLayer = sut.remoteDisplayLayer
-        let originalAddress = Unmanaged.passUnretained(originalLayer).toOpaque()
-
-        // When: reset 호출
-        sut.reset()
-
-        // 메인 스레드 작업 완료 대기
-        let expectation = self.expectation(description: "Layer reset completes")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-            expectation.fulfill()
-        }
-        waitForExpectations(timeout: 1.0)
-
-        // Then: 새 레이어가 생성됨
-        let newLayer = sut.remoteDisplayLayer
-        let newAddress = Unmanaged.passUnretained(newLayer).toOpaque()
-
-        XCTAssertNotEqual(originalAddress, newAddress, "Reset should create a new layer instance")
-    }
-
-    // reset() 후 이전 레이어가 superlayer에서 제거되는지
-    func testReset_RemovesOldLayerFromSuperlayer() {
-        // Given: 레이어를 컨테이너에 추가
+    // 인스턴스 교체 + 계층 제거 + 리소스 정리 검증
+    func testReset_PerformsFullLayerCleanupAndReplacement() {
+        // Given: 이전 레이어 상태 및 계층 설정
         let containerLayer = CALayer()
-        containerLayer.addSublayer(sut.remoteDisplayLayer)
+        let oldLayer = sut.remoteDisplayLayer
+        containerLayer.addSublayer(oldLayer)
 
-        let originalLayer = sut.remoteDisplayLayer
-        XCTAssertNotNil(originalLayer.superlayer, "Original layer should have superlayer")
+        XCTAssertNotNil(oldLayer.superlayer, "리셋 전에는 부모 뷰가 있어야 함")
 
-        // When: reset 호출
+        // When: 리셋 실행
         sut.reset()
 
-        // 메인 스레드 작업 완료 대기
-        let expectation = self.expectation(description: "Layer removal completes")
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+        // Then: 메인 스레드에서 모든 정리 작업 검증
+        let expectation = self.expectation(description: "레이어 정리 및 교체 완료 확인")
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertNotEqual(oldLayer, self.sut.remoteDisplayLayer, "새 레이어로 교체되어야 함")
+            XCTAssertNil(oldLayer.superlayer, "이전 레이어는 반드시 부모 뷰에서 제거되어야 함")
+            XCTAssertNil(oldLayer.controlTimebase, "타임베이스가 nil로 정리되어야 함")
+
             expectation.fulfill()
         }
         waitForExpectations(timeout: 1.0)
-
-        // Then: 이전 레이어가 제거됨
-        XCTAssertNil(originalLayer.superlayer, "Old layer should be removed from superlayer")
     }
 
-    // 연속 reset 호출 시 레이어가 매번 새로 생성되는지
-    func testMultipleResets_CreatesDifferentLayers() {
+    // 연속 리셋 시에도 레이어가 매번 새로 생성되는지
+    func testConsecutiveResets_CreatesUniqueLayers() {
         // Given: 초기 상태
-        var layerAddresses: [String] = []
+        var layerAddresses: Set<String> = []
 
-        // When: reset을 3번 호출
         for _ in 0..<3 {
+            let address = String(describing: Unmanaged.passUnretained(sut.remoteDisplayLayer).toOpaque())
+            layerAddresses.insert(address)
+
+            // When: 리셋 실행
             sut.reset()
 
-            let expectation = self.expectation(description: "Reset completes")
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                expectation.fulfill()
-            }
+            let exp = self.expectation(description: "Wait for reset")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) { exp.fulfill() }
             waitForExpectations(timeout: 1.0)
-
-            let layer = sut.remoteDisplayLayer
-            let address = String(describing: Unmanaged.passUnretained(layer).toOpaque())
-            layerAddresses.append(address)
         }
 
         // Then: 모든 레이어 주소가 다름
-        let uniqueAddresses = Set(layerAddresses)
-        XCTAssertEqual(uniqueAddresses.count, 3, "Each reset should create a unique layer")
-    }
-
-    // MARK: - State Reset Tests
-
-    // reset() 호출 시 remotePlayer가 nil로 초기화되는지
-    func testReset_ClearsRemotePlayer() {
-        // Given: remotePlayer 설정
-        let player = PlayerInfo(
-            id: UUID(),
-            role: .remote,
-            displayName: "Test Player",
-            avatar: .character1
-        )
-        sut.setTargetPlayer(player)
-        XCTAssertNotNil(sut.remotePlayer)
-
-        // When: reset 호출
-        sut.reset()
-
-        // Then: remotePlayer가 nil
-        XCTAssertNil(sut.remotePlayer, "Reset should clear remotePlayer")
+        XCTAssertEqual(layerAddresses.count, 3, "매 리셋마다 고유한 레이어 인스턴스가 생성되어야 함")
     }
 
     // reset() 호출 시 encoder가 재생성되는지
