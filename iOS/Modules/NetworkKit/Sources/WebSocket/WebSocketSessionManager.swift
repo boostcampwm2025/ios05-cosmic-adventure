@@ -148,6 +148,7 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
         players = []
         mySessionId = nil
         onConnectionStateChanged?(false)
+        onDisconnected?()
     }
     
     private func handleMessage(_ message: WebSocketMessage) {
