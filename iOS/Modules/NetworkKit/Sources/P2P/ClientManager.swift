@@ -27,6 +27,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
     var onPermissionDeniedOrFailed: ((Error) -> Void)?
     var onPeersUpdated: (([NetworkPeer]) -> Void)?
     var onDataReceived: ((Data, NWConnection) -> Void)?
+    var onConnectionFailed: ((NWConnection) -> Void)?
 
     // MARK: - Initialization
 
@@ -129,12 +130,14 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
                         }
                     case .failed(let error):
                         self.logger.error("연결 실패: \(error.localizedDescription)")
+                        self.onConnectionFailed?(connection)
                         self.removeConnection(connection)
                         if !hasResumed {
                             hasResumed = true
                             continuation.resume(throwing: error)
                         }
                     case .cancelled:
+                        self.onConnectionFailed?(connection)
                         self.removeConnection(connection)
                         if !hasResumed {
                             hasResumed = true
@@ -247,15 +250,16 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
 
             if let error = error {
                 self?.logger.error("데이터 수신 실패: \(error.localizedDescription)")
+                self?.onConnectionFailed?(connection)
                 self?.removeConnection(connection)
                 return
             }
 
-            // isComplete가 true여도 connection 상태가 ready면 계속 수신 대기
             if connection.state == .ready {
                 self?.receiveData(from: connection)
             } else {
                 self?.logger.info("연결 상태가 ready가 아님: \(String(describing: connection.state))")
+                self?.onConnectionFailed?(connection)
                 self?.removeConnection(connection)
             }
         }

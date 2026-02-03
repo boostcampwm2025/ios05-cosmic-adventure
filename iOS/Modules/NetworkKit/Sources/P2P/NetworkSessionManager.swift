@@ -50,6 +50,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
     public var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
+    public var onDisconnected: (() -> Void)?
 
     // MARK: - Initialization
 
@@ -105,8 +106,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         hostGranted = nil
         clientGranted = nil
 
-        onPermissionResult = nil
-    }
+         onPermissionResult = nil
+         onDisconnected = nil
+     }
 
     public func sendInvite(to targetId: UUID) {
         guard let targetPeer = peerById[targetId] else { return }
@@ -143,7 +145,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
         if let connection = self.activeGameConnection {
-            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
+            connection.send(content: encodedPacket, isComplete: true, completion: .contentProcessed { error in
                 if let error = error {
                     self.logger.error("전송 실패: \(error.localizedDescription)")
                 }
@@ -170,7 +172,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
         if let connection = self.activeVideoConnection {
-            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
+            connection.send(content: encodedPacket, isComplete: true, completion: .contentProcessed { error in
                 if let error = error {
                     self.logger.error("비디오 전송 실패: \(error.localizedDescription)")
                 }
@@ -198,9 +200,9 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         guard let encodedPacket = try? encoder.encode(packet) else { return }
 
         if let connection = self.activeGameConnection {
-            connection.send(content: encodedPacket, isComplete: false, completion: .contentProcessed { error in
+            connection.send(content: encodedPacket, isComplete: true, completion: .contentProcessed { [weak self] error in
                 if let error = error {
-                    self.logger.error("게임 종료 전송 실패: \(error.localizedDescription)")
+                    self?.logger.error("게임 종료 전송 실패: \(error.localizedDescription)")
                 }
             })
         }
@@ -222,6 +224,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         host.onDataReceived = { [weak self] data, connection in
             self?.handleReceivedData(data, from: connection)
         }
+
+        host.onConnectionFailed = { [weak self] connection in
+            self?.handleConnectionFailed(connection)
+        }
     }
 
     private func setupClientCallback() {
@@ -233,6 +239,10 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         client.onPermissionDeniedOrFailed = { [weak self] error in
             self?.clientGranted = false
             self?.handlePermissionError(error)
+        }
+
+        client.onConnectionFailed = { [weak self] connection in
+            self?.handleConnectionFailed(connection)
         }
 
         client.onPeersUpdated = { [weak self] peers in
@@ -258,6 +268,31 @@ public final class NetworkSessionManager: NetworkSessionManaging {
 
         client.onDataReceived = { [weak self] data, connection in
             self?.handleReceivedData(data, from: connection)
+        }
+    }
+
+    private func handleConnectionFailed(_ connection: NWConnection) {
+        DispatchQueue.main.async { [weak self] in
+            guard let self else { return }
+
+            var isActiveConnection = false
+
+            if self.activeGameConnection === connection {
+                self.logger.error("게임 연결 끊김 감지")
+                self.activeGameConnection = nil
+                isActiveConnection = true
+            }
+
+            if self.activeVideoConnection === connection {
+                self.logger.error("비디오 연결 끊김 감지")
+                self.activeVideoConnection = nil
+                isActiveConnection = true
+            }
+
+            if isActiveConnection {
+                self.activePeerId = nil
+                self.onDisconnected?()
+            }
         }
     }
 
