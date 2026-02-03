@@ -96,7 +96,7 @@ extension LobbyViewModel {
                 id: player.id,
                 role: .remote,
                 displayName: player.nickname,
-                avatar: randomAvatar(),
+                avatar: CharacterAvatar(rawValue: player.characterRawValue) ?? .character1,
                 proximity: proximity
             )
         }
@@ -107,14 +107,14 @@ extension LobbyViewModel {
 
         let proximity = calculateProximity(latency: player.latency)
 
-        let player = PlayerInfo(
+        let playerInfo = PlayerInfo(
             id: player.id,
             role: .remote,
             displayName: player.nickname,
-            avatar: randomAvatar(),
+            avatar: CharacterAvatar(rawValue: player.characterRawValue) ?? .character1,
             proximity: proximity
         )
-        remotePlayers.append(player)
+        remotePlayers.append(playerInfo)
     }
 
     func removeRemotePlayer(playerId: UUID) {
@@ -123,10 +123,5 @@ extension LobbyViewModel {
         if selectedPlayerID == playerId {
             selectedPlayerID = nil
         }
-    }
-
-    func randomAvatar() -> CharacterAvatar {
-        let avatars: [CharacterAvatar] = [.character1, .character2, .character3, .character4, .character5, .character6]
-        return avatars.randomElement() ?? .character1
     }
 }

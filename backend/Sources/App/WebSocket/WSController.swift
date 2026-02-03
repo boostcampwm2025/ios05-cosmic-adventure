@@ -39,6 +39,9 @@ private func extractMetadata(from req: Request) -> [String: String] {
     if let nickname = req.query[String.self, at: "nickname"] {
         metadata["nickname"] = nickname
     }
+    if let character = req.query[String.self, at: "character"] {
+        metadata["character"] = character
+    }
 
     return metadata
 }

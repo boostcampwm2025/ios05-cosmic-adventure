@@ -79,7 +79,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         myNickname = nickname
         localSessionId = UUID()
 
-        host.startHosting(nickName: nickname, status: .available, sessionId: localSessionId)
+        host.startHosting(nickName: nickname, status: .available, sessionId: localSessionId, characterRawValue: characterRawValue)
         client.startBrowsing()
         startPingTimer()
     }
