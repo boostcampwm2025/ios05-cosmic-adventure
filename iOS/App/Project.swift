@@ -75,6 +75,8 @@ let project = Project(
                 base: [
                     "DEVELOPMENT_TEAM": "AQCS8SYVV6",
                     "CODE_SIGN_STYLE": "Automatic",
+                    "SUPPORTS_MACCATALYST": "NO",
+                    "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
                 ],
                 configurations: xconfigExists ? [
                     .debug(name: "Debug", xcconfig: "Environment.xcconfig"),
