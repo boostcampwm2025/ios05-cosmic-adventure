@@ -16,6 +16,7 @@ protocol MultiplayerNetworkManaging: AnyObject {
     func unbind()
     func notifyGameEnded(_ reason: GameEndReason)
     func setOnGameEndReceived(_ handler: @escaping @Sendable (NetworkGameEndDTO) -> Void)
+    func setOnPeerDisconnected(_ handler: @escaping @Sendable () -> Void)
     func tick(deltaTime: TimeInterval)
 }
 
@@ -56,6 +57,7 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     private var didSendGameEnd: Bool = false
 
     private var onGameEndReceived: (@Sendable (NetworkGameEndDTO) -> Void)?
+    private var onPeerDisconnected: (@Sendable () -> Void)?
 
     private var localPlayerID: UUID { localPlayer.id }
     private var remotePlayerIDs: [UUID] { remotePlayers.map(\.id) }
@@ -67,6 +69,10 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
 
     /// 이 시간 이상 원격 수신이 없으면 moveX=0 강제 적용
     private let remoteFreezeAfter: TimeInterval = 0.8
+
+    /// 이 시간 이상 원격 수신이 없으면 연결 끊김으로 판단
+    private let peerTimeoutInterval: TimeInterval = 3.0
+    private var didNotifyPeerTimeout: Bool = false
 
     init(
         localPlayer: PlayerInfo,
@@ -100,6 +106,10 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         Task { await self.setOnGameEndReceivedAsync(handler) }
     }
 
+    nonisolated func setOnPeerDisconnected(_ handler: @escaping @Sendable () -> Void) {
+        Task { await self.setOnPeerDisconnectedAsync(handler) }
+    }
+
     /// gameplayManager.update(deltaTime:)와 동일 틱에 실행되는 네트워크 처리
     /// `SKScene.update`는 동기(sync)로 호출되기 때문에, 여기서 바로 `await`를 사용할 수 없어
     ///  실제 작업을 `Task`로 감싸 actor 큐에 등록(enqueue)하여 비동기로 처리합니다.
@@ -130,10 +140,15 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         lastRemoteReceivedAt = Date().timeIntervalSince1970
         didForceStopRemote = false
         didSendGameEnd = false
+        didNotifyPeerTimeout = false
     }
 
     private func setOnGameEndReceivedAsync(_ handler: @escaping @Sendable (NetworkGameEndDTO) -> Void) async {
         onGameEndReceived = handler
+    }
+
+    private func setOnPeerDisconnectedAsync(_ handler: @escaping @Sendable () -> Void) async {
+        onPeerDisconnected = handler
     }
 
     private func unbindAsync() async {
@@ -148,6 +163,7 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         }
         connectionSessionManager.onInputReceived = nil
         connectionSessionManager.onGameEnded = nil
+        onPeerDisconnected = nil
     }
 
     private func notifyGameEndedAsync(_ reason: GameEndReason) async {
@@ -414,6 +430,12 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         if (now - lastRemoteReceivedAt) > remoteFreezeAfter, didForceStopRemote == false {
             didForceStopRemote = true
             remoteTargetMoveX = 0
+        }
+
+        // 장시간 수신 없으면 연결 끊김으로 판단
+        if (now - lastRemoteReceivedAt) > peerTimeoutInterval, !didNotifyPeerTimeout {
+            didNotifyPeerTimeout = true
+            onPeerDisconnected?()
         }
 
         // exponential smoothing: alpha = 1 - exp(-dt / tau)
