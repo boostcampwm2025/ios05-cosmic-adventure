@@ -330,18 +330,20 @@ extension GameScene: SKPhysicsContactDelegate {
                 }
                 
                 gameplayManager?.handleContact(.ground, for: playerID)
-                
-                if playerID == localPlayerID {
-                    platformController?.updateLastSafePlatform(platformNode)
-                    if let idx = platformController?.lastSafePlatformIndex,
-                       let safe = platformController?.lastSafePosition {
-                        // 로컬 플레이어의 진행도만 기록
+
+                platformController?.updateLastSafePlatform(platformNode)
+                if let idx = platformController?.lastSafePlatformIndex,
+                   let safe = platformController?.lastSafePosition {
+                    // 상대방 기기에서도 내 진행도를 알 수 있게 함
+                    gameplayManager?.updateLastSafePosition(
+                        RespawnPosition(x: Double(safe.x),
+                                        y: Double(safe.y),
+                                        platformIndex: idx),
+                        for: playerID
+                    )
+                    if playerID == localPlayerID {
+                        // 진행도 트래커 업데이트는 로컬 플레이어만 기록
                         gameplayManager?.updateLandedPlatformIndex(idx)
-                        // 로컬 플레이어의 마지막 리스폰 위치만 기록
-                        gameplayManager?.updateLastSafePosition(
-                            RespawnPosition(x: Double(safe.x), y: Double(safe.y)),
-                            for: localPlayerID
-                        )
                     }
                 }
             }

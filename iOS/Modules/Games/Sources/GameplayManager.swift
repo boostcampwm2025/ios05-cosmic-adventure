@@ -276,7 +276,6 @@ extension GameplayManager {
     // MARK: Remote
     
     public func updateLastSafePosition(_ pos: RespawnPosition, for playerID: UUID) {
-        guard playerID == localPlayerID else { return }
         state.setLastSafePosition(pos, for: playerID)
     }
     
@@ -314,6 +313,35 @@ extension GameplayManager {
 
     public func updateLandedPlatformIndex(_ index: Int) {
         guard gameEnd.endReason == nil else { return }
-        gameEnd.updateLandedPlatformIndex(index)
+        gameEnd.updateLandedPlatformIndex(index, playerID: localPlayerID)
+    }
+}
+
+// MARK: 게임 결과에 따른 승자 ID 계산
+extension GameplayManager {
+    public func getWinnerID(for reason: GameEndReason) -> UUID? {
+        switch reason {
+        case .reachedFinish:
+            // 결승선 통과 시 이미 저장된 승자 ID 반환
+            return gameEnd.winnerID
+        case .timeout:
+            // 타임아웃 시: 플랫폼 인덱스 비교
+            let localIndex = gameEnd.lastLandedPlatformIndex
+
+            // 2인 모드일 때만 비교
+            if let remoteID = remotePlayerIDs.first {
+                // 상대방의 마지막 인덱스 가져오기
+                let remoteIndex = state.characters[remoteID]?.respawn.lastSafePosition.platformIndex ?? 0
+                if localIndex > remoteIndex {
+                    return localPlayerID
+                } else if remoteIndex > localIndex {
+                    return remoteID
+                }
+                return nil
+            }
+            return nil
+        case .quit:
+            return nil
+        }
     }
 }

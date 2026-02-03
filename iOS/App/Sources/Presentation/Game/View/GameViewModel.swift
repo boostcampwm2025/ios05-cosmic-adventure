@@ -43,7 +43,7 @@ final class GameViewModel {
         gameplayManager.gameEnd.endReason
     }
 
-    struct GameEndDisplay: Equatable {
+    struct GameEndDisplay: Equatable, Hashable {
         let reason: GameEndReason
         let winnerId: UUID?
         let localElapsedSeconds: Int?
@@ -182,37 +182,6 @@ final class GameViewModel {
         gameplayManager.requestRespawn(.fell, for: localPlayerID)
     }
 
-    func updateLocalGameEndDisplay(_ reason: GameEndReason) {
-        guard gameEndDisplay == nil else { return }
-        let opponentId = remotePlayerId
-        let winnerId: UUID?
-        switch reason {
-        case .reachedFinish:
-            winnerId = localPlayerID
-        case .timeout:
-            winnerId = opponentId
-        case .quit:
-            winnerId = nil
-        }
-        let winnerName: String?
-        let opponentName: String?
-        if reason == .quit {
-            winnerName = nil
-            opponentName = nil
-        } else {
-            winnerName = winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName
-            opponentName = winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
-        }
-        gameEndDisplay = GameEndDisplay(
-            reason: reason,
-            winnerId: winnerId,
-            localElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
-            winnerElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
-            winnerName: winnerName,
-            opponentName: opponentName
-        )
-    }
-
     func applyRemoteGameEnd(_ dto: NetworkGameEndDTO) {
         guard let reason = decodeGameEndReason(dto.reason) else { return }
         gameEndDisplay = GameEndDisplay(
@@ -222,6 +191,20 @@ final class GameViewModel {
             winnerElapsedSeconds: dto.winnerElapsedSeconds,
             winnerName: dto.winnerName,
             opponentName: dto.opponentName
+        )
+    }
+
+    func updateLocalGameEndDisplay(_ reason: GameEndReason) {
+        // 매니저를 통해 승자 확정
+        let winnerId = gameplayManager.getWinnerID(for: reason)
+
+        self.gameEndDisplay = GameEndDisplay(
+            reason: reason,
+            winnerId: winnerId,
+            localElapsedSeconds: Int(elapsedSeconds),
+            winnerElapsedSeconds: reason == .reachedFinish ? Int(elapsedSeconds) : nil, // 도착 시에만 기록
+            winnerName: winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName,
+            opponentName: winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
         )
     }
 

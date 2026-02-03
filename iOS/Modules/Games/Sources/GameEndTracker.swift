@@ -18,7 +18,8 @@ public final class GameEndTracker {
     public private(set) var elapsedSeconds: Int = 0
     public private(set) var remainingSeconds: Int? = nil
     public private(set) var lastLandedPlatformIndex: Int = 0
-
+    public private(set) var winnerID: UUID? = nil
+    
     private var elapsedTime: TimeInterval = 0
     private var timeLimit: TimeInterval? = nil
     private(set) var endCondition: any GameEndCondition
@@ -55,17 +56,27 @@ public final class GameEndTracker {
         evaluateEndConditionIfNeeded()
     }
 
-    public func updateLandedPlatformIndex(_ index: Int) {
+    public func updateLandedPlatformIndex(_ index: Int, playerID: UUID) {
         guard endReason == nil else { return }
         if index > lastLandedPlatformIndex {
             lastLandedPlatformIndex = index
         }
-        evaluateEndConditionIfNeeded()
+        evaluateEndConditionWithWinner(playerID: playerID)
     }
 
     private func evaluateEndConditionIfNeeded() {
         guard endReason == nil else { return }
         if let reason = endCondition.check(elapsedTime: elapsedTime, lastLandedPlatformIndex: lastLandedPlatformIndex) {
+            endReason = reason
+        }
+    }
+
+    private func evaluateEndConditionWithWinner(playerID: UUID) {
+        guard endReason == nil else { return }
+        if let reason = endCondition.check(elapsedTime: elapsedTime, lastLandedPlatformIndex: lastLandedPlatformIndex) {
+            if reason == .reachedFinish {
+                self.winnerID = playerID // 결승점 도달 시 승자 ID 기록
+            }
             endReason = reason
         }
     }
