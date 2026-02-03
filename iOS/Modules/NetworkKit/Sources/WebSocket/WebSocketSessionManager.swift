@@ -266,10 +266,16 @@ extension WebSocketSessionManager {
         if let cached = players.first(where: { $0.sessionId == senderId })?.id {
             return cached
         }
+        if let uuid = UUID(uuidString: senderId) {
+            return uuid
+        }
         return DeterministicUUID.fromString(senderId, namespace: "ws-sender")
     }
 
     private func sessionId(forPlayerId playerId: UUID) -> String? {
-        players.first(where: { $0.id == playerId })?.sessionId
+        if let sessionId = players.first(where: { $0.id == playerId })?.sessionId {
+            return sessionId
+        }
+        return playerId.uuidString
     }
 }
