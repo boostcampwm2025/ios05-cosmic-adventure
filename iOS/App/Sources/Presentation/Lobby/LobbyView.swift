@@ -241,9 +241,9 @@ private extension LobbyView {
             Spacer()
 
             HStack(spacing: 12) {
-                topBarButton(systemName: "trophy") {
-                    // TODO: RankingView로 연결
-                }
+//                topBarButton(systemName: "trophy") {
+//                    // TODO: RankingView로 연결
+//                }
 
                 topBarButton(systemName: "bell") {
                     viewModel.isShowingNotification.toggle()
