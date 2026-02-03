@@ -51,13 +51,13 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     // MARK: - Public Methods
     
-    public func activate(channelId: String?, nickname: String) {
+    public func activate(channelId: String?, nickname: String, characterRawValue: String) {
         guard !isActive else { return }
         guard let channelId = channelId else { return }
         isActive = true
 
         logger.info("WebSocket 탐색 시작 - channelId: \(channelId)")
-        service.connect(to: serverURL, channelId: channelId, nickname: nickname)
+        service.connect(to: serverURL, channelId: channelId, nickname: nickname, characterRawValue: characterRawValue)
     }
 
     public func deactivate() {

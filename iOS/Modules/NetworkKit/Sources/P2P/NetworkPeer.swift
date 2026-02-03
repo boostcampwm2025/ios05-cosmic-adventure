@@ -13,10 +13,11 @@ public enum PeerStatus: String {
     case busy
 }
 
-public struct NetworkPeer: Identifiable, Equatable {
+public struct NetworkPeer: Identifiable, Equatable, NetworkPlayerProfileProviding {
     public var id: String { endpoint.debugDescription }
     public let sessionId: UUID
-    public let name: String
+    public let nickname: String
+    public let characterRawValue: String
     public let status: PeerStatus
     public let endpoint: NWEndpoint
     public var latency: Double?

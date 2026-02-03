@@ -72,7 +72,7 @@ extension LobbyViewModel {
             return PlayerInfo(
                 id: player.sessionId,
                 role: .remote,
-                displayName: player.name,
+                displayName: player.nickname,
                 avatar: .character1,
                 proximity: proximity
             )

@@ -16,6 +16,7 @@ final class NetworkExplorationCoordinator {
     private var currentMode: NetworkMode?
     private var currentChannelId: String?
     private var currentNickname: String?
+    private var currentCharacterRawValue: String?
 
     init(
         networkSessionManager: NetworkSessionManaging,
@@ -36,12 +37,16 @@ final class NetworkExplorationCoordinator {
         }
     }
 
-    func updateExploration(mode: NetworkMode, channelId: String?, nickname: String) {
-        let needsRestart = currentMode != mode || currentChannelId != channelId || currentNickname != nickname
+    func updateExploration(mode: NetworkMode, channelId: String?, nickname: String, characterRawValue: String) {
+        let needsRestart = currentMode != mode
+            || currentChannelId != channelId
+            || currentNickname != nickname
+            || currentCharacterRawValue != characterRawValue
         
         currentMode = mode
         currentChannelId = channelId
         currentNickname = nickname
+        currentCharacterRawValue = characterRawValue
         
         if needsRestart && isAppActive {
             deactivateAll()
@@ -53,18 +58,29 @@ final class NetworkExplorationCoordinator {
         currentMode = nil
         currentChannelId = nil
         currentNickname = nil
+        currentCharacterRawValue = nil
         deactivateAll()
     }
 
     private func activateIfNeeded() {
-        guard let mode = currentMode, let nickname = currentNickname else { return }
+        guard let mode = currentMode,
+              let nickname = currentNickname,
+              let characterRawValue = currentCharacterRawValue else { return }
 
         switch mode {
         case .local:
-            networkSessionManager.activate(nickname: nickname)
+            networkSessionManager.activate(
+                channelId: nil,
+                nickname: nickname,
+                characterRawValue: characterRawValue
+            )
         case .remote:
             guard let channelId = currentChannelId else { return }
-            webSocketSessionManager?.activate(channelId: channelId, nickname: nickname)
+            webSocketSessionManager?.activate(
+                channelId: channelId,
+                nickname: nickname,
+                characterRawValue: characterRawValue
+            )
         }
     }
 

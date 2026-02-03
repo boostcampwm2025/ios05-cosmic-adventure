@@ -194,7 +194,8 @@ extension LobbyViewModel {
                 explorationCoordinator.updateExploration(
                     mode: .local,
                     channelId: nil,
-                    nickname: localPlayer.displayName
+                    nickname: localPlayer.displayName,
+                    characterRawValue: player.character
                 )
             }
         case .remote:
@@ -202,7 +203,8 @@ extension LobbyViewModel {
             explorationCoordinator.updateExploration(
                 mode: .remote,
                 channelId: channelId,
-                nickname: localPlayer.displayName
+                nickname: localPlayer.displayName,
+                characterRawValue: player.character
             )
         }
     }

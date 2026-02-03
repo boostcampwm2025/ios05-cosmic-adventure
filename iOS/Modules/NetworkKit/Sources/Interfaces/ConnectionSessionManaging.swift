@@ -10,7 +10,7 @@ import Foundation
 public protocol ConnectionSessionManaging: AnyObject {
     // MARK: - connection
 
-    func activate(channelId: String?, nickname: String)
+    func activate(channelId: String?, nickname: String, characterRawValue: String)
     func deactivate()
 
     // MARK: - call back
@@ -39,8 +39,8 @@ public protocol ConnectionSessionManaging: AnyObject {
 }
 
 extension ConnectionSessionManaging {
-    public func activate(nickname: String) {
-        self.activate(channelId: nil, nickname: nickname)
+    public func activate(nickname: String, characterRawValue: String) {
+        self.activate(channelId: nil, nickname: nickname, characterRawValue: characterRawValue)
     }
 
     public func sendInput<T: Codable>(_ data: T) {

@@ -19,7 +19,7 @@ final class MockConnectionSessionManager: ConnectionSessionManaging {
     var onVideoReceived: ((UUID, Data) -> Void)?
     var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
 
-    func activate(channelId: String?, nickname: String) {}
+    func activate(channelId: String?, nickname: String, characterRawValue: String) {}
     func deactivate() {}
     func sendInvite(to targetId: UUID) {}
     func acceptInvite(from targetId: UUID) {}

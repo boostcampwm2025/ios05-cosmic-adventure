@@ -221,7 +221,8 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
 
             return NetworkPeer(
                 sessionId: sessionId,
-                name: nickname,
+                nickname: nickname,
+                characterRawValue: "",
                 status: status,
                 endpoint: result.endpoint,
                 latency: nil                    // 탐색 직후부터 latency를 계산할 수 없으므로 초기값 nil

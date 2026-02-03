@@ -33,7 +33,7 @@ final class LocalNetworkPermissionRequester: LocalNetworkPermissionRequesting {
                 continuation.finish()
             }
 
-            networkSessionManager.activate(nickname: hostName)
+            networkSessionManager.activate(channelId: nil, nickname: hostName, characterRawValue: "")
 
             // 초기 요청 시 응답이 없을 경우를 대비한 타임아웃
             timeoutTask = Task { [weak self] in
