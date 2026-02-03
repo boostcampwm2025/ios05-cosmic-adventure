@@ -53,6 +53,7 @@ final class GameViewModel {
     }
 
     var gameEndDisplay: GameEndDisplay?
+    var showDisconnectAlert: Bool = false
     
     var remainingSeconds: Int? {
         gameplayManager.gameEnd.remainingSeconds
@@ -132,6 +133,12 @@ final class GameViewModel {
             self?.multiplayerIO?.tick(deltaTime: deltaTime)
         }
         
+        connectionSessionManager.onDisconnected = { [weak self] in
+            Task { @MainActor in
+                self?.showDisconnectAlert = true
+            }
+        }
+
         inputProvider.start()
     }
 
@@ -139,6 +146,7 @@ final class GameViewModel {
         multiplayerIO?.unbind()
         gameplayManager.onDidUpdate = nil
         gameplayManager.onJumpTriggered = nil
+        connectionSessionManager.onDisconnected = nil
 
         gameplayManager.unbind()
         inputProvider.stop()

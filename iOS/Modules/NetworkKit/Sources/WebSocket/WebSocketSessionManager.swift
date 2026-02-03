@@ -27,19 +27,26 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     
     // MARK: - Callbacks
     
+    /// 플레이어 정보 전달
     public var onPlayersUpdated: (([WebSocketPlayer]) -> Void)?
     public var onPlayerJoined: ((WebSocketPlayer) -> Void)?
     public var onPlayerLeft: ((UUID) -> Void)?
+
+    /// 초대 송수신
     public var onInviteReceived: ((UUID) -> Void)?
     public var onInviteAccepted: ((UUID) -> Void)?
     public var onInviteDeclined: ((UUID) -> Void)?
     public var onInviteCancelled: ((UUID) -> Void)?
-    public var onInputReceived: ((UUID, Data) -> Void)?
+
+    /// connection 관리
     public var onConnectionStateChanged: ((Bool) -> Void)?
+    public var onDisconnected: (() -> Void)?                 // 웹소켓에서도 비디오/게임 세션이 분리될 때 사용
+
+    /// 데이터 수신
+    public var onInputReceived: ((UUID, Data) -> Void)?
     public var onReadyStatusReceived: ((UUID) -> Void)?
     public var onVideoReceived: ((UUID, Data) -> Void)?
     public var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
-    public var onDisconnected: (() -> Void)?                 // 웹소켓에서도 비디오/게임 세션이 분리될 때 사용
 
     // MARK: - Initialization
     
