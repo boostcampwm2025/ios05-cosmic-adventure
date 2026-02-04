@@ -23,6 +23,8 @@ enum GameSpriteAsset: String, Codable, CaseIterable, Equatable {
 
     var atlasName: String {
         switch self {
+        case .monster:
+            return "Monster"
         case .goalRocket:
             return "GoalRocket"
         default:
