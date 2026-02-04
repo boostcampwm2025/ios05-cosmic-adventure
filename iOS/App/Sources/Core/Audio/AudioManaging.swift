@@ -5,12 +5,11 @@
 //  Created by sungkug_apple_developer_ac on 2/4/26.
 //
 
-
 import Foundation
 
 protocol AudioManaging {
     func playBGM(_ bgm: BGMAsset)
-    func stopBGM()
+    func stopBGMIfPlaying(_ bgm: BGMAsset)
     func playSFX(_ sfx: SFXAsset)
     func setBGMVolume(_ value: Float)
     func setSFXVolume(_ value: Float)

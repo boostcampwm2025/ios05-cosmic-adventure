@@ -134,7 +134,7 @@ final class LobbyViewModel {
     }
 
     func stopLobbyBGM() {
-        AudioManager.shared.stopBGM()
+        AudioManager.shared.stopBGMIfPlaying(.lobby)
     }
 
     private func setupNotificationHandlers() {
