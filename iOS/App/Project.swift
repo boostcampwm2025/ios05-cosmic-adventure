@@ -67,7 +67,9 @@ let project = Project(
             settings: .settings(
                 base: [
                     "DEVELOPMENT_TEAM": "AQCS8SYVV6",
-                    "CODE_SIGN_STYLE": "Automatic",
+                    "CODE_SIGN_STYLE": "Manual",
+                    "CODE_SIGN_IDENTITY": "Apple Distribution",
+                    "PROVISIONING_PROFILE_SPECIFIER": "match AppStore kr.boostcamp10.ios05.cosmic-adventure",
                     "SUPPORTS_MACCATALYST": "NO",
                     "SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD": "NO",
                     "TARGETED_DEVICE_FAMILY": "1",
