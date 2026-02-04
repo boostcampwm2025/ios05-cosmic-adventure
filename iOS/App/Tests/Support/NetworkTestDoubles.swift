@@ -1,15 +1,36 @@
 //
-//  LobbyViewModelTestHelpers.swift
+//  NetworkTestDoubles.swift
 //  App
 //
-//  Created by 영빈 on 2/4/26.
+//  Created by 영빈 on 2/5/26.
 //
 
 import Foundation
-@testable import App
 import NetworkKit
+@testable import App
 
-// MARK: - MockNetworkSessionManager
+final class MockConnectionSessionManager: ConnectionSessionManaging {
+    var onInviteReceived: ((UUID) -> Void)?
+    var onInviteAccepted: ((UUID) -> Void)?
+    var onInviteDeclined: ((UUID) -> Void)?
+    var onInviteCancelled: ((UUID) -> Void)?
+    var onInputReceived: ((UUID, Data) -> Void)?
+    var onReadyStatusReceived: ((UUID) -> Void)?
+    var onVideoReceived: ((UUID, Data) -> Void)?
+    var onGameEnded: ((UUID, NetworkGameEndDTO) -> Void)?
+
+    func activate(channelId: String?, nickname: String, characterRawValue: String) {}
+    func deactivate() {}
+    func sendInvite(to targetId: UUID) {}
+    func acceptInvite(from targetId: UUID) {}
+    func declineInvite(from targetId: UUID) {}
+    func cancelInvite(to targetId: UUID) {}
+    func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {}
+    func sendReadyStatus(to targetId: UUID) {}
+    func sendVideo(_ data: Data, to targetId: UUID?) {}
+    func getLatency(for playerId: UUID) -> Double? { nil }
+    func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {}
+}
 
 @MainActor
 final class MockNetworkSessionManager: NetworkSessionManaging {
@@ -38,6 +59,7 @@ final class MockNetworkSessionManager: NetworkSessionManaging {
     func activate(channelId: String?, nickname: String, characterRawValue: String) {
         activateCalls.append((channelId, nickname, characterRawValue))
     }
+
     func deactivate() { deactivateCallCount += 1 }
     func sendInvite(to targetId: UUID) { sendInviteCalls.append(targetId) }
     func acceptInvite(from targetId: UUID) { acceptInviteCalls.append(targetId) }
@@ -49,8 +71,6 @@ final class MockNetworkSessionManager: NetworkSessionManaging {
     func getLatency(for playerId: UUID) -> Double? { nil }
     func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {}
 }
-
-// MARK: - MockWebSocketSessionManager
 
 @MainActor
 final class MockWebSocketSessionManager: WebSocketSessionManaging {
@@ -83,6 +103,7 @@ final class MockWebSocketSessionManager: WebSocketSessionManaging {
     func activate(channelId: String?, nickname: String, characterRawValue: String) {
         activateCalls.append((channelId, nickname, characterRawValue))
     }
+
     func deactivate() { deactivateCallCount += 1 }
     func sendInvite(to targetId: UUID) { sendInviteCalls.append(targetId) }
     func acceptInvite(from targetId: UUID) { acceptInviteCalls.append(targetId) }
@@ -95,8 +116,6 @@ final class MockWebSocketSessionManager: WebSocketSessionManaging {
     func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {}
 }
 
-// MARK: - MockConnectivityMonitor
-
 final class MockConnectivityMonitor: ConnectivityMonitoring, @unchecked Sendable {
     var isConnected: Bool = false
     var connectionType: ConnectivityMonitor.ConnectionType = .wifi
@@ -105,23 +124,8 @@ final class MockConnectivityMonitor: ConnectivityMonitoring, @unchecked Sendable
     func start() {}
     func stop() {}
 
-    /// Test helper: simulate connectivity change callback
     func simulateConnectivityChange(isConnected: Bool) {
         self.isConnected = isConnected
         onStatusChanged?(isConnected)
     }
-}
-
-// MARK: - MockPermissionService
-
-@MainActor
-struct MockPermissionService: PermissionServicing {
-    var localNetworkResult: Bool = true
-    var cameraResult: Bool = true
-
-    func refreshCameraState() -> PermissionState { .allowed }
-    func requestCameraIfNeeded() async -> Bool { cameraResult }
-    func requestLocalNetworkPermissionIfNeeded() async -> Bool { localNetworkResult }
-    func requestNotificationPermission() async -> Bool { true }
-    func openAppSettings() {}
 }

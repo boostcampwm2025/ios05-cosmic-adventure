@@ -87,6 +87,7 @@ struct LobbyViewModelChannelGatingTests {
 
         // Then: 매치 상태가 idle로 초기화
         #expect(sut.matchStatus == .idle)
+        #expect(sut.remotePlayers.isEmpty)
     }
 
     @Test("초대를 수신한 상태일 때, 채널 리스트에 진입하면, 초대가 거절되고 알림·상태가 모두 초기화된다")
