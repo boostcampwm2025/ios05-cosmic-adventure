@@ -29,7 +29,8 @@ final class MonsterController {
     func setupInitialMonster() {
         guard let scene else { return }
 
-        let texture = SKTexture(imageNamed: AppAsset.Image.monsterOverlay.name)
+        let textures = loadMonsterTextures()
+        let texture = textures.first ?? SKTexture(imageNamed: AppAsset.Image.monsterOverlay.name)
         let sprite = SKSpriteNode(texture: texture)
 
         // 비율 유지 + 폭 기준
@@ -52,6 +53,7 @@ final class MonsterController {
         scene.addChild(sprite)
         self.node = sprite
 
+        attachMonsterAnimation(to: sprite, textures: textures)
         resetBelowCamera() // 시작 위치
     }
 
@@ -85,4 +87,31 @@ final class MonsterController {
     }
 
     var topY: CGFloat { node?.frame.maxY ?? -.infinity }
+}
+
+private extension MonsterController {
+    func attachMonsterAnimation(to sprite: SKSpriteNode, textures: [SKTexture]) {
+        guard textures.count >= 2 else { return }
+        let animate = SKAction.animate(with: textures, timePerFrame: 0.08, resize: false, restore: true)
+        sprite.run(.repeatForever(animate), withKey: "monsterAnimation")
+    }
+
+    func loadMonsterTextures() -> [SKTexture] {
+        let atlasName = GameSpriteAsset.monster.atlasName
+        guard !atlasName.isEmpty else { return [] }
+        let atlas = SKTextureAtlas(named: atlasName)
+        let names = atlas.textureNames.sorted { lhs, rhs in
+            extractFrameIndex(from: lhs) < extractFrameIndex(from: rhs)
+        }
+        let forward = names.map { atlas.textureNamed($0) }
+        guard forward.count >= 2 else { return forward }
+        let backward = forward.dropLast().dropFirst().reversed()
+        return forward + backward
+    }
+
+    func extractFrameIndex(from name: String) -> Int {
+        let digits = name.compactMap { $0.isNumber ? $0 : nil }
+        let value = String(digits)
+        return Int(value) ?? 0
+    }
 }
