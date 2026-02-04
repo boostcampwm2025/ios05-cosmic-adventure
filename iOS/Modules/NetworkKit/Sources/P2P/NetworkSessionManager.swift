@@ -275,24 +275,30 @@ public final class NetworkSessionManager: NetworkSessionManaging {
         DispatchQueue.main.async { [weak self] in
             guard let self else { return }
 
-            var isActiveConnection = false
+            let isGameConnection = self.activeGameConnection === connection
+            let isVideoConnection = self.activeVideoConnection === connection
 
-            if self.activeGameConnection === connection {
+            guard isGameConnection || isVideoConnection else { return }
+
+            if isGameConnection {
                 self.logger.error("게임 연결 끊김 감지")
-                self.activeGameConnection = nil
-                isActiveConnection = true
             }
-
-            if self.activeVideoConnection === connection {
+            if isVideoConnection {
                 self.logger.error("비디오 연결 끊김 감지")
-                self.activeVideoConnection = nil
-                isActiveConnection = true
             }
 
-            if isActiveConnection {
-                self.activePeerId = nil
-                self.onDisconnected?()
+            // 한 채널이 실패하면 같은 세션의 양쪽 채널 모두 종료
+            if let game = self.activeGameConnection {
+                game.cancel()
+                self.activeGameConnection = nil
             }
+            if let video = self.activeVideoConnection {
+                video.cancel()
+                self.activeVideoConnection = nil
+            }
+
+            self.activePeerId = nil
+            self.onDisconnected?()
         }
     }
 
