@@ -42,12 +42,16 @@ struct LobbyView: View {
         }
         .onAppear {
             viewModel.setup()
+            viewModel.playLobbyBGM()
 
             // onChange는 값이 '변경'될 때만 트리거되므로, 이미 remote 모드로 진입한 경우
             // 채널 목록을 불러오지 못함. onAppear에서도 fetch를 호출하여 이를 보완.
             if viewModel.networkMode == .remote && viewModel.selectedChannelId == nil {
                 Task { await channelListViewModel.fetchChannels() }
             }
+        }
+        .onDisappear {
+            viewModel.stopLobbyBGM()
         }
         .onChange(of: router.path) { oldPath, newPath in
             handleRouteChange(from: oldPath, to: newPath)

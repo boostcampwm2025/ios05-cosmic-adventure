@@ -69,6 +69,7 @@ final class LobbyViewModel {
     @ObservationIgnored
     let appEntryManager: AppEntryManager
 
+
     /// setupExploration()에서 생성한 권한 체크 Task. 중복 호출 시 이전 Task를 cancel하기 위해 보관.
     @ObservationIgnored
     private var permissionCheckTask: Task<Void, Never>?
@@ -126,6 +127,14 @@ final class LobbyViewModel {
         // networkMode가 확정된 후에만 탐색이 시작된다.
         setupNotificationHandlers()
         resetToIdle()
+    }
+
+    func playLobbyBGM() {
+        AudioManager.shared.playBGM(.lobby)
+    }
+
+    func stopLobbyBGM() {
+        AudioManager.shared.stopBGM()
     }
 
     private func setupNotificationHandlers() {
