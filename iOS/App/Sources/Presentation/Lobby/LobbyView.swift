@@ -136,12 +136,12 @@ private extension LobbyView {
     }
 
     // TODO: 채널 목록 로드 실패 시 분기 처리 (네트워크 끊김 등)
-    @ViewBuilder
-    var channelListContent: some View {
+     @ViewBuilder
+     var channelListContent: some View {
         AppAsset.Image.titleLogo.swiftUIImage
             .resizable()
             .scaledToFit()
-            .frame(height: 100)
+            .frame(height: 80)
             .padding(.top, 20)
 
         // channels 배열이 비어있는 것이 '로딩 중'인지 '정말 없는 것'인지 구분하기 위해
