@@ -40,7 +40,14 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         _ = await ChannelManager.shared.join(channelId, session: session)
 
         let latency = await manager.getLatency(for: session.id)
-        let playerInfo = buildPlayerInfo(from: session, latency: latency)
+        let playerInfoDict = buildPlayerInfo(from: session, latency: latency)
+        
+        guard let playerInfoData = try? JSONSerialization.data(withJSONObject: playerInfoDict),
+              let playerInfo = String(data: playerInfoData, encoding: .utf8) else {
+            print("[GameMessageHandler] \(session.id)의 플레이어 정보를 인코딩하는 데 실패했습니다.")
+            return
+        }
+        
         let joinedMessage = WSMessage(
             type: GameMessageType.playerJoined.rawValue,
             senderId: session.id,
@@ -71,37 +78,31 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         let sessionsInChannel = await ChannelManager.shared.getSessionsInChannel(channelId)
         guard !sessionsInChannel.isEmpty else { return }
 
-        let playerInfos = await withTaskGroup(of: String.self) { group in
-            for session in sessionsInChannel {
-                group.addTask {
-                    let latency = await manager.getLatency(for: session.id)
-                    return self.buildPlayerInfo(from: session, latency: latency)
-                }
-            }
-            
-            return await group.reduce(into: [String]()) { $0.append($1) }
+        // 모든 플레이어 정보 수집
+        var playerInfos: [[String: Any]] = []
+        for session in sessionsInChannel {
+            let latency = await manager.getLatency(for: session.id)
+            let playerInfo = buildPlayerInfo(from: session, latency: latency)
+            playerInfos.append(playerInfo)
         }
 
-        let playersArray = "[" + playerInfos.joined(separator: ",") + "]"
+        // 전송할 세션 목록 결정
+        let sessionsToSend = toSession.map { [$0] } ?? sessionsInChannel
 
-        if let session = toSession {
-            let payload = "{\"youSessionId\":\"\(session.id)\",\"players\":\(playersArray)}"
+        // 각 세션에 플레이어 목록 전송
+        for session in sessionsToSend {
+            guard let payload = buildPlayerListPayload(youSessionId: session.id,
+                                                        players: playerInfos) else {
+                print("[GameMessageHandler] \(session.id) 세션의 플레이어 목록을 구성하는 데 실패했습니다.")
+                continue
+            }
+
             let listMessage = WSMessage(
                 type: GameMessageType.channelPlayerList.rawValue,
                 senderId: "server",
                 payload: payload
             )
             await manager.send(to: session.id, message: listMessage)
-        } else {
-            for session in sessionsInChannel {
-                let payload = "{\"youSessionId\":\"\(session.id)\",\"players\":\(playersArray)}"
-                let listMessage = WSMessage(
-                    type: GameMessageType.channelPlayerList.rawValue,
-                    senderId: "server",
-                    payload: payload
-                )
-                await manager.send(to: session.id, message: listMessage)
-            }
         }
     }
 
@@ -135,22 +136,30 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         await manager.send(to: routed.to, message: forwarded)
     }
 
-    private func buildPlayerInfo(from session: WSSession, latency: Double?) -> String {
+    private func buildPlayerInfo(from session: WSSession, latency: Double?) -> [String: Any] {
         let nickname = session.metadata["nickname"] ?? "unknown"
         let character = session.metadata["character"] ?? ""
         let lat = latency ?? 200.0
 
-        let dict: [String: Any] = [
+        return [
             "sessionId": session.id,
             "nickname": nickname,
             "characterRawValue": character,
             "latency": lat
         ]
+    }
 
-        guard let data = try? JSONSerialization.data(withJSONObject: dict),
-              let json = String(data: data, encoding: .utf8) else {
-            return "{\"sessionId\":\"\(session.id)\",\"nickname\":\"\(nickname)\",\"characterRawValue\":\"\(character)\",\"latency\":\(lat)}"
+    private func buildPlayerListPayload(youSessionId: String, players: [[String: Any]]) -> String? {
+        let payloadDict: [String: Any] = [
+            "youSessionId": youSessionId,
+            "players": players
+        ]
+
+        guard let payloadData = try? JSONSerialization.data(withJSONObject: payloadDict),
+              let payload = String(data: payloadData, encoding: .utf8) else {
+            return nil
         }
-        return json
+
+        return payload
     }
 }
