@@ -356,7 +356,7 @@ public final class NetworkSessionManager: NetworkSessionManaging {
             case .ping:
                 let pongPacket = NetworkPacket(type: .pong, senderIdentifier: localSessionId.uuidString)
                 guard let encodedPong = try? self.encoder.encode(pongPacket) else { return }
-                host.sendData(encodedPong, to: connection)
+                host.sendData(encodedPong, to: connection, completion: nil)
 
             case .pong:
                 if let sendDate = lastPingTimestamps[senderId] {

@@ -9,7 +9,7 @@ import Foundation
 import Network
 import os
 
-final class ClientManager: ClientManaging, @unchecked Sendable {
+final class ClientManager: ClientManaging, ConnectionHandling, @unchecked Sendable {
 
     // MARK: - Properties
     
@@ -20,6 +20,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
     private var connections: [NWEndpoint: [ConnectionKind: NWConnection]] = [:]
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "ClientManager")
+    var connectionLogger: Logger { logger }
 
     // MARK: - Callbacks
 
@@ -161,15 +162,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
                 return
             }
 
-            logger.info("데이터 전송: \(data.count) bytes")
-            
-            connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
-                if let error = error {
-                    self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
-                } else {
-                    self?.logger.info("데이터 전송 성공")
-                }
-            })
+            self.sendData(data, to: connection)
         }
     }
 
@@ -241,31 +234,7 @@ final class ClientManager: ClientManaging, @unchecked Sendable {
         onPeersUpdated?(Array(peers))
     }
 
-    private func receiveData(from connection: NWConnection) {
-        connection.receiveMessage { [weak self] data, _, isComplete, error in
-            if let data = data, !data.isEmpty {
-                self?.logger.info("데이터 수신: \(data.count) bytes")
-                self?.onDataReceived?(data, connection)
-            }
-
-            if let error = error {
-                self?.logger.error("데이터 수신 실패: \(error.localizedDescription)")
-                self?.onConnectionFailed?(connection)
-                self?.removeConnection(connection)
-                return
-            }
-
-            if connection.state == .ready {
-                self?.receiveData(from: connection)
-            } else {
-                self?.logger.info("연결 상태가 ready가 아님: \(String(describing: connection.state))")
-                self?.onConnectionFailed?(connection)
-                self?.removeConnection(connection)
-            }
-        }
-    }
-
-    private func removeConnection(_ connection: NWConnection) {
+    func removeConnection(_ connection: NWConnection) {
         networkQueue.async { [weak self] in
             guard let self else { return }
             let endpoints = Array(connections.keys)

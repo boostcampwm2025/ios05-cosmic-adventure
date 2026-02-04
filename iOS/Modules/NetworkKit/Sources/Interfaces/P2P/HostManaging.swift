@@ -16,6 +16,5 @@ public protocol HostManaging {
 
     func startHosting(nickName: String, status: PeerStatus, sessionId: UUID, characterRawValue: String)
     func stopHosting()
-    func sendData(_ data: Data, to connection: NWConnection)
-    func sendData(_ data: Data, to connection: NWConnection, completion: @escaping (NWError?) -> Void)
+    func sendData(_ data: Data, to connection: NWConnection, completion: ((NWError?) -> Void)?)
 }
