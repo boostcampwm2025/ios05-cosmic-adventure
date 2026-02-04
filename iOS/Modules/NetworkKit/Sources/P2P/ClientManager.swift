@@ -138,7 +138,7 @@ final class ClientManager: ClientManaging, ConnectionHandling, @unchecked Sendab
                             continuation.resume(throwing: error)
                         }
                     case .cancelled:
-                        self.onConnectionFailed?(connection)
+                        self.logger.info("연결 취소")
                         self.removeConnection(connection)
                         if !hasResumed {
                             hasResumed = true

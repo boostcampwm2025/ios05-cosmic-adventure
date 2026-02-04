@@ -122,6 +122,9 @@ final class HostManager: HostManaging, ConnectionHandling {
                 self?.logger.error("연결 실패: \(error.localizedDescription)")
                 self?.onConnectionFailed?(connection)
                 self?.removeConnection(connection)
+            case .cancelled:
+                self?.logger.info("연결 취소")
+                self?.removeConnection(connection)
             default:
                 return
             }
