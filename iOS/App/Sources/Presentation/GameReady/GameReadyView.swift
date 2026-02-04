@@ -65,6 +65,20 @@ struct GameReadyView: View {
             viewModel.stopTimer()
             startTask?.cancel()
         }
+        .alert(
+            L10N.GameReady.timeoutTitle,
+            isPresented: Binding(
+                get: { viewModel.didTimeout },
+                set: { if !$0 { viewModel.clearTimeout() } }
+            )
+        ) {
+            Button(L10N.GameReady.timeoutAction) {
+                viewModel.clearTimeout()
+                router.resetToHome()
+            }
+        } message: {
+            Text(L10N.GameReady.timeoutMessage)
+        }
         .onChange(of: viewModel.isMeReady) { _, _ in attemptStart() }
         .onChange(of: viewModel.isPeerReady) { _, _ in attemptStart() }
         .onChange(of: viewModel.scheduledStartAt) { _, _ in attemptStart() }

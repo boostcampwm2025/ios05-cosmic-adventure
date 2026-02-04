@@ -108,6 +108,9 @@ enum L10N {
         static let allReadyMessage = "모든 탐험가 준비 완료! 곧 시작합니다."
         static let soloPreparingMessage = "탐험 준비중..."
         static let soloReadyMessage = "탐험 준비 완료! 곧 시작합니다."
+        static let timeoutTitle: LocalizedStringKey = "연결 지연"
+        static let timeoutMessage: LocalizedStringKey = "30초 동안 연결 상태에 변화가 없어 로비로 이동합니다."
+        static let timeoutAction: LocalizedStringKey = "로비로 이동"
     }
 
     enum Settings {

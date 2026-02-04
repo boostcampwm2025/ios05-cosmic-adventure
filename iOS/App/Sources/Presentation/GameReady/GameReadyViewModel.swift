@@ -26,10 +26,13 @@ final class GameReadyViewModel {
 
     @ObservationIgnored
     private var readyRetryTimer: Timer?
+    @ObservationIgnored
+    private var readyTimeoutTimer: Timer?
 
     private(set) var isMeReady: Bool = false
     private(set) var isPeerReady: Bool = false
     private(set) var scheduledStartAt: TimeInterval? = nil
+    private(set) var didTimeout: Bool = false
 
     private(set) var message: String = ""
     private(set) var progress: Double = 0.0
@@ -40,6 +43,7 @@ final class GameReadyViewModel {
 
     private var hasSentStartSignal: Bool = false
     private let decoder = JSONDecoder()
+    private let readyTimeoutInterval: TimeInterval = 30
 
     init(
         localPlayer: PlayerInfo,
@@ -61,9 +65,10 @@ final class GameReadyViewModel {
 
         setupConnectivityMonitor()
     }
-
+    
     deinit {
         readyRetryTimer?.invalidate()
+        readyTimeoutTimer?.invalidate()
     }
 
     func setMyReady() {
@@ -86,6 +91,7 @@ final class GameReadyViewModel {
             }
         } else {
             startReadySignalTimer()
+            startReadyTimeoutTimerIfNeeded()
         }
     }
 
@@ -96,6 +102,8 @@ final class GameReadyViewModel {
     func stopTimer() {
         readyRetryTimer?.invalidate()
         readyRetryTimer = nil
+        readyTimeoutTimer?.invalidate()
+        readyTimeoutTimer = nil
     }
 
     private func startReadySignalTimer() {
@@ -185,6 +193,7 @@ final class GameReadyViewModel {
         guard !isPeerReady else { return }
 
         isPeerReady = true
+        cancelReadyTimeoutTimer()
         updateProgressUI()
         evaluateStartIfReady()
     }
@@ -202,6 +211,7 @@ final class GameReadyViewModel {
             hasSentStartSignal = true
             let startAt = Date().timeIntervalSince1970 + 2.0
             scheduledStartAt = startAt
+            cancelReadyTimeoutTimer()
             sendStartSignal(startAt: startAt)
         }
     }
@@ -210,11 +220,37 @@ final class GameReadyViewModel {
         guard scheduledStartAt == nil else { return }
         guard let dto = try? decoder.decode(NetworkGameStartSyncDTO.self, from: payload) else { return }
         scheduledStartAt = dto.startAt
+        cancelReadyTimeoutTimer()
     }
 
     private func scheduleLocalStart(after delay: TimeInterval) {
         guard scheduledStartAt == nil else { return }
         scheduledStartAt = Date().timeIntervalSince1970 + delay
+    }
+
+    private func startReadyTimeoutTimerIfNeeded() {
+        guard remotePlayer != nil else { return }
+        guard readyTimeoutTimer == nil else { return }
+        guard didTimeout == false else { return }
+
+        readyTimeoutTimer = Timer.scheduledTimer(withTimeInterval: readyTimeoutInterval, repeats: false) { [weak self] _ in
+            Task { @MainActor in
+                guard let self else { return }
+                guard self.scheduledStartAt == nil else { return }
+                
+                self.didTimeout = true
+                self.stopTimer()
+            }
+        }
+    }
+
+    private func cancelReadyTimeoutTimer() {
+        readyTimeoutTimer?.invalidate()
+        readyTimeoutTimer = nil
+    }
+
+    func clearTimeout() {
+        didTimeout = false
     }
 
     private func isHost() -> Bool {
