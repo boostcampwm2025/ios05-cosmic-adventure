@@ -156,7 +156,7 @@ final class GameViewModel {
 
         gameplayManager.unbind()
         inputProvider.stop()
-        AudioManager.shared.stopBGM()
+        AudioManager.shared.stopBGMIfPlaying(.gameplay)
     }
 
     func bindRemotePlayerPosition(scene: GameScene) {

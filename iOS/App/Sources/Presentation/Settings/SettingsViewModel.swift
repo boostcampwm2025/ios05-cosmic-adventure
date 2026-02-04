@@ -32,7 +32,10 @@ final class SettingsViewModel {
     }
     
     var soundVolume: Int {
-        didSet { UserDefaultsList.Settings.soundVolumeRaw = soundVolume }
+        didSet {
+            UserDefaultsList.Settings.soundVolumeRaw = soundVolume
+            AudioManager.shared.applyVolumeFromDefaults()
+        }
     }
     
     var isHapticsEnabled: Bool {
