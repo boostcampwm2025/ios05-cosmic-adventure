@@ -9,7 +9,7 @@ import Foundation
 import Network
 import os
 
-final class HostManager: HostManaging {
+final class HostManager: HostManaging, ConnectionHandling {
     
     // MARK: - Properties
     
@@ -20,6 +20,7 @@ final class HostManager: HostManaging {
     private var connections: [NWConnection] = []
 
     private let logger = Logger(subsystem: "com.cosmicadventure.networkkit", category: "HostManager")
+    var connectionLogger: Logger { logger }
 
     // MARK: - Callbacks
 
@@ -84,31 +85,6 @@ final class HostManager: HostManaging {
         listener = nil
     }
 
-    func sendData(_ data: Data, to connection: NWConnection) {
-        logger.info("데이터 전송 시작: \(data.count) bytes")
-
-        connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
-            if let error = error {
-                self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
-            } else {
-                self?.logger.info("데이터 전송 성공")
-            }
-        })
-    }
-
-    func sendData(_ data: Data, to connection: NWConnection, completion: @escaping (NWError?) -> Void) {
-        logger.info("데이터 전송 시작: \(data.count) bytes")
-
-        connection.send(content: data, isComplete: true, completion: .contentProcessed { [weak self] error in
-            if let error = error {
-                self?.logger.error("데이터 전송 실패: \(error.localizedDescription)")
-            } else {
-                self?.logger.info("데이터 전송 성공")
-            }
-            completion(error)
-        })
-    }
-
     // MARK: - Private Methods
 
     private func handleListenerStateUpdate(_ state: NWListener.State) {
@@ -154,31 +130,7 @@ final class HostManager: HostManaging {
         connection.start(queue: networkQueue)
     }
 
-    private func receiveData(from connection: NWConnection) {
-        connection.receiveMessage { [weak self] data, _, isComplete, error in
-            if let data = data, !data.isEmpty {
-                self?.logger.info("데이터 수신: \(data.count) bytes")
-                self?.onDataReceived?(data, connection)
-            }
-
-            if let error = error {
-                self?.logger.error("데이터 수신 실패: \(error.localizedDescription)")
-                self?.onConnectionFailed?(connection)
-                self?.removeConnection(connection)
-                return
-            }
-
-            if connection.state == .ready {
-                self?.receiveData(from: connection)
-            } else {
-                self?.logger.info("연결 상태가 ready가 아님: \(String(describing: connection.state))")
-                self?.onConnectionFailed?(connection)
-                self?.removeConnection(connection)
-            }
-        }
-    }
-
-    private func removeConnection(_ connection: NWConnection) {
+    func removeConnection(_ connection: NWConnection) {
         connections.removeAll { $0 === connection }
         connection.cancel()
     }
