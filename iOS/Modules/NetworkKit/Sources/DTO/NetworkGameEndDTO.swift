@@ -19,18 +19,21 @@ public struct NetworkGameEndDTO: Codable, Sendable {
     public let winnerElapsedSeconds: Int?
     public let winnerName: String?
     public let opponentName: String?
+    public let lastSafePlatformIndex: Int
 
     public init(
         reason: GameEndReasonCode,
         winnerId: UUID? = nil,
         winnerElapsedSeconds: Int? = nil,
         winnerName: String? = nil,
-        opponentName: String? = nil
+        opponentName: String? = nil,
+        lastSafePlatformIndex: Int = 0
     ) {
         self.reason = reason
         self.winnerId = winnerId
         self.winnerElapsedSeconds = winnerElapsedSeconds
         self.winnerName = winnerName
         self.opponentName = opponentName
+        self.lastSafePlatformIndex = lastSafePlatformIndex
     }
 }

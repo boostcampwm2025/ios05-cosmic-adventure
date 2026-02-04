@@ -170,8 +170,21 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         guard didSendGameEnd == false else { return }
         guard let peerId else { return }
         didSendGameEnd = true
+
+        if reason == .reachedFinish {
+            await MainActor.run {
+                gameplayManager.gameEnd.updateWinner(localPlayer.id)
+            }
+        }
+
         let dto = await makeGameEndDTO(reason: reason)
-        connectionSessionManager.sendGameEnded(dto, to: peerId)
+
+        Task.detached(priority: .userInitiated) { [weak self] in
+            guard let self else { return }
+            await connectionSessionManager.sendGameEnded(dto, to: peerId)
+        }
+
+        onGameEndReceived?(dto)
     }
 
     private func tickAsync(deltaTime: TimeInterval) async {
@@ -231,12 +244,26 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         guard let reason = decodeGameEndReason(dto.reason) else { return }
         didSendGameEnd = true
 
-        if let onGameEndReceived {
-            onGameEndReceived(dto)
-        }
         await MainActor.run {
-            self.gameplayManager.applyGameEnd(reason)
+            var finalWinner: UUID? = nil
+
+            if let winnerIdFromDTO = dto.winnerId {
+                finalWinner = winnerIdFromDTO
+            } else if reason == .timeout {
+                let myIndex = gameplayManager.gameEnd.lastLandedPlatformIndex
+                let opponentIndex = dto.lastSafePlatformIndex
+
+                if myIndex > opponentIndex {
+                    finalWinner = localPlayer.id
+                } else if opponentIndex > myIndex {
+                    finalWinner = sender
+                }
+            }
+
+            gameplayManager.gameEnd.updateWinner(finalWinner)
         }
+
+        onGameEndReceived?(dto)
     }
     
     private func installLocalRespawnConfirmedSender() async {
@@ -316,37 +343,23 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         connectionSessionManager.sendGameEnded(dto, to: peerId)
     }
 
+    // 종료 신호를 보낼 때
     private func makeGameEndDTO(reason: GameEndReason) async -> NetworkGameEndDTO {
-        let remotePlayerId = remotePlayerIDs.first
-        let elapsed = await MainActor.run { gameplayManager.gameEnd.elapsedSeconds }
-        let winnerId: UUID?
-        let winnerElapsed: Int?
-        switch reason {
-        case .reachedFinish:
-            winnerId = localPlayerID
-            winnerElapsed = elapsed
-        case .timeout:
-            winnerId = remotePlayerId
-            winnerElapsed = nil
-        case .quit:
-            winnerId = nil
-            winnerElapsed = nil
+        let (myIndex, myElapsed, winnerId) = await MainActor.run {
+            let gameEnd = gameplayManager.gameEnd
+            return (
+                gameEnd.lastLandedPlatformIndex,
+                gameEnd.elapsedSeconds,
+                gameEnd.winnerID
+            )
         }
-        let winnerName: String?
-        let opponentName: String?
-        if reason == .quit {
-            winnerName = nil
-            opponentName = nil
-        } else {
-            winnerName = (winnerId == localPlayerID) ? localDisplayName : remoteDisplayName
-            opponentName = (winnerId == localPlayerID) ? remoteDisplayName : localDisplayName
-        }
+
         return NetworkGameEndDTO(
             reason: encodeGameEndReason(reason),
             winnerId: winnerId,
-            winnerElapsedSeconds: winnerElapsed,
-            winnerName: winnerName,
-            opponentName: opponentName
+            winnerElapsedSeconds: myElapsed,
+            winnerName: localPlayer.displayName,
+            lastSafePlatformIndex: myIndex
         )
     }
 

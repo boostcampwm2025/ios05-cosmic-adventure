@@ -27,7 +27,9 @@ final class GameViewModel {
     
     let gameplayManager: GameplayManager
     let gameConfig: GameConfigProviding
-    
+
+    var shouldNavigateToResult: Bool = false
+
     @ObservationIgnored
     let inputProvider: FaceTrackingGameInputProvider
     
@@ -182,19 +184,39 @@ final class GameViewModel {
 
     func applyRemoteGameEnd(_ dto: NetworkGameEndDTO) {
         guard let reason = decodeGameEndReason(dto.reason) else { return }
-        gameEndDisplay = GameEndDisplay(
+
+        let finalWinnerId = dto.winnerId ?? gameplayManager.gameEnd.winnerID
+        var winnerName: String? = nil
+        var opponentName: String? = nil
+
+        if let winnerId = finalWinnerId {
+            if winnerId == localPlayerID {
+                winnerName = localPlayer.displayName
+                opponentName = remotePlayer?.displayName
+            } else {
+                winnerName = remotePlayer?.displayName
+                opponentName = localPlayer.displayName
+            }
+        }
+
+        self.gameEndDisplay = GameEndDisplay(
             reason: reason,
-            winnerId: dto.winnerId,
+            winnerId: finalWinnerId,
             localElapsedSeconds: gameplayManager.gameEnd.elapsedSeconds,
             winnerElapsedSeconds: dto.winnerElapsedSeconds,
-            winnerName: dto.winnerName,
-            opponentName: dto.opponentName
+            winnerName: winnerName,
+            opponentName: opponentName
         )
+
+        self.shouldNavigateToResult = true
     }
 
     func updateLocalGameEndDisplay(_ reason: GameEndReason) {
-        // 매니저를 통해 승자 확정
-        let winnerId = gameplayManager.getWinnerID(for: reason)
+        if reason == .reachedFinish && gameplayManager.gameEnd.winnerID == nil {
+            gameplayManager.gameEnd.updateWinner(localPlayerID)
+        }
+
+        let winnerId = gameplayManager.gameEnd.winnerID
 
         self.gameEndDisplay = GameEndDisplay(
             reason: reason,
@@ -204,6 +226,12 @@ final class GameViewModel {
             winnerName: winnerId == localPlayerID ? localPlayer.displayName : remotePlayer?.displayName,
             opponentName: winnerId == localPlayerID ? remotePlayer?.displayName : localPlayer.displayName
         )
+
+        if remotePlayer == nil {
+            self.shouldNavigateToResult = true
+        } else if reason == .reachedFinish {
+            self.shouldNavigateToResult = true
+        }
     }
 
     var gameEndReasonText: String? {

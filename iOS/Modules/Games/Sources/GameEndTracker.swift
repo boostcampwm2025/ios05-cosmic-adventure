@@ -56,27 +56,20 @@ public final class GameEndTracker {
         evaluateEndConditionIfNeeded()
     }
 
+    public func updateWinner(_ id: UUID?) {
+        self.winnerID = id
+    }
+
     public func updateLandedPlatformIndex(_ index: Int, playerID: UUID) {
         guard endReason == nil else { return }
         if index > lastLandedPlatformIndex {
             lastLandedPlatformIndex = index
         }
-        evaluateEndConditionWithWinner(playerID: playerID)
     }
 
     private func evaluateEndConditionIfNeeded() {
         guard endReason == nil else { return }
         if let reason = endCondition.check(elapsedTime: elapsedTime, lastLandedPlatformIndex: lastLandedPlatformIndex) {
-            endReason = reason
-        }
-    }
-
-    private func evaluateEndConditionWithWinner(playerID: UUID) {
-        guard endReason == nil else { return }
-        if let reason = endCondition.check(elapsedTime: elapsedTime, lastLandedPlatformIndex: lastLandedPlatformIndex) {
-            if reason == .reachedFinish {
-                self.winnerID = playerID // 결승점 도달 시 승자 ID 기록
-            }
             endReason = reason
         }
     }

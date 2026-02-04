@@ -117,8 +117,9 @@ struct GameView: View {
             viewModel.updateLocalGameEndDisplay(reason)
             viewModel.notifyGameEnded(reason)
             viewModel.stop()
-
-            if let display = viewModel.gameEndDisplay {
+        }
+        .onChange(of: viewModel.shouldNavigateToResult) { _, shouldNavigate in
+            if shouldNavigate, let display = viewModel.gameEndDisplay {
                 router.push(.gameResult(
                     display: display,
                     localPlayer: viewModel.localPlayer,
