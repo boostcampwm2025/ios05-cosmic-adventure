@@ -30,7 +30,7 @@ struct OperationGuideView: View {
                 
                 // TODO: - Image GIF로 변환 필요
                 GuideManualRow(
-                    characterImage: AppAsset.Image.character1.swiftUIImage,
+                    characterImage: AppAsset.Image.character1Walk.swiftUIImage,
                     manualText: L10N.Game.Guide.horizontalMove
                 )
                 .padding(.top, 21)
@@ -41,7 +41,7 @@ struct OperationGuideView: View {
                 
                 // TODO: - Image GIF로 변환 필요
                 GuideManualRow(
-                    characterImage: AppAsset.Image.character1.swiftUIImage,
+                    characterImage: AppAsset.Image.character1Jump.swiftUIImage,
                     manualText: L10N.Game.Guide.jumpManual,
                     subText: L10N.Game.Guide.doubleJumpManual
                 )
