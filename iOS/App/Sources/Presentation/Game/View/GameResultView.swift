@@ -21,6 +21,10 @@ struct GameResultView: View {
         (display.reason == .timeout) && isWin && (remotePlayer != nil)
     }
 
+    private var isQuit: Bool {
+        display.reason == .quit
+    }
+
     private var brandGradient: LinearGradient {
         LinearGradient(
             colors: [AppAsset.Color.buttonGradientStart.swiftUIColor, AppAsset.Color.buttonGradientEnd.swiftUIColor],
@@ -91,15 +95,15 @@ private extension GameResultView {
 
     private var characterIllustrationView: some View {
         VStack(spacing: 20) {
-            if isDecisiveWin {
+            if isDecisiveWin || isQuit {
                 VStack(spacing: -15) {
                     avatarImage
-                    AppAsset.Image.platform.swiftUIImage.resizable().scaledToFit().frame(width: 180)
+                    AppAsset.Image.platform.swiftUIImage.resizable().scaledToFit().frame(width: 160)
                 }
             } else if isWin {
                 AppAsset.Image.goalRocket.swiftUIImage.resizable().scaledToFit().frame(width: 180)
             } else {
-                AppAsset.Image.failMonster.swiftUIImage.resizable().scaledToFit().frame(width: 180)
+                AppAsset.Image.failMonster.swiftUIImage.resizable().scaledToFit().frame(width: 140)
             }
 
             if let remotePlayer = remotePlayer {
@@ -114,7 +118,7 @@ private extension GameResultView {
         localPlayer.avatar.image
             .resizable()
             .scaledToFit()
-            .frame(width: 120, height: 120)
+            .frame(width: 70, height: 70)
             .zIndex(1)
     }
 
@@ -159,11 +163,18 @@ private extension GameResultView {
     }
 
     private func getResultTitle() -> String {
+        if isQuit {
+            return L10N.Game.End.quitTitle
+        }
+
         if remotePlayer == nil {
             return isWin ? L10N.Game.End.successTitle : L10N.Game.End.failTitle
         } else {
-            if isDecisiveWin { return L10N.Game.End.decisiveWinTitle }
-            return isWin ? L10N.Game.End.winTitle : L10N.Game.End.loseTitle
+            if isDecisiveWin {
+                return L10N.Game.End.decisiveWinTitle
+            } else {
+                return isWin ? L10N.Game.End.winTitle : L10N.Game.End.loseTitle
+            }
         }
     }
 }

@@ -175,6 +175,9 @@ final class GameViewModel {
 
     func requestQuitGame() {
         gameplayManager.applyGameEnd(.quit)
+
+        notifyGameEnded(.quit)
+        stop()
     }
 
     func requestRespawn() {
@@ -229,7 +232,7 @@ final class GameViewModel {
 
         if remotePlayer == nil {
             self.shouldNavigateToResult = true
-        } else if reason == .reachedFinish {
+        } else if reason == .reachedFinish || reason == .quit {
             self.shouldNavigateToResult = true
         }
     }
