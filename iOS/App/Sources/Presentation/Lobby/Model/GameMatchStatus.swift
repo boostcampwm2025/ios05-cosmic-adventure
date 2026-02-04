@@ -17,33 +17,48 @@ enum GameMatchStatus: Equatable {
     case requestDeclined(player: PlayerInfo)
     case gameReady(player: PlayerInfo)
 
-    mutating func reset() {
-        self = .idle
-    }
-    
-    mutating func setSoloGame() {
-        self = .soloGame
-    }
+    mutating func handle(_ event: MatchEvent) {
+        switch (self, event) {
+        case (_, .reset):
+            self = .idle
 
-    mutating func select(_ player: PlayerInfo) {
-        self = .readyToSend(player: player)
-    }
+        case (.idle, .startSoloGame):
+            self = .soloGame
 
-    mutating func sendRequest() {
-        if case .readyToSend(let player) = self {
+        case (.idle, .selectPlayer(let player)),
+             (.requestDeclined, .selectPlayer(let player)):
+            self = .readyToSend(player: player)
+
+        case (_, .deselectPlayer):
+            self = .idle
+
+        case (.readyToSend(let player), .sendInvite):
             self = .sendingRequest(player: player)
+
+        case (.sendingRequest, .cancelOutboundInvite):
+            self = .idle
+
+        case (.sendingRequest, .inviteAccepted(let player)):
+            self = .gameReady(player: player)
+
+        case (.sendingRequest, .inviteDeclined(let player)):
+            self = .requestDeclined(player: player)
+
+        case (.idle, .receiveInvite(let player, let wasSoloGame)),
+             (.soloGame, .receiveInvite(let player, let wasSoloGame)):
+            self = .receivedInvite(player: player, wasSoloGame: wasSoloGame)
+
+        case (.receivedInvite(let player, _), .acceptInvite):
+            self = .gameReady(player: player)
+
+        case (.receivedInvite(_, let wasSoloGame), .declineInvite):
+            self = wasSoloGame ? .soloGame : .idle
+
+        case (.receivedInvite(_, let wasSoloGame), .inviteCancelled):
+            self = wasSoloGame ? .soloGame : .idle
+
+        default:
+            break
         }
-    }
-
-    mutating func requestDeclined(by player: PlayerInfo) {
-        self = .requestDeclined(player: player)
-    }
-
-    mutating func receiveInvite(from player: PlayerInfo, wasSoloGame: Bool = false) {
-        self = .receivedInvite(player: player, wasSoloGame: wasSoloGame)
-    }
-
-    mutating func setGameReady(with player: PlayerInfo) {
-        self = .gameReady(player: player)
     }
 }

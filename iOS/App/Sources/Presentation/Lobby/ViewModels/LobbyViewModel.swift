@@ -271,7 +271,7 @@ extension LobbyViewModel {
             guard !Task.isCancelled else { return }
             if !isPermissionGranted {
                 appEntryManager.presentAlert(.localNetworkDenied)
-                matchStatus.reset()
+                matchStatus.handle(.reset)
                 return
             }
 
@@ -308,7 +308,7 @@ extension LobbyViewModel {
             break
         }
 
-        matchStatus.reset()
+        matchStatus.handle(.reset)
         inviteNotifications.removeAll()
         isShowingNotification = false
         selectedPlayerID = nil
@@ -332,7 +332,7 @@ extension LobbyViewModel {
 extension LobbyViewModel {
     func selectPlayer(_ player: PlayerInfo) {
         self.selectedPlayerID = player.id
-        self.matchStatus.select(player)
+        self.matchStatus.handle(.selectPlayer(player))
     }
 
     func updateProximity(for playerID: UUID, value: Double) {
@@ -360,11 +360,11 @@ extension LobbyViewModel {
 
 extension LobbyViewModel {
     func setSoloMode() {
-        matchStatus.setSoloGame()
+        matchStatus.handle(.startSoloGame)
     }
 
     func resetToIdle() {
-        matchStatus.reset()
+        matchStatus.handle(.reset)
         selectedPlayerID = nil
     }
 }
@@ -384,45 +384,36 @@ extension LobbyViewModel {
             inviteNotifications.insert(InviteNotification(sender: player), at: 0)
         }
 
-        switch matchStatus {
-        case .idle:
-            matchStatus.receiveInvite(from: player, wasSoloGame: false)
-        case .soloGame:
+        let wasSoloGame = matchStatus == .soloGame
+        if wasSoloGame {
             // TODO: - 알림 권한 사전 확인 필요, 권한이 없다면 초대를 수신받을 수 없음
             NotificationManager.shared.sendInviteNotification(from: player)
-            matchStatus.receiveInvite(from: player, wasSoloGame: true)
-        default:
-            break
         }
+        matchStatus.handle(.receiveInvite(from: player, wasSoloGame: wasSoloGame))
     }
 
     func handleInviteAccepted(from senderId: UUID) {
         guard !isOnChannelList else { return }
         guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
-        if case .sendingRequest = matchStatus {
-            matchStatus.setGameReady(with: player)
-        }
+        matchStatus.handle(.inviteAccepted(by: player))
     }
 
     func handleInviteDeclined(from senderId: UUID) {
         guard !isOnChannelList else { return }
         guard let player = remotePlayers.first(where: { $0.id == senderId }) else { return }
 
-        if case .sendingRequest = matchStatus {
-            matchStatus.requestDeclined(by: player)
-        }
+        matchStatus.handle(.inviteDeclined(by: player))
     }
 
     func handleInviteCancelled(from senderId: UUID) {
         guard !isOnChannelList else { return }
         inviteNotifications.removeAll { $0.sender.id == senderId }
 
-        if case .receivedInvite(let player, let wasSoloGame) = matchStatus, player.id == senderId {
-            if wasSoloGame {
-                setSoloMode()
-            } else {
-                resetToIdle()
+        if case .receivedInvite(let player, _) = matchStatus, player.id == senderId {
+            matchStatus.handle(.inviteCancelled)
+            if case .idle = matchStatus {
+                selectedPlayerID = nil
             }
         }
     }
@@ -433,7 +424,7 @@ extension LobbyViewModel {
 extension LobbyViewModel {
     func sendInvite() {
         guard case .readyToSend(let player) = matchStatus else { return }
-        matchStatus.sendRequest()
+        matchStatus.handle(.sendInvite)
         activeConnection?.sendInvite(to: player.id)
     }
 
@@ -447,16 +438,15 @@ extension LobbyViewModel {
     func acceptInvite() {
         guard case .receivedInvite(let player, _) = matchStatus else { return }
         activeConnection?.acceptInvite(from: player.id)
-        matchStatus.setGameReady(with: player)
+        matchStatus.handle(.acceptInvite)
     }
 
     func declineInvite() {
-        guard case .receivedInvite(let player, let wasSoloGame) = matchStatus else { return }
+        guard case .receivedInvite(let player, _) = matchStatus else { return }
         activeConnection?.declineInvite(from: player.id)
-        if wasSoloGame {
-            setSoloMode()
-        } else {
-            resetToIdle()
+        matchStatus.handle(.declineInvite)
+        if case .idle = matchStatus {
+            selectedPlayerID = nil
         }
     }
 

@@ -19,7 +19,7 @@ extension LobbyViewModel {
             Task { @MainActor in
                 guard error == .denied else { return }
                 self?.appEntryManager.presentAlert(.localNetworkDenied)
-                self?.matchStatus.reset()
+                self?.matchStatus.handle(.reset)
                 self?.explorationCoordinator.stopExploration()
             }
         }
