@@ -24,7 +24,7 @@ struct GuideManualRow: View {
     
     var body: some View {
         if let characterImage {
-            HStack(alignment: .top, spacing: 27) {
+            HStack(alignment: .center, spacing: 27) {
                 characterImage
                     .resizable()
                     .aspectRatio(contentMode: .fit)
