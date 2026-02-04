@@ -72,40 +72,40 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     }
     
     public func sendInvite(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.sendInvite(to: sessionId)
     }
     
     public func acceptInvite(from targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.acceptInvite(from: sessionId)
     }
     
     public func declineInvite(from targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.declineInvite(from: sessionId)
     }
     
     public func cancelInvite(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.cancelInvite(to: sessionId)
     }
     
     public func sendInput<T: Codable>(_ data: T, to targetId: UUID?) {
-        guard let targetId,
-              let sessionId = sessionId(forPlayerId: targetId) else { return }
+        guard let targetId else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
 
         service.sendInput(data, to: sessionId)
     }
 
     public func sendReadyStatus(to targetId: UUID) {
-        guard let sessionId = sessionId(forPlayerId: targetId) else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.sendReadyStatus(to: sessionId)
     }
 
     public func sendVideo(_ data: Data, to targetId: UUID?) {
-        guard let targetId,
-              let sessionId = sessionId(forPlayerId: targetId) else { return }
+        guard let targetId else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
 
         service.sendVideo(data, to: sessionId)
     }
@@ -115,8 +115,8 @@ public final class WebSocketSessionManager: WebSocketSessionManaging {
     }
 
     public func sendGameEnded(_ dto: NetworkGameEndDTO, to targetId: UUID?) {
-        guard let targetId,
-              let sessionId = sessionId(forPlayerId: targetId) else { return }
+        guard let targetId else { return }
+        let sessionId = sessionId(forPlayerId: targetId)
         service.sendGameEnded(dto, to: sessionId)
     }
 
@@ -273,7 +273,7 @@ extension WebSocketSessionManager {
         return DeterministicUUID.fromString(senderId, namespace: "ws-sender")
     }
 
-    private func sessionId(forPlayerId playerId: UUID) -> String? {
+    private func sessionId(forPlayerId playerId: UUID) -> String {
         if let sessionId = players.first(where: { $0.id == playerId })?.sessionId {
             return sessionId
         }
