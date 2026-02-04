@@ -117,6 +117,7 @@ final class GameViewModel {
     
     func start() {
         gameplayManager.startNewGame()
+        AudioManager.shared.playBGM(.gameplay)
         // 로컬 입력 바인드
         gameplayManager.bind(input: inputProvider, for: localPlayerID)
         
@@ -155,6 +156,7 @@ final class GameViewModel {
 
         gameplayManager.unbind()
         inputProvider.stop()
+        AudioManager.shared.stopBGM()
     }
 
     func bindRemotePlayerPosition(scene: GameScene) {

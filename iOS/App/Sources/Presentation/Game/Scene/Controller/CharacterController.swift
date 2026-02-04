@@ -195,6 +195,7 @@ final class CharacterController {
     
     func applyJump() {
         guard let physicsCore else { return }
+        AudioManager.shared.playSFX(.jump)
         physicsCore.applyJumpImpulse()
     }
 }
