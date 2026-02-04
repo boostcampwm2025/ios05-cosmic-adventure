@@ -61,6 +61,9 @@ final class LengthPrefixFramer: NWProtocolFramerImplementation {
             try framer.writeOutputNoCopy(length: messageLength)
         } catch {
             logger.error("프레이머 출력 쓰기 실패: \(error.localizedDescription)")
+            let errorMessage = NWProtocolFramer.Message(definition: Self.definition)
+            framer.deliverInput(data: Data(), message: errorMessage, isComplete: true)
+            framer.markFailed(error: error as? NWError ?? .posix(.EIO))
         }
     }
     
