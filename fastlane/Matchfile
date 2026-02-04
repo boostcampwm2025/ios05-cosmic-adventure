@@ -10,7 +10,7 @@ s3_bucket("ios-certificates-cosmic")
 type("appstore")
 app_identifier("kr.boostcamp10.ios05.cosmic-adventure")
 # TODO: Team ID 확인 후 업데이트 필요 (Apple Developer Portal → Membership → Team ID)
-team_id(ENV["COSMIC_TEAM_ID"] || "YOUR_TEAM_ID")
+team_id(ENV["COSMIC_TEAM_ID"] || "AQCS8SYVV6")
 
 # Apple Developer 계정
 username("rjwlehlwk@naver.com")
