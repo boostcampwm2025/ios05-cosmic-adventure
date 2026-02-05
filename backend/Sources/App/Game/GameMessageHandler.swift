@@ -1,6 +1,10 @@
 import Vapor
 
 final class GameMessageHandler: WSMessageHandler, Sendable {
+    
+    private let encoder = JSONEncoder()
+    private let decoder = JSONDecoder()
+
     func handle(_ message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
         guard let type = GameMessageType(rawValue: message.type) else { return }
 
@@ -34,28 +38,22 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         }
     }
 
-    private func handleChannelJoin(session: WSSession, manager: WSSessionManager) async {
+    // MARK: - Core Handlers
+
+    func handleChannelJoin(session: WSSession, manager: WSSessionManager) async {
         guard let channelId = session.metadata["channelId"] else { return }
 
         _ = await ChannelManager.shared.join(channelId, session: session)
 
-        let latency = await manager.getLatency(for: session.id)
-        let playerInfoDict = buildPlayerInfo(from: session, latency: latency)
-        
-        guard let playerInfoData = try? JSONSerialization.data(withJSONObject: playerInfoDict),
-              let playerInfo = String(data: playerInfoData, encoding: .utf8) else {
-            print("[GameMessageHandler] \(session.id)의 플레이어 정보를 인코딩하는 데 실패했습니다.")
-            return
+        let playerInfo = await getPlayerInfo(from: session, manager: manager)
+        if let payload = try? encoder.encodeAsString(playerInfo) {
+            let joinedMessage = WSMessage(
+                type: GameMessageType.playerJoined.rawValue,
+                senderId: session.id,
+                payload: payload
+            )
+            await ChannelManager.shared.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
         }
-        
-        let joinedMessage = WSMessage(
-            type: GameMessageType.playerJoined.rawValue,
-            senderId: session.id,
-            payload: playerInfo
-        )
-        
-        /// 채널에 있는 다른 플레이어에게 새로운 플레이어가 입장했음을 알림
-        await ChannelManager.shared.broadcastToChannel(channelId, message: joinedMessage, exclude: session.id)
 
         await sendPlayerList(in: channelId, to: session, manager: manager)
     }
@@ -69,8 +67,6 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
             type: GameMessageType.playerLeft.rawValue,
             senderId: session.id
         )
-        
-        /// 채널에 있는 다른 플레이어에게 새로운 플레이어가 퇴장했음을 알림
         await ChannelManager.shared.broadcastToChannel(channelId, message: leftMessage, exclude: session.id)
     }
 
@@ -78,33 +74,28 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         let sessionsInChannel = await ChannelManager.shared.getSessionsInChannel(channelId)
         guard !sessionsInChannel.isEmpty else { return }
 
-        // 모든 플레이어 정보 수집
-        var playerInfos: [[String: Any]] = []
+        var allPlayers: [PlayerInfo] = []
         for session in sessionsInChannel {
-            let latency = await manager.getLatency(for: session.id)
-            let playerInfo = buildPlayerInfo(from: session, latency: latency)
-            playerInfos.append(playerInfo)
+            allPlayers.append(await getPlayerInfo(from: session, manager: manager))
         }
 
-        // 전송할 세션 목록 결정
         let sessionsToSend = toSession.map { [$0] } ?? sessionsInChannel
 
-        // 각 세션에 플레이어 목록 전송
         for session in sessionsToSend {
-            guard let payload = buildPlayerListPayload(youSessionId: session.id,
-                                                        players: playerInfos) else {
-                print("[GameMessageHandler] \(session.id) 세션의 플레이어 목록을 구성하는 데 실패했습니다.")
-                continue
-            }
+            let payloadObj = PlayerListPayload(youSessionId: session.id, players: allPlayers)
 
-            let listMessage = WSMessage(
-                type: GameMessageType.channelPlayerList.rawValue,
-                senderId: "server",
-                payload: payload
-            )
-            await manager.send(to: session.id, message: listMessage)
+            if let payloadString = try? encoder.encodeAsString(payloadObj) {
+                let listMessage = WSMessage(
+                    type: GameMessageType.channelPlayerList.rawValue,
+                    senderId: "server",
+                    payload: payloadString
+                )
+                await manager.send(to: session.id, message: listMessage)
+            }
         }
     }
+
+    // MARK: - Forwarding
 
     private func forwardToTarget(message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
         guard let targetId = message.payload else { return }
@@ -117,11 +108,9 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
     }
 
     private func handleForwarding(message: WSMessage, from session: WSSession, manager: WSSessionManager) async {
-        guard let channelId = session.metadata["channelId"] else { return }
-
-        guard let payload = message.payload,
-              let data = payload.data(using: .utf8),
-              let routed = try? JSONDecoder().decode(ForwardingPayload.self, from: data) else {
+        guard let channelId = session.metadata["channelId"],
+              let payloadData = message.payload?.data(using: .utf8),
+              let routed = try? decoder.decode(ForwardingPayload.self, from: payloadData) else {
             return
         }
 
@@ -136,30 +125,28 @@ final class GameMessageHandler: WSMessageHandler, Sendable {
         await manager.send(to: routed.to, message: forwarded)
     }
 
-    private func buildPlayerInfo(from session: WSSession, latency: Double?) -> [String: Any] {
-        let nickname = session.metadata["nickname"] ?? "unknown"
-        let character = session.metadata["character"] ?? ""
-        let lat = latency ?? 200.0
+    // MARK: - Helpers
 
-        return [
-            "sessionId": session.id,
-            "nickname": nickname,
-            "characterRawValue": character,
-            "latency": lat
-        ]
+    /// 세션 메타데이터와 Latency를 기반으로 PlayerInfo 객체 생성.
+    private func getPlayerInfo(from session: WSSession, manager: WSSessionManager) async -> PlayerInfo {
+        let latency = await manager.getLatency(for: session.id)
+        return PlayerInfo(
+            sessionId: session.id,
+            nickname: session.metadata["nickname"] ?? "unknown",
+            characterRawValue: session.metadata["character"] ?? "",
+            latency: latency ?? 200.0
+        )
     }
+}
 
-    private func buildPlayerListPayload(youSessionId: String, players: [[String: Any]]) -> String? {
-        let payloadDict: [String: Any] = [
-            "youSessionId": youSessionId,
-            "players": players
-        ]
+// MARK: - JSONEncoder Extension
 
-        guard let payloadData = try? JSONSerialization.data(withJSONObject: payloadDict),
-              let payload = String(data: payloadData, encoding: .utf8) else {
-            return nil
+extension JSONEncoder {
+    func encodeAsString<T: Encodable>(_ value: T) throws -> String {
+        let data = try self.encode(value)
+        guard let string = String(data: data, encoding: .utf8) else {
+            throw EncodingError.invalidValue(value, .init(codingPath: [], debugDescription: "Failed to convert encoded data to UTF-8 string"))
         }
-
-        return payload
+        return string
     }
 }
