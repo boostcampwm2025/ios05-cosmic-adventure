@@ -67,6 +67,11 @@ struct GameView: View {
             facePreviewOverlay
                 .zIndex(1)
 
+            if isMenuPresented {
+                menuOverlay
+                    .zIndex(10)
+            }
+            
             if let reason = viewModel.endReason {
                 gameEndOverlay(reason: reason)
                     .zIndex(10)
