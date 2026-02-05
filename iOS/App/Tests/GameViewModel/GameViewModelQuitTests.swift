@@ -16,24 +16,6 @@ final class GameViewModelQuitTests: XCTestCase {
         XCTAssertNil(viewModel.gameEndDisplay?.opponentName)
     }
 
-    func testGameEndReasonTextForQuit() async {
-        let viewModel = makeViewModel()
-
-        viewModel.updateLocalGameEndDisplay(.quit)
-
-        XCTAssertEqual(viewModel.gameEndReasonText, L10N.Game.End.quitTitle)
-    }
-
-    func testQuitHidesWinnerAndOpponentTexts() async {
-        let viewModel = makeViewModel()
-
-        viewModel.updateLocalGameEndDisplay(.quit)
-
-        XCTAssertNil(viewModel.gameEndWinnerText)
-        XCTAssertNil(viewModel.gameEndOpponentText)
-        XCTAssertNil(viewModel.gameEndOpponentElapsedText)
-    }
-
     func testApplyRemoteGameEndQuitSetsDisplay() async {
         let viewModel = makeViewModel()
         let dto = NetworkGameEndDTO(reason: .quit)

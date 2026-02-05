@@ -42,6 +42,7 @@ public final class GameEndTracker {
         remainingSeconds = timeLimit.map { Int($0) }
         endReason = nil
         lastLandedPlatformIndex = 0
+        winnerID = nil
     }
 
     public func forceEnd(_ reason: GameEndReason) {

@@ -354,11 +354,12 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
             )
         }
 
+        let isLocalWinner = winnerId == localPlayer.id
         return NetworkGameEndDTO(
             reason: encodeGameEndReason(reason),
             winnerId: winnerId,
-            winnerElapsedSeconds: myElapsed,
-            winnerName: localPlayer.displayName,
+            winnerElapsedSeconds: isLocalWinner ? myElapsed : nil,
+            winnerName: isLocalWinner ? localPlayer.displayName : nil,
             lastSafePlatformIndex: myIndex
         )
     }
