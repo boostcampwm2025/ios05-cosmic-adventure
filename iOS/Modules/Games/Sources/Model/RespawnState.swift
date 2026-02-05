@@ -10,7 +10,7 @@ public struct RespawnPosition: Sendable, Codable, Equatable {
     public var y: Double
     public static let zero = RespawnPosition(x: 0, y: 0)
 
-    public init(x: Double, y: Double, platformIndex: Int = 0) {
+    public init(x: Double, y: Double) {
         self.x = x
         self.y = y
     }

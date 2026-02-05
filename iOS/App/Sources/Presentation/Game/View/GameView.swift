@@ -71,11 +71,6 @@ struct GameView: View {
 
             facePreviewOverlay
                 .zIndex(1)
-
-            if let reason = viewModel.endReason {
-                gameEndOverlay(reason: reason)
-                    .zIndex(10)
-            }
             
             if viewModel.showDisconnectAlert {
                 disconnectAlertOverlay
@@ -278,58 +273,6 @@ struct GameView: View {
             .background(.black.opacity(0.75))
             .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
         }
-    }
-
-    private func gameEndOverlay(reason: GameEndReason) -> some View {
-        let title = viewModel.gameEndReasonText ?? {
-            switch reason {
-            case .timeout: return L10N.Game.End.timeoutTitle
-            case .reachedFinish: return L10N.Game.End.finishTitle
-            case .quit: return L10N.Game.End.quitTitle
-            }
-        }()
-
-        return ZStack {
-            Color.black.opacity(0.55)
-                .ignoresSafeArea()
-
-            VStack(spacing: 12) {
-                Text(title)
-                    .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 32))
-                    .foregroundStyle(.white)
-
-                if let winnerText = viewModel.gameEndWinnerText {
-                    Text(winnerText)
-                        .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
-                        .foregroundStyle(.white)
-                }
-
-                if let opponentText = viewModel.gameEndOpponentText {
-                    Text(opponentText)
-                        .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-
-                if let opponentElapsed = viewModel.gameEndOpponentElapsedText {
-                    Text(opponentElapsed)
-                        .font(AppFontFamily.Pretendard.regular.swiftUIFont(size: 18))
-                        .foregroundStyle(.white.opacity(0.85))
-                }
-
-                Button(L10N.Game.End.backToLobby) {
-                    router.resetToHome()
-                }
-                .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
-                .foregroundStyle(.white)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 20)
-                .background(AppAsset.Color.buttonGradientStart.swiftUIColor)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-            }
-            .padding(20)
-            .clipShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
-        }
-        .transition(.opacity)
     }
 
     // MARK: - Disconnect Alert
