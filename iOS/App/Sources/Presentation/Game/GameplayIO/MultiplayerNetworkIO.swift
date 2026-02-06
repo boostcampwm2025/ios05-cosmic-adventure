@@ -71,7 +71,7 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     private let remoteFreezeAfter: TimeInterval = 0.8
 
     /// 이 시간 이상 원격 수신이 없으면 연결 끊김으로 판단
-    private let peerTimeoutInterval: TimeInterval = 3.0
+    private let peerTimeoutInterval: TimeInterval = 10.0
     private var didNotifyPeerTimeout: Bool = false
 
     init(
