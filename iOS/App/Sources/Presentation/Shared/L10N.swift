@@ -19,7 +19,7 @@ enum L10N {
         static let title: LocalizedStringKey = "우주 수호자 설정"
         static let subtitle: LocalizedStringKey = "게임을 시작하기 위해 몇 가지 권한이 필요해요."
         static let privacyNotice: LocalizedStringKey = "저희는 개인 정보를 수집하지 않습니다."
-        static let requestButtonTitle: LocalizedStringKey = "권한 요청하기"
+        static let requestButtonTitle: LocalizedStringKey = "다음"
 
         enum Card {
             static let cameraTitle: LocalizedStringKey = "카메라 권한"
