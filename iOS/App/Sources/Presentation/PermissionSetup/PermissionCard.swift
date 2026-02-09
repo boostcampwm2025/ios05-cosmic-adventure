@@ -15,7 +15,8 @@ struct PermissionCard: View {
     var body: some View {
         HStack(spacing: 14) {
             iconImage
-                .frame(width: 50, height: 50)
+                .resizable()
+                .scaledToFit()
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)

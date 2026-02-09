@@ -29,6 +29,7 @@ struct PermissionSetupView: View {
                 
                 permissionCardsSection
                     .padding(.top, 26)
+                    .frame(maxHeight: 320)
                 
                 Spacer()
                 
@@ -55,22 +56,19 @@ struct PermissionSetupView: View {
     }
     
     private var backgoundImage: some View {
-        ZStack {
+        let circleSize = Metrics.screenWidth * 0.3
+
+        return ZStack {
             Circle()
-                .fill(
-                    AppAsset.Color.profileBackground.swiftUIColor
-                        .opacity(0.5)
-                )
-                .overlay(
-                    Circle()
-                        .stroke(.white, lineWidth: 5)
-                )
-                .frame(width: 120, height: 120)
+                .fill(AppAsset.Color.profileBackground.swiftUIColor.opacity(0.5))
+                .overlay(Circle().stroke(.white, lineWidth: 4))
+                .frame(width: circleSize, height: circleSize)
             
             AppAsset.Image.character1.swiftUIImage
                 .resizable()
                 .scaledToFit()
-                .frame(width: 70)
+                .padding(circleSize * 0.2)
+                .frame(width: circleSize, height: circleSize)
         }
     }
     
