@@ -23,10 +23,14 @@ struct LobbyView: View {
     var body: some View {
         @Bindable var viewModel = viewModel
 
-        BackgroundContainerView {
+        ZStack {
+            BackgroundContainerView {
+                EmptyView()
+            }
+            .ignoresSafeArea()
+
             VStack(spacing: 0) {
                 topBar
-                    .padding(.top, 60)
                     .padding(.horizontal, 20)
 
                 // ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 networkMode가 확정되지 않으므로,
@@ -123,8 +127,7 @@ private extension LobbyView {
             .padding(.horizontal, 30)
 
         playerOrbitSelector
-
-        Spacer()
+            .padding(.vertical, 30)
 
         bottomButtons(
             secondaryTitle: L10N.Lobby.remoteGalaxyButtonTitle,
@@ -234,7 +237,7 @@ private extension LobbyView {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.bottom, 50)
+        .padding(.bottom, 20)
     }
 }
 
@@ -304,12 +307,12 @@ private extension LobbyView {
                 Text(viewModel.localPlayer.displayName)
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 22))
                 Text(L10N.Lobby.greetingSuffix)
-                    .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
+                    .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 20))
             }
             .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
 
             Text(L10N.Lobby.greetingMessage)
-                .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 22))
+                .font(AppFontFamily.Pretendard.medium.swiftUIFont(size: 20))
                 .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
         }
         .padding(.vertical, 20)
@@ -369,7 +372,6 @@ private extension LobbyView {
                 isAppearing = false
             }
         }
-        .frame(height: 400)
         .padding(.horizontal, 20)
     }
 
