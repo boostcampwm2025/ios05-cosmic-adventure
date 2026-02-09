@@ -179,8 +179,8 @@ enum L10N {
             static let gotoVictoryCondition: LocalizedStringKey = "승리 조건 보기"
 
             static let victoryManual: LocalizedStringKey = "승리 방법"
-            static let timeCondition: LocalizedStringKey = "제한 시간 1분 안에 결승점에 도착하세요."
-            static let monsterCondition: LocalizedStringKey = "아래에서 모험을 방해하는 몬스터가\n올라오고 있으니 조심하세요."
+            static let timeCondition: LocalizedStringKey = "제한 시간 1분 안에\n결승점에 도착하세요."
+            static let monsterCondition: LocalizedStringKey = "아래에서 올라오는 방해꾼\n몬스터를 조심하세요."
 
             static let gameReady: LocalizedStringKey = "모험 준비 완료"
             static let neverShowAgain: LocalizedStringKey = "다시 보지 않기"
