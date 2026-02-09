@@ -37,15 +37,10 @@ struct GameView: View {
     }
     
     public var body: some View {
-        ZStack {
-            AppAsset.Image.background.swiftUIImage
-                .resizable()
-                .scaledToFill()
-                .edgesIgnoringSafeArea(.all)
+        BackgroundContainerView {
             
             if let scene = gameScene {
                 SpriteView(scene: scene, options: [.allowsTransparency])
-                    .edgesIgnoringSafeArea(.all)
                     .allowsHitTesting(true)
             }
 
@@ -77,7 +72,7 @@ struct GameView: View {
                     .zIndex(10)
             }
         }
-        .safeAreaInset(edge: .top) {
+        .safeAreaInset(edge: .top, alignment: .center) {
             HStack {
                 gameHUD
                 Spacer()
@@ -87,7 +82,6 @@ struct GameView: View {
                 }
             }
             .padding(.horizontal, 16)
-            .padding(.top, 8)
         }
         .onAppear {
             setupGame()
