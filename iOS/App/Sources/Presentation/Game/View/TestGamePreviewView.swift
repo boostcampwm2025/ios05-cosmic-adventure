@@ -35,6 +35,7 @@ struct TestGamePreviewView: View {
             }
             
             facePreviewOverlay
+                .padding(.bottom, 20)
         }
         .onAppear {
             setupScene()
@@ -73,7 +74,7 @@ struct TestGamePreviewView: View {
     
     private func setupScene() {
         let newScene = TestGameScene(
-            size: UIScreen.main.bounds.size,
+            size: Metrics.screenSize,
             inputProvider: inputProvider
         )
         newScene.scaleMode = .aspectFill
