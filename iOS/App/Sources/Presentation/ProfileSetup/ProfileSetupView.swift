@@ -62,7 +62,10 @@ struct ProfileSetupView: View {
 
 private extension ProfileSetupView {
     var profilePreview: some View {
-        VStack(spacing: 0) {
+        let size = Metrics.screenWidth * 0.3
+        let avatarSize = Metrics.screenWidth * 0.2
+        
+        return VStack(spacing: 0) {
             ZStack {
                 Circle()
                     .fill(
@@ -73,12 +76,12 @@ private extension ProfileSetupView {
                         Circle()
                             .stroke(.white, lineWidth: 5)
                     )
-                    .frame(width: 140, height: 140)
+                    .frame(width: size, height: size)
                 
                 viewModel.selectedAvatar.image
                     .resizable()
                     .scaledToFit()
-                    .frame(width: 90)
+                    .frame(width: avatarSize)
             }
         }
     }
@@ -135,6 +138,8 @@ private extension ProfileSetupView {
     
     func characterGridItem(avatar: CharacterAvatar) -> some View {
         let isSelected = viewModel.selectedAvatar == avatar
+        let size = Metrics.screenWidth * 0.29
+        let avatarSize = Metrics.screenWidth * 0.24
         
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
@@ -144,17 +149,17 @@ private extension ProfileSetupView {
             avatar.image
                 .resizable()
                 .scaledToFit()
-                .frame(width: 95, height: 95)
+                .frame(width: avatarSize, height: avatarSize)
                 .opacity(isSelected ? 1.0 : 0.5)
                 .background(
                     Circle()
                         .fill(.white.opacity(isSelected ? 0.3 : 0))
-                        .frame(width: 110, height: 110)
+                        .frame(width: size, height: size)
                 )
                 .overlay(
                     Circle()
                         .stroke(.white, lineWidth: isSelected ? 3 : 0)
-                        .frame(width: 110, height: 110)
+                        .frame(width: size, height: size)
                 )
                 .scaleEffect(isSelected ? 1.0 : 0.9)
                 .animation(.spring(response: 0.3, dampingFraction: 0.7), value: isSelected)
