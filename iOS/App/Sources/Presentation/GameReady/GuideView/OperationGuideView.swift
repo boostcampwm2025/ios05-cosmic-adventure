@@ -15,49 +15,67 @@ struct OperationGuideView: View {
     let isNetwork: Bool
     
     var body: some View {
-        BackgroundContainerView {
-            Color.black.opacity(0.4)
-                .ignoresSafeArea()
-            
-            VStack(alignment: .leading, spacing: 0) {
-                GuideTitleView(title: L10N.Game.Guide.moveManual)
-                    .padding(.top, 24)
-                    .padding(.leading, 20)
-                
-                GuideImageView(image: AppAsset.Image.horizontalGuide.swiftUIImage)
-                    .padding(.top, 48)
-                    .padding(.horizontal, 58)
-                
-                // TODO: - Image GIF로 변환 필요
-                GuideManualRow(
-                    characterImage: AppAsset.Image.character1Walk.swiftUIImage,
-                    manualText: L10N.Game.Guide.horizontalMove
-                )
-                .padding(.top, 21)
-                
-                GuideImageView(image: AppAsset.Image.jumpGuide.swiftUIImage)
-                    .padding(.top, 21)
-                    .padding(.horizontal, 58)
-                
-                // TODO: - Image GIF로 변환 필요
-                GuideManualRow(
-                    characterImage: AppAsset.Image.character1Jump.swiftUIImage,
-                    manualText: L10N.Game.Guide.jumpManual,
-                    subText: L10N.Game.Guide.doubleJumpManual
-                )
-                .padding(.top, 22)
-                
-                Spacer()
-                
-                PrimaryGradientButton(
-                    title: L10N.Game.Guide.gotoVictoryCondition,
-                    verticalPadding: 16
-                ) {
-                    router.push(.victoryGuide(localPlayer: localPlayer, remotePlayer: remotePlayer, isNetwork: isNetwork))
+        GeometryReader { geometry in
+            let height = geometry.size.height
+
+            ZStack {
+                BackgroundContainerView {
+                    Color.black.opacity(0.4)
                 }
-                .padding(.horizontal, 20)
-                .padding(.bottom, 59)
+
+                VStack(alignment: .leading, spacing: 0) {
+                    GuideTitleView(title: L10N.Game.Guide.moveManual)
+                        .padding(.top, 24)
+                        .padding(.leading, 20)
+
+                    Spacer()
+
+                    GuideImageView(image: AppAsset.Image.horizontalGuide.swiftUIImage,
+                                   imageSize: GuideLayoutConfiguration.imageSize(for: height))
+                    .padding(.horizontal, GuideLayoutConfiguration.horizontalPadding(for: height))
+
+                    Spacer()
+
+                    GuideManualRow(
+                        characterImage: AppAsset.Image.character1Walk.swiftUIImage,
+                        characterImageSize: GuideLayoutConfiguration.iconSize(for: height),
+                        manualText: L10N.Game.Guide.horizontalMove
+                    )
+
+                    Spacer()
+
+                    GuideImageView(image: AppAsset.Image.jumpGuide.swiftUIImage,
+                                   imageSize: GuideLayoutConfiguration.imageSize(for: height))
+                    .padding(.horizontal, GuideLayoutConfiguration.horizontalPadding(for: height))
+
+
+                    Spacer()
+
+                    GuideManualRow(
+                        characterImage: AppAsset.Image.character1Jump.swiftUIImage,
+                        characterImageSize: GuideLayoutConfiguration.iconSize(for: height),
+                        manualText: L10N.Game.Guide.jumpManual,
+                        subText: L10N.Game.Guide.doubleJumpManual
+                    )
+
+                    Spacer()
+
+                    PrimaryGradientButton(
+                        title: L10N.Game.Guide.gotoVictoryCondition,
+                        verticalPadding: 16
+                    ) {
+                        router.push(.victoryGuide(localPlayer: localPlayer, remotePlayer: remotePlayer, isNetwork: isNetwork))
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.bottom, 24)
+
+                    Rectangle()
+                        .frame(height: 20)
+                        .foregroundStyle(.clear)
+                        .padding(.bottom, geometry.safeAreaInsets.bottom + 10)
+                }
             }
+            .ignoresSafeArea()
         }
         .navigationBarBackButtonHidden(true)
     }

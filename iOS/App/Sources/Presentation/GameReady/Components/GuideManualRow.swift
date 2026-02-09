@@ -9,15 +9,18 @@ import SwiftUI
 
 struct GuideManualRow: View {
     let characterImage: Image?
+    let characterImageSize: CGFloat?
     let manualText: LocalizedStringKey
     let subText: LocalizedStringKey?
     
     init(
         characterImage: Image? = nil,
+        characterImageSize: CGFloat? = nil,
         manualText: LocalizedStringKey,
         subText: LocalizedStringKey? = nil
     ) {
         self.characterImage = characterImage
+        self.characterImageSize = characterImageSize
         self.manualText = manualText
         self.subText = subText
     }
@@ -28,7 +31,7 @@ struct GuideManualRow: View {
                 characterImage
                     .resizable()
                     .aspectRatio(contentMode: .fit)
-                    .frame(width: 56, height: 67)
+                    .frame(height: characterImageSize)
                     .padding(.leading, 67)
                 
                 VStack(alignment: .leading, spacing: 2) {
@@ -70,6 +73,7 @@ struct GuideManualRow: View {
         Color.black.ignoresSafeArea()
         GuideManualRow(
             characterImage: AppAsset.Image.character1.swiftUIImage,
+            characterImageSize: 65,
             manualText: "고개를 좌우로 갸웃거리면\n앞으로 움직여요."
         )
     }
@@ -79,6 +83,7 @@ struct GuideManualRow: View {
     ZStack {
         Color.black.ignoresSafeArea()
         GuideManualRow(
+            characterImageSize: 65,
             manualText: "제한 시간 1분 안에 결승점에 도착하세요."
         )
     }
