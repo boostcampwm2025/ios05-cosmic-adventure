@@ -34,7 +34,6 @@ struct TestGamePreviewView: View {
                     .ignoresSafeArea()
             }
             
-            backButton
             facePreviewOverlay
         }
         .onAppear {
@@ -46,32 +45,16 @@ struct TestGamePreviewView: View {
             inputProvider.stop()
             UIApplication.shared.isIdleTimerDisabled = false
         }
-        .navigationBarBackButtonHidden()
-    }
-    
-    private var backButton: some View {
-        VStack {
-            HStack {
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
                 Button {
                     router.pop()
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 16, weight: .semibold))
-                        Text("Back")
-                            .font(AppFontFamily.Pretendard.semiBold.swiftUIFont(size: 16))
-                    }
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.black.opacity(0.5))
-                    .clipShape(Capsule())
+                    Image(systemName: "chevron.backward")
+                        .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
                 }
-                Spacer()
             }
-            .padding(.leading, 32)
-            .padding(.top, 16)
-            Spacer()
         }
     }
     
