@@ -102,7 +102,7 @@ struct PermissionSetupView: View {
             )
 
             PermissionCard(
-                iconImage: Image(systemName: "bell.badge.fill"),
+                iconImage: AppAsset.Image.permissionNotificationIcon.swiftUIImage,
                 title: L10N.PermissionSetup.Card.notificationTitle,
                 subtitle: L10N.PermissionSetup.Card.notificationSubtitle
             )
