@@ -44,7 +44,16 @@ struct SettingsView: View {
         .onTapGesture {
             hideKeyboard()
         }
+        .navigationBarBackButtonHidden(true)
         .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    router.pop()
+                } label: {
+                    Image(systemName: "chevron.backward")
+                        .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+                }
+            }
             ToolbarItem(placement: .principal) {
                 Text(L10N.Settings.title)
                     .font(AppFontFamily.Pretendard.bold.swiftUIFont(size: 20))
@@ -56,7 +65,7 @@ struct SettingsView: View {
                     router.pop()
                 } label: {
                     Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
+                        .foregroundStyle(AppAsset.Color.mainLabel.swiftUIColor)
                 }
             }
         }
