@@ -30,9 +30,6 @@ struct LobbyView: View {
             .ignoresSafeArea()
 
             VStack(spacing: 0) {
-                topBar
-                    .padding(.horizontal, 20)
-
                 // ConnectivityMonitor의 첫 번째 콜백이 오기 전까지 networkMode가 확정되지 않으므로,
                 // resolved 전에는 중립적 placeholder를 표시하여 local↔remote 전환 깜빡임을 방지.
                 if !viewModel.isConnectivityResolved {
@@ -43,6 +40,10 @@ struct LobbyView: View {
                     lobbyContent
                 }
             }
+        }
+        .safeAreaInset(edge: .top) {
+            topBar
+                .padding(.horizontal, 20)
         }
         .onAppear {
             viewModel.setup()
