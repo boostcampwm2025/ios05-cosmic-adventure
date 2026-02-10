@@ -34,7 +34,7 @@ struct ChannelEmptyView: View {
                 .frame(width: 88, height: 106)
                 .padding(.top, -30)
         }
-        .padding(.top, 77)
+        .padding(.top, 30)
     }
 }
 
