@@ -28,16 +28,16 @@ struct ProfileSetupView: View {
             VStack(spacing: 0) {
                 Group {
                     profilePreview
-                        .padding(.top, 80)
+                        .padding(.top, Metrics.screenWidth * 0.19)
                     
                     titleSection
-                        .padding(.top, 16)
+                        .padding(.top, Metrics.screenWidth * 0.03)
                     
                     nicknameSection
-                        .padding(.top, 32)
+                        .padding(.top, Metrics.screenWidth * 0.08)
                     
                     characterSection
-                        .padding(.top, 28)
+                        .padding(.top, Metrics.screenWidth * 0.07)
                 }
                 .padding(.horizontal, 40)
                 
@@ -138,8 +138,8 @@ private extension ProfileSetupView {
     
     func characterGridItem(avatar: CharacterAvatar) -> some View {
         let isSelected = viewModel.selectedAvatar == avatar
-        let size = Metrics.screenWidth * 0.29
-        let avatarSize = Metrics.screenWidth * 0.24
+        let size = Metrics.screenWidth * 0.28
+        let avatarSize = Metrics.screenWidth * 0.23
         
         return Button {
             withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
