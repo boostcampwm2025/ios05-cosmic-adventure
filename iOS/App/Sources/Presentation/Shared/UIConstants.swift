@@ -8,8 +8,18 @@
 import SwiftUI
 
 enum Metrics {
-    // 화면 전체 사이즈 관련
-    static let screenSize = UIScreen.main.bounds.size
-    static let screenWidth = UIScreen.main.bounds.width
-    static let screenHeight = UIScreen.main.bounds.height
+    private static var currentWindowScene: UIWindowScene? {
+        return UIApplication.shared.connectedScenes
+            .first { $0.activationState == .foregroundActive } as? UIWindowScene
+            ?? UIApplication.shared.connectedScenes.first as? UIWindowScene
+    }
+
+    private static var screenBounds: CGRect {
+        return currentWindowScene?.screen.bounds ?? .zero
+    }
+    
+    // 화면 전체 사이즈 관련 (호출 시점에 계산)
+    static var screenSize: CGSize { screenBounds.size }
+    static var screenWidth: CGFloat { screenBounds.width }
+    static var screenHeight: CGFloat { screenBounds.height }
 }
