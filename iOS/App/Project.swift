@@ -27,9 +27,6 @@ let project = Project(
                     .string("_cosmicadventure._tcp"),
                 ]),
 
-                "NSAppTransportSecurity": .dictionary([
-                    "NSAllowsArbitraryLoads": .boolean(true)
-                ]),
                 "API_BASE_URL": .string("$(API_BASE_URL)"),
 
                 "UIAppFonts": .array([
