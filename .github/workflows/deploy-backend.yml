@@ -87,7 +87,7 @@ jobs:
           script: |
             set -e
             
-            mkdir -p /srv/cosmic-adventure/data
+            mkdir -p /srv/cosmic-adventure/data /srv/cosmic-adventure/certs
             cd /srv/cosmic-adventure
             
             curl -fsSL https://raw.githubusercontent.com/boostcampwm2025/ios05-cosmic-adventure/develop/deploy/docker-compose.yml -o docker-compose.yml
