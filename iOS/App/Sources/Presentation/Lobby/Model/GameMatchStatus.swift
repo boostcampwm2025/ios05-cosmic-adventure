@@ -45,7 +45,8 @@ enum GameMatchStatus: Equatable {
             self = .requestDeclined(player: player)
 
         case (.idle, .receiveInvite(let player, let wasSoloGame)),
-             (.soloGame, .receiveInvite(let player, let wasSoloGame)):
+             (.soloGame, .receiveInvite(let player, let wasSoloGame)),
+             (.requestDeclined, .receiveInvite(let player, let wasSoloGame)):
             self = .receivedInvite(player: player, wasSoloGame: wasSoloGame)
 
         case (.receivedInvite(let player, _), .acceptInvite):
