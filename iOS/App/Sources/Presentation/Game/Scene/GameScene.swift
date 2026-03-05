@@ -26,6 +26,10 @@ final class GameScene: SKScene {
     
     private let outOfBoundsMargin: CGFloat = 100
     private var lastUpdateTime: TimeInterval = 0
+    private var localPositionSyncAccumulator: TimeInterval = 0
+    private var lastSyncedLocalPosition: CharacterPosition?
+    private let localPositionSyncInterval: TimeInterval = 1.0 / 15.0
+    private let localPositionSyncMinDistance: Double = 1.0
 
     private var goalPlatformIndex: Int
 
@@ -96,6 +100,10 @@ final class GameScene: SKScene {
             // 카메라가 로컬 플레이어를 따라가도록 설정
             cameraSystem.follow(player)
         }
+
+        if let gameplayManager {
+            syncLocalPlayerPositionToGameState(gameplayManager: gameplayManager, deltaTime: 0, force: true)
+        }
         
         // 몬스터 설정
         monsterController = MonsterController(scene: self, cameraSystem: cameraSystem)
@@ -128,20 +136,9 @@ final class GameScene: SKScene {
         }
 
         // 모든 플레이어의 상태를 반영
-        for (id, controller) in characterControllers {
-            guard let cs = gameplayManager.state.characters[id] else { continue }
+        applyCharacterStates(deltaTime: deltaTime, gameplayManager: gameplayManager)
 
-            controller.applyMovement(
-                deltaTime: deltaTime,
-                moveX: cs.moveX,
-                isGrounded: cs.isGrounded
-            )
-
-            if gameplayManager.isJumpRequested(for: id) {
-                controller.applyJump()
-                gameplayManager.resetJumpRequest(for: id)
-            }
-        }
+        syncLocalPlayerPositionToGameState(gameplayManager: gameplayManager, deltaTime: deltaTime)
         // 맵 업데이트
         updateWalls()
         
@@ -169,6 +166,29 @@ final class GameScene: SKScene {
         
         // 상대 플레이어 화면 좌표 업데이트
         updateRemotePlayerScreenPosition()
+    }
+
+    private func applyCharacterStates(deltaTime: TimeInterval, gameplayManager: GameplayManager) {
+        for (id, controller) in characterControllers {
+            guard let state = gameplayManager.state.characters[id] else { continue }
+
+            let targetPosition: CGPoint? = {
+                guard id != localPlayerID, state.hasNetworkPosition else { return nil }
+                return CGPoint(x: state.position.x, y: state.position.y)
+            }()
+
+            controller.applyMovement(
+                deltaTime: deltaTime,
+                moveX: state.moveX,
+                isGrounded: state.isGrounded,
+                targetPosition: targetPosition
+            )
+
+            if gameplayManager.isJumpRequested(for: id) {
+                controller.applyJump()
+                gameplayManager.resetJumpRequest(for: id)
+            }
+        }
     }
     
     private func updateRemotePlayerScreenPosition() {
@@ -292,6 +312,37 @@ final class GameScene: SKScene {
         return UUID(uuidString: uuidString)
     }
 
+    private func syncLocalPlayerPositionToGameState(
+        gameplayManager: GameplayManager,
+        deltaTime: TimeInterval,
+        force: Bool = false
+    ) {
+        guard let localNode = characterControllers[localPlayerID]?.playerNode else { return }
+        let current = CharacterPosition(
+            x: Double(localNode.position.x),
+            y: Double(localNode.position.y)
+        )
+
+        if force {
+            gameplayManager.updatePosition(current, for: localPlayerID)
+            lastSyncedLocalPosition = current
+            localPositionSyncAccumulator = 0
+            return
+        }
+
+        localPositionSyncAccumulator += deltaTime
+        guard localPositionSyncAccumulator >= localPositionSyncInterval else { return }
+        localPositionSyncAccumulator = 0
+
+        if let last = lastSyncedLocalPosition {
+            let movedDistance = hypot(current.x - last.x, current.y - last.y)
+            guard movedDistance >= localPositionSyncMinDistance else { return }
+        }
+
+        gameplayManager.updatePosition(current, for: localPlayerID)
+        lastSyncedLocalPosition = current
+    }
+
 }
 
 extension GameScene: SKPhysicsContactDelegate {
@@ -336,7 +387,7 @@ extension GameScene: SKPhysicsContactDelegate {
                     if let idx = platformController?.lastSafePlatformIndex,
                        let safe = platformController?.lastSafePosition {
                         gameplayManager?.updateLastSafePosition(
-                            RespawnPosition(x: Double(safe.x),
+                            CharacterPosition(x: Double(safe.x),
                                             y: Double(safe.y)),
                             for: playerID
                         )

@@ -168,11 +168,17 @@ final class CharacterController {
     
     func applyMovement(deltaTime: TimeInterval,
                        moveX: Double,
-                       isGrounded: Bool
+                       isGrounded: Bool,
+                       targetPosition: CGPoint? = nil
     ) {
         guard let physicsCore else { return }
         
-        physicsCore.applyState(deltaTime: deltaTime, moveX: moveX, isGrounded: isGrounded)
+        physicsCore.applyState(
+            deltaTime: deltaTime,
+            moveX: moveX,
+            isGrounded: isGrounded,
+            targetPosition: (playerRole == .remote ? targetPosition : nil)
+        )
         
         animatePlayer(moveX: moveX)
         syncRespawnLabelPosition()

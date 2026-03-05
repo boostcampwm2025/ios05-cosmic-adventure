@@ -24,12 +24,22 @@ public final class PhysicsCore {
     }
 
     // 매 프레임 호출: State -> Velocity 적용
-    public func applyState(deltaTime: TimeInterval, moveX: Double, isGrounded: Bool) {
+    public func applyState(
+        deltaTime: TimeInterval,
+        moveX: Double,
+        isGrounded: Bool,
+        targetPosition: CGPoint? = nil
+    ) {
         // X축 이동
         applyMovement(moveX: moveX, isGrounded: isGrounded)
 
         // Y축 중력 보정 (Apex Control)
         applyGravityCorrection(deltaTime: deltaTime, isGrounded: isGrounded)
+
+        // 원격 위치 동기화 보정(속도 기반)
+        if let targetPosition {
+            applyNetworkPositionCorrection(targetPosition, deltaTime: deltaTime)
+        }
     }
 
     // 즉발적인 점프 힘 적용
@@ -105,5 +115,50 @@ public final class PhysicsCore {
 
         let additionalGravity = PhysicsConstants.gravityDY * (multiplier - 1.0) * CGFloat(deltaTime)
         body.velocity = CGVector(dx: body.velocity.dx, dy: velocityY + additionalGravity)
+    }
+
+    private func applyNetworkPositionCorrection(_ targetPosition: CGPoint, deltaTime: TimeInterval) {
+        guard let body,
+              let node = body.node,
+              deltaTime > 0 else { return }
+
+        let current = node.position
+        let dx = targetPosition.x - current.x
+        let dy = targetPosition.y - current.y
+        let distance = hypot(dx, dy)
+
+        if distance <= PhysicsConstants.networkSyncDeadZone {
+            return
+        }
+
+        // 비정상적으로 크게 벌어진 경우에만 안전 스냅
+        if distance >= PhysicsConstants.networkSyncEmergencySnapDistance {
+            node.position = targetPosition
+            body.velocity = .zero
+            return
+        }
+
+        let gainT = min(max(distance / PhysicsConstants.networkSyncGainDistance, 0), 1)
+        let gain = CGFloat.lerp(
+            start: PhysicsConstants.networkSyncMinCorrectionGain,
+            end: PhysicsConstants.networkSyncMaxCorrectionGain,
+            t: gainT
+        )
+
+        let desiredVx = dx * gain
+        let desiredVy = dy * gain
+        let maxSpeed = PhysicsConstants.networkSyncMaxCorrectionSpeed
+
+        let correctionVx = clamp(desiredVx, min: -maxSpeed, max: maxSpeed)
+        let correctionVy = clamp(desiredVy, min: -maxSpeed, max: maxSpeed)
+
+        body.velocity = CGVector(
+            dx: body.velocity.dx + correctionVx * CGFloat(deltaTime),
+            dy: body.velocity.dy + correctionVy * CGFloat(deltaTime)
+        )
+    }
+
+    private func clamp(_ value: CGFloat, min minValue: CGFloat, max maxValue: CGFloat) -> CGFloat {
+        min(maxValue, max(minValue, value))
     }
 }

@@ -32,4 +32,12 @@ public enum PhysicsConstants {
     public static let linearDamping: CGFloat = 0.5
     public static let friction: CGFloat = 1.0
     public static let restitution: CGFloat = 0.0
+
+    // 원격 위치 보정
+    public static let networkSyncDeadZone: CGFloat = 2.0
+    public static let networkSyncMinCorrectionGain: CGFloat = 4.0
+    public static let networkSyncMaxCorrectionGain: CGFloat = 14.0
+    public static let networkSyncGainDistance: CGFloat = 200.0
+    public static let networkSyncMaxCorrectionSpeed: CGFloat = 900.0
+    public static let networkSyncEmergencySnapDistance: CGFloat = 1200.0
 }

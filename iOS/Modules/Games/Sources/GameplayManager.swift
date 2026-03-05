@@ -59,10 +59,10 @@ public final class GameplayManager {
     public var onDidUpdate: ((TimeInterval) -> Void)?
     
     @ObservationIgnored
-    public var onRespawnConfirmed: ((UUID, RespawnReason, RespawnPosition) -> Void)?
+    public var onRespawnConfirmed: ((UUID, RespawnReason, CharacterPosition) -> Void)?
 
     @ObservationIgnored
-    private var pendingRespawnPositionByPlayerID: [UUID: RespawnPosition] = [:]
+    private var pendingRespawnPositionByPlayerID: [UUID: CharacterPosition] = [:]
     
     // 조절값
     private let maxJumpCount = 2
@@ -177,6 +177,10 @@ extension GameplayManager {
     public func updateMoveX(_ moveX: Double, for playerID: UUID) {
         state.setMoveX(moveX, for: playerID)
     }
+
+    public func updatePosition(_ position: CharacterPosition, for playerID: UUID) {
+        state.setPosition(position, for: playerID)
+    }
     
     private func tryJump(for playerID: UUID) {
         // 로컬 점프 검증은 로컬 플레이어만 수행
@@ -275,11 +279,11 @@ extension GameplayManager {
     
     // MARK: Remote
     
-    public func updateLastSafePosition(_ pos: RespawnPosition, for playerID: UUID) {
+    public func updateLastSafePosition(_ pos: CharacterPosition, for playerID: UUID) {
         state.setLastSafePosition(pos, for: playerID)
     }
     
-    public func applyRespawnRequested(_ reason: RespawnReason, position: RespawnPosition, for playerID: UUID) {
+    public func applyRespawnRequested(_ reason: RespawnReason, position: CharacterPosition, for playerID: UUID) {
         guard playerID != localPlayerID else { return }
         guard state.isRespawning(playerID) == false else { return }
 
@@ -287,7 +291,7 @@ extension GameplayManager {
         state.setIsRespawning(true, reason, for: playerID)
     }
     
-    public func consumeRespawnPosition(for playerID: UUID) -> RespawnPosition? {
+    public func consumeRespawnPosition(for playerID: UUID) -> CharacterPosition? {
         pendingRespawnPositionByPlayerID.removeValue(forKey: playerID)
     }
 }

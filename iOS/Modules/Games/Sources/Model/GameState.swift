@@ -37,6 +37,14 @@ public struct GameState: Equatable, Sendable {
         characters[id, default: .init()].moveX = moveX
     }
 
+    public mutating func setPosition(_ position: CharacterPosition, for id: UUID) {
+        ensurePlayer(id)
+        guard var character = characters[id] else { return }
+        character.position = position
+        character.hasNetworkPosition = true
+        characters[id] = character
+    }
+
     public mutating func setGrounded(_ grounded: Bool, for id: UUID) {
         characters[id, default: .init()].isGrounded = grounded
     }
@@ -75,7 +83,7 @@ public struct GameState: Equatable, Sendable {
         return reason
     }
     
-    mutating func setLastSafePosition(_ pos: RespawnPosition, for playerID: UUID) {
+    mutating func setLastSafePosition(_ pos: CharacterPosition, for playerID: UUID) {
         guard var character = characters[playerID] else { return }
         character.respawn.lastSafePosition = pos
         characters[playerID] = character

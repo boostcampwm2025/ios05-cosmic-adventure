@@ -67,6 +67,7 @@ public final class WebSocketService: NSObject {
 
             webSocketTask?.send(.string(text)) { [weak self] error in
                 if let error {
+                    print(error)
                     self?.handleError(error)
                 }
             }
