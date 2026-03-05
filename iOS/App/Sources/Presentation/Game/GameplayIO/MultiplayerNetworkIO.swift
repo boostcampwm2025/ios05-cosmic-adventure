@@ -39,12 +39,17 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
 
     /// 움직임 변화가 작으면 전송 생략(네트워크/지터 최적화)
     private let movementSendThreshold: Double = 0.02
+    /// 위치가 이 값 이상 변하면 keep-alive를 기다리지 않고 즉시 동기화
+    private let positionSendThreshold: Double = 8.0
     private var timeSinceLastMovementSend: TimeInterval = 0
     /// 동일 값 유지 시에도 liveness 보장을 위한 keep-alive 주기
     private let movementKeepAliveInterval: TimeInterval = 0.4
     
     private var lastSentMoveX: Double = 0
+    private var lastSentPosition: CharacterPosition = .zero
     private var pendingLocalMoveX: Double = 0
+    private var localJumpSequence: Int = 0
+    private var lastRemoteJumpSequence: Int = -1
 
     // --- Receive + interpolation ---
     private var remoteTargetMoveX: Double = 0
@@ -71,7 +76,8 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     private let remoteFreezeAfter: TimeInterval = 0.8
 
     /// 이 시간 이상 원격 수신이 없으면 연결 끊김으로 판단
-    private let peerTimeoutInterval: TimeInterval = 10.0
+    /// (실제 네트워크 끊김 콜백 외에 입력 무수신 기반 보조 판단)
+    private let peerTimeoutInterval: TimeInterval = 20.0
     private var didNotifyPeerTimeout: Bool = false
 
     init(
@@ -134,7 +140,10 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         movementSendAccumulator = 0
         timeSinceLastMovementSend = 0
         lastSentMoveX = 0
+        lastSentPosition = .zero
         pendingLocalMoveX = 0
+        localJumpSequence = 0
+        lastRemoteJumpSequence = -1
         remoteTargetMoveX = 0
         remoteSmoothedMoveX = 0
         lastRemoteReceivedAt = Date().timeIntervalSince1970
@@ -215,13 +224,39 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
             return
         }
 
+        // 입력 종류와 무관하게 "상대 생존 신호"로 간주
+        self.lastRemoteReceivedAt = Date().timeIntervalSince1970
+        self.didForceStopRemote = false
+        self.didNotifyPeerTimeout = false
+
         switch dto.kind {
         case .horizontal:
             let x = Double(dto.x ?? 0)
-            self.lastRemoteReceivedAt = Date().timeIntervalSince1970
-            self.didForceStopRemote = false
             self.remoteTargetMoveX = x
+
+            if let px = dto.positionX, let py = dto.positionY {
+                let position = CharacterPosition(x: px, y: py)
+                await MainActor.run {
+                    self.gameplayManager.updatePosition(position, for: remotePlayerID)
+                }
+            }
         case .jumpTriggered:
+            if let seq = dto.jumpSeq {
+                guard seq > self.lastRemoteJumpSequence else { return }
+                self.lastRemoteJumpSequence = seq
+            }
+
+            if let x = dto.x {
+                self.remoteTargetMoveX = x
+            }
+
+            if let px = dto.positionX, let py = dto.positionY {
+                let position = CharacterPosition(x: px, y: py)
+                await MainActor.run {
+                    self.gameplayManager.updatePosition(position, for: remotePlayerID)
+                }
+            }
+
             await MainActor.run {
                 self.gameplayManager.applyJumpTriggered(for: remotePlayerID)
             }
@@ -232,7 +267,7 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
                   let reason = self.decodeRespawnReason(raw) else {
                 return
             }
-            let pos = RespawnPosition(x: x, y: y)
+            let pos = CharacterPosition(x: x, y: y)
             await MainActor.run {
                 self.gameplayManager.applyRespawnRequested(reason, position: pos, for: remotePlayerID)
             }
@@ -275,7 +310,7 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         }
     }
 
-    private func handleLocalRespawnConfirmed(playerID: UUID, reason: RespawnReason, position: RespawnPosition) async {
+    private func handleLocalRespawnConfirmed(playerID: UUID, reason: RespawnReason, position: CharacterPosition) async {
         guard playerID == self.localPlayerID else { return }
         guard let peerId = self.peerId else { return }
 
@@ -403,7 +438,33 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
     private func handleLocalJumpTriggered(playerID: UUID) async {
         guard playerID == self.localPlayerID else { return }
         guard let peerId = self.peerId else { return }
-        self.sendDTO(.jumpTriggered, to: peerId)
+
+        let fallbackMoveX = pendingLocalMoveX
+        let localID = localPlayerID
+        let (currentMoveX, currentPosition) = await MainActor.run {
+            let character = gameplayManager.state.characters[localID]
+            return (character?.moveX ?? fallbackMoveX, character?.position ?? .zero)
+        }
+
+        let quantizedMoveX = quantize(currentMoveX, step: 0.01)
+        let quantizedPosition = CharacterPosition(
+            x: quantize(currentPosition.x, step: 1.0),
+            y: quantize(currentPosition.y, step: 1.0)
+        )
+
+        localJumpSequence += 1
+        let jumpDTO = NetworkGameInputDTO.jumpTriggered(
+            moveX: quantizedMoveX,
+            positionX: quantizedPosition.x,
+            positionY: quantizedPosition.y,
+            jumpSeq: localJumpSequence
+        )
+        self.sendDTO(jumpDTO, to: peerId)
+
+        // 점프 스냅샷도 최근 전송 상태로 반영해 중복 전송을 줄인다.
+        lastSentMoveX = quantizedMoveX
+        lastSentPosition = quantizedPosition
+        timeSinceLastMovementSend = 0
     }
 
     // MARK: - Tick send + smoothing
@@ -417,23 +478,37 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
         movementSendAccumulator -= movementSendInterval
 
         // 스냅샷 소스는 "현재 캐릭터 상태" 기반이 더 일관적(입력 지터 방지)
-        let fallback = pendingLocalMoveX
+        let fallbackMoveX = pendingLocalMoveX
         let localID = localPlayerID
-        let currentMoveX = await MainActor.run {
-            gameplayManager.state.characters[localID]?.moveX ?? fallback
+        let (currentMoveX, currentPosition) = await MainActor.run {
+            let character = gameplayManager.state.characters[localID]
+            return (character?.moveX ?? fallbackMoveX, character?.position ?? .zero)
         }
 
         // 간단 quantize(페이로드 안정화)
-        let quantized = (currentMoveX * 100).rounded() / 100
+        let quantizedMoveX = quantize(currentMoveX, step: 0.01)
+        let quantizedPosition = CharacterPosition(
+            x: quantize(currentPosition.x, step: 1.0),
+            y: quantize(currentPosition.y, step: 1.0)
+        )
         
-        let hasSignificantChange = abs(quantized - lastSentMoveX) >= movementSendThreshold
+        let hasSignificantMoveChange = abs(quantizedMoveX - lastSentMoveX) >= movementSendThreshold
+        let hasSignificantPositionChange = distance(quantizedPosition, lastSentPosition) >= positionSendThreshold
         let isKeepAliveDue = timeSinceLastMovementSend >= movementKeepAliveInterval
-        guard hasSignificantChange || isKeepAliveDue else { return }
+        guard hasSignificantMoveChange || hasSignificantPositionChange || isKeepAliveDue else { return }
         
         // 전송 성공 기준으로 reset
         timeSinceLastMovementSend = 0
-        lastSentMoveX = quantized
-        sendDTO(.horizontal(quantized), to: peerId)
+        lastSentMoveX = quantizedMoveX
+        lastSentPosition = quantizedPosition
+        sendDTO(
+            .horizontal(
+                quantizedMoveX,
+                positionX: quantizedPosition.x,
+                positionY: quantizedPosition.y
+            ),
+            to: peerId
+        )
     }
 
     private func updateRemoteInterpolation(deltaTime: TimeInterval) async {
@@ -464,5 +539,13 @@ actor MultiplayerNetworkIO: MultiplayerNetworkManaging {
 
     private func sendDTO(_ dto: NetworkGameInputDTO, to peerId: UUID) {
         connectionSessionManager.sendGameData(dto, to: peerId)
+    }
+
+    private func quantize(_ value: Double, step: Double) -> Double {
+        (value / step).rounded() * step
+    }
+
+    private func distance(_ lhs: CharacterPosition, _ rhs: CharacterPosition) -> Double {
+        hypot(lhs.x - rhs.x, lhs.y - rhs.y)
     }
 }
