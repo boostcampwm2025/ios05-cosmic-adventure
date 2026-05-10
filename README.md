@@ -447,4 +447,3 @@ make db-reset   # DB 초기화
 make test       # 테스트 실행
 make clean      # 정리
 ```
-
